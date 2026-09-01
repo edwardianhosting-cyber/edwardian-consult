@@ -1,0 +1,134 @@
+import { Router, Request, Response } from 'express';
+import { authenticate, authorize } from '../middleware/auth.middleware';
+import multer from 'multer';
+import {
+  createAssignment,
+  getAssignments,
+  getAssignmentById,
+  updateAssignment,
+  deleteAssignment,
+  submitAssignmentAttempt,
+  getAssignmentResults,
+  getAssignmentResultById,
+  getAssignmentQuestions,
+  uploadAssignmentFile,
+  getPublishedAssignmentsForUser,
+  publishAssignment,
+  unpublishAssignment,
+} from '../services/assignment.service';
+
+const router = Router();
+const upload = multer({ storage: multer.memoryStorage() });
+
+router.get('/', authenticate, async (req: Request, res: Response) => {
+  try {
+    const assignments = await getAssignments(req.user!.userId, req.user!.role);
+    res.json({ success: true, data: assignments });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch assignments' });
+  }
+});
+
+router.get('/available', authenticate, async (req: Request, res: Response) => {
+  try {
+    const assignments = await getPublishedAssignmentsForUser(req.user!.userId);
+    res.json({ success: true, data: assignments });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch assignments' });
+  }
+});
+
+router.get('/results', authenticate, async (req: Request, res: Response) => {
+  try {
+    const results = await getAssignmentResults(req.user!.userId);
+    res.json({ success: true, data: results });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch assignment results' });
+  }
+});
+
+router.get('/:id', authenticate, async (req: Request, res: Response) => {
+  try {
+    const assignment = await getAssignmentById(req.params.id);
+    res.json({ success: true, data: assignment });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch assignment' });
+  }
+});
+
+router.get('/:id/questions', authenticate, async (req: Request, res: Response) => {
+  try {
+    const questions = await getAssignmentQuestions(req.params.id);
+    res.json({ success: true, data: questions });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch assignment questions' });
+  }
+});
+
+router.post('/', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+  try {
+    const assignment = await createAssignment(req.user!.userId, req.body);
+    res.status(201).json({ success: true, data: assignment });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to create assignment' });
+  }
+});
+
+router.put('/:id', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+  try {
+    const assignment = await updateAssignment(req.params.id, req.body);
+    res.json({ success: true, data: assignment });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update assignment' });
+  }
+});
+
+router.delete('/:id', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+  try {
+    await deleteAssignment(req.params.id);
+    res.json({ success: true, message: 'Assignment deleted' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete assignment' });
+  }
+});
+
+router.post('/:id/submit', authenticate, async (req: Request, res: Response) => {
+  try {
+    const result = await submitAssignmentAttempt(req.user!.userId, req.params.id, req.body);
+    res.status(201).json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to submit assignment' });
+  }
+});
+
+router.post('/upload', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), upload.single('file'), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file provided' });
+    }
+    const result = await uploadAssignmentFile(req.file);
+    res.status(201).json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to upload file' });
+  }
+});
+
+router.patch('/:id/publish', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+  try {
+    const assignment = await publishAssignment(req.params.id);
+    res.json({ success: true, data: assignment, message: 'Assignment published' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to publish assignment' });
+  }
+});
+
+router.patch('/:id/unpublish', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+  try {
+    const assignment = await unpublishAssignment(req.params.id);
+    res.json({ success: true, data: assignment, message: 'Assignment unpublished' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to unpublish assignment' });
+  }
+});
+
+export default router;
