@@ -34,7 +34,7 @@ edward-ian-consult/
 - Node.js 18+
 - PostgreSQL database (Neon.tech or Supabase recommended)
 - Paystack account (for payments)
-- Brevo account (for emails)
+- PHP Mailer hosted on Whogohost (for emails)
 - Termii account (for SMS - optional)
 
 ---
@@ -64,9 +64,9 @@ NODE_ENV=development
 FRONTEND_URL="http://localhost:3000"
 PAYSTACK_SECRET_KEY="sk_test_..."
 PAYSTACK_PUBLIC_KEY="pk_test_..."
-BREVO_API_KEY="xkeysib-..."
-BREVO_SENDER_EMAIL="noreply@edwardianconsult.com"
-BREVO_SENDER_NAME="Edwardian Educational Consult"
+PHP_MAILER_URL="https://edwardianeducationalconsult.com.ng/mailer/send.php"
+PHP_MAILER_KEY="eiec-mailer-2026"
+FROM_EMAIL="registrar@edwardianeducationalconsult.com.ng"
 TERMII_API_KEY="TL_..."
 TERMII_SENDER_ID="EdwardIan"
 ```
@@ -126,7 +126,9 @@ Access the application:
     FRONTEND_URL=https://your-frontend.vercel.app
     PAYSTACK_SECRET_KEY=sk_live_...
     PAYSTACK_PUBLIC_KEY=pk_live_...
-    BREVO_API_KEY=your_brevo_key
+    PHP_MAILER_URL=https://edwardianeducationalconsult.com.ng/mailer/send.php
+    PHP_MAILER_KEY=your_mailer_key
+    FROM_EMAIL=registrar@edwardianeducationalconsult.com.ng
     CLOUDINARY_CLOUD_NAME=your_cloud_name
     CLOUDINARY_API_KEY=your_api_key
     CLOUDINARY_API_SECRET=your_api_secret

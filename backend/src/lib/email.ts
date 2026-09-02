@@ -7,7 +7,7 @@ import prisma from './prisma';
 const PHP_MAILER_URL = process.env.PHP_MAILER_URL || 'https://edwardianeducationalconsult.com.ng/mailer/send.php';
 const PHP_MAILER_KEY = process.env.PHP_MAILER_KEY || 'eiec-mailer-2026';
 const FRONTEND_URL   = process.env.FRONTEND_URL   || 'https://edwardian-consult.vercel.app';
-const FROM_EMAIL     = process.env.BREVO_SENDER_EMAIL || 'noreply@edwardianconsult.com';
+const FROM_EMAIL     = process.env.FROM_EMAIL || 'noreply@edwardianconsult.com';
 
 export type EmailPurpose = 'REGISTRAR' | 'SECURITY' | 'NOTIFICATION';
 

@@ -27,12 +27,12 @@ services:
         sync: false
       - key: PAYSTACK_PUBLIC_KEY
         sync: false
-      - key: BREVO_API_KEY
-        sync: false
-      - key: BREVO_SENDER_EMAIL
-        sync: false
-      - key: BREVO_SENDER_NAME
-        value: Edwardian Educational Consult
+      - key: PHP_MAILER_URL
+        value: https://edwardianeducationalconsult.com.ng/mailer/send.php
+      - key: PHP_MAILER_KEY
+        generateValue: true
+      - key: FROM_EMAIL
+        value: registrar@edwardianeducationalconsult.com.ng
       - key: TERMII_API_KEY
         sync: false
       - key: TERMII_SENDER_ID
