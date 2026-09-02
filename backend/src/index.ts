@@ -55,9 +55,10 @@ app.use(helmet());
 
 // CORS configuration
 const allowedOrigins = [
-  'https://edwardian-consult.vercel.app',
-  'http://localhost:3000',
   process.env.FRONTEND_URL,
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://edwardian-consult.vercel.app',
 ].filter(Boolean);
 
 app.use(cors({
