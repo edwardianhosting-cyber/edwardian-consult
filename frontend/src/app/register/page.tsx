@@ -258,8 +258,13 @@ export default function RegisterPage() {
         }
         break;
       case 4:
-        if (formData.examTypes.includes('JAMB') && formData.jambSubjects.length !== 4) {
-          setError('Please select exactly 4 JAMB subjects');
+        // JAMB and Post-UTME share the same subject combination, so one
+        // picker covers both. O'Level (WAEC/NECO) never needs a picker here.
+        if (
+          (formData.examTypes.includes('JAMB') || formData.examTypes.includes('Post-UTME')) &&
+          formData.jambSubjects.length !== 4
+        ) {
+          setError('Please select exactly 4 subjects for your JAMB/Post-UTME combination');
           return false;
         }
         break;
@@ -282,7 +287,12 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const response = await authApi.register(formData);
+      // Strip the File object before sending — it isn't JSON-serializable and
+      // this endpoint doesn't accept multipart uploads. Passport photo can be
+      // uploaded separately from the student's profile after registration.
+      const { passport, ...payload } = formData;
+
+      const response = await authApi.register(payload);
       const { token, user } = response.data;
 
       localStorage.setItem('token', token);
@@ -290,7 +300,16 @@ export default function RegisterPage() {
 
       router.push('/register/success');
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Registration failed';
+      let errorMessage = err.response?.data?.message || err.message || 'Registration failed';
+
+      // A network-level failure means the request never reached the server —
+      // wrong/unreachable API URL, the server being down, or a CORS block.
+      // Show the user something actionable instead of a raw fetch error.
+      if (errorMessage.includes('Failed to fetch')) {
+        errorMessage =
+          "Couldn't reach the server. Please check your internet connection and try again — if this keeps happening, the server may be temporarily down.";
+      }
+
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -507,16 +526,32 @@ export default function RegisterPage() {
           </div>
         );
 
-      case 4:
+      case 4: {
+        const wantsJamb = formData.examTypes.includes('JAMB');
+        const wantsPostUtme = formData.examTypes.includes('Post-UTME');
+        const wantsOlevel = formData.examTypes.includes('WAEC') || formData.examTypes.includes('NECO');
+        const showSubjectPicker = wantsJamb || wantsPostUtme;
+
+        // Label adapts to what the student actually picked, since JAMB and
+        // Post-UTME use the same 4-subject combination.
+        let pickerLabel = 'Exam Subjects';
+        if (wantsJamb && wantsPostUtme) pickerLabel = 'JAMB & Post-UTME Subjects';
+        else if (wantsPostUtme) pickerLabel = 'Post-UTME Subjects';
+        else if (wantsJamb) pickerLabel = 'JAMB Subjects';
+
         return (
           <div className="space-y-6">
             <h3 className="text-xl font-semibold text-gray-900">Subject Selection</h3>
 
-            {formData.examTypes.includes('JAMB') && (
+            {showSubjectPicker && (
               <div>
                 <h4 className="font-medium text-gray-900 mb-3">
-                  JAMB Subjects <span className="text-sm text-gray-500">(Select exactly 4)</span>
+                  {pickerLabel} <span className="text-sm text-gray-500">(Select exactly 4)</span>
                 </h4>
+                <p className="text-sm text-gray-500 mb-3">
+                  Post-UTME screening uses the same subject combination you register for JAMB, so you only need to
+                  pick these once.
+                </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {jambSubjects.map((subject) => (
                     <button
@@ -540,21 +575,35 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {(formData.examTypes.includes('WAEC') || formData.examTypes.includes('NECO')) && (
+            {wantsOlevel && (
               <div>
                 <h4 className="font-medium text-gray-900 mb-3">O'Level Subjects</h4>
-                <p className="text-sm text-gray-500 mb-3">You can add your O'Level results later in your profile</p>
+                <p className="text-sm text-gray-500 mb-3">
+                  These are shown for reference only and can't be selected here — you'll add your actual O'Level
+                  subjects and grades later from your student profile.
+                </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {waecNecoSubjects.slice(0, 12).map((subject) => (
-                    <div key={subject} className="p-2 rounded-lg border border-gray-200 text-sm">
+                    <div
+                      key={subject}
+                      aria-disabled="true"
+                      className="p-2 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-400 cursor-not-allowed select-none"
+                    >
                       {subject}
                     </div>
                   ))}
                 </div>
               </div>
             )}
+
+            {!showSubjectPicker && !wantsOlevel && (
+              <p className="text-sm text-gray-500">
+                No subject selection is needed for the examination(s) you chose. You can continue to the next step.
+              </p>
+            )}
           </div>
         );
+      }
 
       case 5:
         return (
@@ -589,9 +638,9 @@ export default function RegisterPage() {
                   ))}
                 </select>
               </div>
-              {formData.examTypes.includes('JAMB') && (
+              {(formData.examTypes.includes('JAMB') || formData.examTypes.includes('Post-UTME')) && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Target JAMB Score</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Target JAMB/Post-UTME Score</label>
                   <input
                     type="number"
                     value={formData.targetScore}

@@ -2,6 +2,35 @@ export const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50
   .replace(/\/api$/, '')
   .replace(/\/+$/, '') + '/api';
 
+// NEXT_PUBLIC_API_URL must be set at BUILD time (in .env.local for dev, or in
+// your host's environment variables for production — e.g. Vercel project
+// settings). If it's missing, every request silently falls back to
+// localhost:5000, which will never work once the site isn't running on the
+// same machine as the API — this is the #1 cause of "Failed to fetch" on a
+// deployed site.
+if (typeof window !== 'undefined' && !process.env.NEXT_PUBLIC_API_URL) {
+  console.warn(
+    `[api] NEXT_PUBLIC_API_URL is not set — falling back to ${API_BASE}. ` +
+    `Set NEXT_PUBLIC_API_URL in your environment (and redeploy) if this isn't running locally.`
+  );
+}
+
+function describeNetworkError(err: unknown): Error {
+  // A raw TypeError with no HTTP status means fetch never got a response at
+  // all: wrong URL, server unreachable/down, or the browser blocked it (most
+  // commonly a CORS rejection, which fetch reports as this same generic
+  // error with no further detail).
+  if (err instanceof TypeError) {
+    return new Error(
+      `Failed to fetch. Could not reach the API at ${API_BASE}. Check that: ` +
+      `(1) the backend server is running and reachable, ` +
+      `(2) NEXT_PUBLIC_API_URL is set correctly for this environment, and ` +
+      `(3) the backend's CORS allow-list (FRONTEND_URL) includes this site's origin.`
+    );
+  }
+  return err instanceof Error ? err : new Error('Request failed');
+}
+
 async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   
@@ -11,10 +40,15 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     ...(options.headers as Record<string, string> || {}),
   };
 
-  const res = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  } catch (err) {
+    throw describeNetworkError(err);
+  }
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: 'Request failed' }));
@@ -31,11 +65,16 @@ async function fetchFormData(endpoint: string, formData: FormData) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${endpoint}`, {
-    method: 'POST',
-    headers,
-    body: formData,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+  } catch (err) {
+    throw describeNetworkError(err);
+  }
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: 'Request failed' }));

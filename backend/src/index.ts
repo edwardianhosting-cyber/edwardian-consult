@@ -54,19 +54,34 @@ const upload = multer({ storage: multer.memoryStorage() });
 app.use(helmet());
 
 // CORS configuration
+// IMPORTANT: FRONTEND_URL must exactly match the origin your site is served
+// from (protocol + host, no trailing slash) — e.g. "https://yourdomain.com".
+// A mismatch here is the most common cause of the frontend showing
+// "Failed to fetch": the browser blocks the request before it even reaches
+// this server, so no error handler here ever runs — check the logs below
+// instead.
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   'http://localhost:3000',
   'http://localhost:3001',
   'https://edwardian-consult.vercel.app',
-].filter(Boolean);
+].filter(Boolean) as string[];
+
+// Also allow any Vercel preview deployment of this project
+// (https://<project>-<hash>-<team>.vercel.app), since those change on every
+// deploy and can't be listed individually.
+const isAllowedOrigin = (origin: string) =>
+  allowedOrigins.includes(origin) || /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
 
 app.use(cors({
   origin: (origin, callback) => {
     // allow requests with no origin (mobile apps, curl, server-to-server)
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || isAllowedOrigin(origin)) {
       callback(null, true);
     } else {
+      console.warn(`[CORS] Blocked request from origin "${origin}". ` +
+        `Allowed origins: ${allowedOrigins.join(', ') || '(none configured)'}. ` +
+        `If this is your real frontend, set FRONTEND_URL to match it exactly.`);
       callback(new Error('Not allowed by CORS'));
     }
   },
