@@ -55,8 +55,9 @@ export default function CareersPage() {
 
   async function fetchUserSubjects() {
     try {
-      const data = await api.getMySubjects();
-      setUserSubjects(data || []);
+      const res = await api.getMySubjects();
+      const list = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+      setUserSubjects(list);
     } catch (error) {
       console.error('Failed to fetch user subjects:', error);
       const userStr = localStorage.getItem('user');

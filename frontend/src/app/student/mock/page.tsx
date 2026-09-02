@@ -28,8 +28,8 @@ export default function MockPage() {
     try {
       setLoading(true);
       setError(null);
-      const questions = await api.getQuestions();
-      setExams(questions.data?.exams || []);
+      const res = await api.getMockExams();
+      setExams(res.data || []);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch mock exams');
     } finally {

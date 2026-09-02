@@ -30,7 +30,7 @@ export default function AssignmentsPage() {
     try {
       setLoading(true);
       setError(null);
-      const data = await api.getAssignments();
+      const data = await api.getAvailableAssignments();
       setAssignments(data.data || []);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch assignments');

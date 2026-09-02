@@ -110,7 +110,7 @@ export default function StudentDashboard() {
         api.getCBTResults(1),
         api.getRecentNotifications(5),
         api.getNewsForStudent(userData?.programme),
-        api.getAssignments(),
+        api.getAvailableAssignments(),
         api.getNotices(),
       ]);
 

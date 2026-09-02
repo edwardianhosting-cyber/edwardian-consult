@@ -122,8 +122,9 @@ export default function CBTPracticePage() {
 
   async function fetchSubjects() {
     try {
-      const data = await api.getMySubjects();
-      setSubjects(data && data.length > 0 ? data : []);
+      const res = await api.getMySubjects();
+      const list = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+      setSubjects(list);
     } catch (err) {
       console.error('Failed to fetch subjects:', err);
     }
@@ -132,9 +133,8 @@ export default function CBTPracticePage() {
   async function loadExam(examId: string) {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch(`${API_BASE}/exams/${examId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       if (res.ok) {
         const data = await res.json();

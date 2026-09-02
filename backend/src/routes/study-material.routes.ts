@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize } from '../middleware/auth.middleware';
 import multer from 'multer';
+import prisma from '../lib/prisma';
 import {
   createStudySubject,
   getStudySubjects,
@@ -167,7 +168,37 @@ router.post('/upload', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), upl
 // Get all study materials (student view)
 router.get('/materials', authenticate, async (req: Request, res: Response) => {
   try {
-    const materials = await getAllStudyMaterials();
+    // If the requester is a student, filter by their registered subjects.
+    // Materials are linked to StudySubject via StudyTopic. We match the
+    // StudySubject.name against the student's jambSubjects strings.
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: { jambSubjects: true, role: true },
+    });
+
+    const userSubjects = (user?.jambSubjects as string[]) || [];
+    const isStudent = user?.role === 'STUDENT';
+
+    const where: any = { isActive: true };
+
+    if (isStudent && userSubjects.length > 0) {
+      where.topic = {
+        subject: { name: { in: userSubjects } },
+      };
+    }
+
+    const materials = await prisma.studyResource.findMany({
+      where,
+      include: {
+        topic: {
+          include: {
+            subject: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
     const formatted = materials.map((m: any) => ({
       id: m.id,
       title: m.title,

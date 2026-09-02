@@ -44,8 +44,9 @@ export default function CoursesPage() {
     try {
       setLoading(true);
       setError(null);
-      const data = await api.getMySubjects();
-      setSubjects(Array.isArray(data) ? data : []);
+      const res = await api.getMySubjects();
+      const list = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+      setSubjects(list);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch subjects');
       setSubjects([]);
@@ -60,8 +61,9 @@ export default function CoursesPage() {
     setSaving(true);
     setError(null);
     try {
-      const updated = await api.updateMySubjects(newSubjects);
-      setSubjects(updated);
+      const res = await api.updateMySubjects(newSubjects);
+      const list = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : newSubjects;
+      setSubjects(list);
       setSuccess('Subject added successfully');
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
@@ -78,8 +80,9 @@ export default function CoursesPage() {
     setSaving(true);
     setError(null);
     try {
-      const updated = await api.updateMySubjects(newSubjects);
-      setSubjects(updated);
+      const res = await api.updateMySubjects(newSubjects);
+      const list = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : newSubjects;
+      setSubjects(list);
       setSuccess('Subject removed successfully');
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {

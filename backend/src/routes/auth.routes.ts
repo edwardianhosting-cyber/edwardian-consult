@@ -107,19 +107,19 @@ router.post('/register', async (req: Request, res: Response) => {
         state: validated.state || null,
         lga: validated.lga || null,
 
-        // Academic
-        currentSchool: validated.currentSchool || null,
-        classLevel: validated.classLevel || null,
-        programme: validated.programme || null,
+  // Academic
+  currentSchool: validated.currentSchool || null,
+  classLevel: validated.classLevel || null,
+  programme: validated.programme || null,
 
-        // Exams
-        examTypes: validated.examTypes || [],
-        jambSubjects: validated.jambSubjects || [],
-        targetScore: validated.targetScore || null,
-        olevelSubjects: validated.olevelSubjects || [],
+  // Exams
+  examTypes: validated.examTypes || [],
+  jambSubjects: validated.jambSubjects || [],
+  targetScore: validated.targetScore || null,
+  olevelResults: validated.olevelSubjects || [],
 
-        // Target
-        targetInstitution: validated.targetInstitution || validated.targetSchool || null,
+  // Target
+  targetInstitution: validated.targetInstitution || validated.targetSchool || null,
         targetCourse: validated.targetCourse || null,
         secondChoiceInstitution: validated.secondChoiceInstitution || null,
         secondChoiceCourse: validated.secondChoiceCourse || null,
