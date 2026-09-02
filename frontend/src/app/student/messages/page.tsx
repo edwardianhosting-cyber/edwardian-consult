@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MessageSquare, Send, Search, Paperclip, User } from 'lucide-react';
-import { API_BASE } from '@/lib/api';
+import { MessageSquare, Search, User } from 'lucide-react';
+import api from '@/lib/api';
 
 interface Message {
   id: string;
@@ -18,7 +18,6 @@ export default function MessagesPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
-  const [showCompose, setShowCompose] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -27,14 +26,8 @@ export default function MessagesPage() {
 
   async function fetchMessages() {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE}/messages`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setMessages(data.data || []);
-      }
+      const res = await api.getMessages();
+      setMessages(res.data || []);
     } catch (error) {
       console.error('Failed to fetch messages:', error);
     } finally {

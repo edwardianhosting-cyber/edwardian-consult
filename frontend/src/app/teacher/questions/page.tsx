@@ -90,7 +90,7 @@ export default function TeacherQuestions() {
     setError(null);
     try {
       if (editingQuestion) {
-        await api.updateTimetableEntry(editingQuestion.id, form);
+        await api.updateQuestion(editingQuestion.id, form);
       } else {
         await api.createQuestion(form);
       }

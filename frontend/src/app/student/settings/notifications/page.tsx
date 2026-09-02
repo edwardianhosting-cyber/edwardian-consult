@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Bell, Mail, MessageSquare, Save, Check } from 'lucide-react';
-import { API_BASE } from '@/lib/api';
+import api from '@/lib/api';
 
 interface NotificationPreferences {
   dashboard: {
@@ -80,17 +80,7 @@ export default function NotificationPreferencesPage() {
   async function savePreferences() {
     try {
       setSaving(true);
-      const token = localStorage.getItem('token');
-
-      await fetch(`${API_BASE}/notifications/preferences`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(preferences),
-      });
-
+      await api.updateNotificationPreferences(preferences);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {

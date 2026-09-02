@@ -56,14 +56,8 @@ export default function TranscriptPage() {
   async function generateTranscript() {
     try {
       setGenerating(true);
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE}/transcripts/generate`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        const data = await res.json();
+      const data = await api.generateTranscript();
+      if (data.data) {
         setTranscript(data.data);
       }
     } catch (err: any) {

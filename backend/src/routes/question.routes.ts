@@ -2,11 +2,52 @@ import { Router, Request, Response } from 'express';
 import { authenticate, authorize } from '../middleware/auth.middleware';
 import multer from 'multer';
 import * as XLSX from 'xlsx';
+import { z } from 'zod';
+import prisma from '../lib/prisma';
 import { uploadQuestionImage, bulkCreateQuestionsFromCSV, bulkCreateQuestionsFromExcel } from '../services/question.service';
 
 const router = Router();
 
 const upload = multer({ storage: multer.memoryStorage() });
+
+// Update question
+router.put('/:id', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+  try {
+    const schema = z.object({
+      subject: z.string().optional(),
+      examType: z.string().optional(),
+      institution: z.string().optional().nullable(),
+      year: z.number().int().optional(),
+      topic: z.string().optional().nullable(),
+      difficulty: z.string().optional(),
+      text: z.string().optional(),
+      imageUrl: z.string().optional().nullable(),
+      options: z.array(z.string()).optional(),
+      correctOption: z.number().int().optional(),
+      explanation: z.string().optional().nullable(),
+      isActive: z.boolean().optional(),
+    });
+
+    const validated = schema.parse(req.body);
+    const question = await prisma.question.update({
+      where: { id: req.params.id },
+      data: validated,
+    });
+    return res.json({ success: true, data: question });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message || 'Failed to update question' });
+  }
+});
+
+// Delete question
+router.delete('/:id', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+  try {
+    await prisma.question.delete({ where: { id: req.params.id } });
+    return res.json({ success: true, message: 'Question deleted' });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message || 'Failed to delete question' });
+  }
+});
 
 router.get('/sample', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
   try {

@@ -54,6 +54,7 @@ interface NewsItem {
   title: string;
   excerpt?: string;
   category?: string;
+  slug: string;
   createdAt?: string;
 }
 
@@ -93,8 +94,11 @@ export default function StudentDashboard() {
 
   async function fetchDashboardData() {
     try {
+      const userRes = await api.getProfile();
+      const userData = userRes.data;
+      setUser(userData);
+
       const [
-        userRes,
         performanceRes,
         resultsRes,
         notificationsRes,
@@ -102,18 +106,14 @@ export default function StudentDashboard() {
         assignmentsRes,
         noticesRes,
       ] = await Promise.allSettled([
-        api.getProfile(),
         api.getPerformance(),
         api.getCBTResults(1),
         api.getRecentNotifications(5),
-        api.getNews(),
+        api.getNewsForStudent(userData?.programme),
         api.getAssignments(),
         api.getNotices(),
       ]);
 
-      if (userRes.status === 'fulfilled') {
-        setUser(userRes.value.data);
-      }
       if (performanceRes.status === 'fulfilled') {
         setStats({
           totalCBTs: performanceRes.value.data.totalExams || 0,
@@ -243,7 +243,7 @@ export default function StudentDashboard() {
               <Newspaper className="w-5 h-5 text-primary-600" />
               Recent News
             </h2>
-            <Link href="/news" className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1">
+            <Link href="/student/news" className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1">
               View More <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
@@ -254,7 +254,7 @@ export default function StudentDashboard() {
               news.map((item) => (
                 <Link
                   key={item.id}
-                  href={`/news`}
+                  href={`/student/news/${item.slug}`}
                   className="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   <p className="text-sm font-medium text-gray-900 line-clamp-1">{item.title}</p>

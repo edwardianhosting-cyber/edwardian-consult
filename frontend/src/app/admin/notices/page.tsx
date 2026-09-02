@@ -1,8 +1,9 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import api from '@/lib/api';
-import { Plus, Trash2, Edit2, AlertTriangle, Info, Calendar, Clock } from 'lucide-react';
+import { Plus, Trash2, Edit2, AlertTriangle, Info, Calendar, Clock, Newspaper, Bell } from 'lucide-react';
 
 interface Notice {
   id: string;
@@ -129,13 +130,27 @@ export default function AdminNoticesPage() {
           <h1 className="text-2xl font-bold text-gray-900">Notice Board</h1>
           <p className="text-gray-600 mt-1">Manage notices and announcements</p>
         </div>
-        <button
-          onClick={() => { resetForm(); setShowForm(true); }}
-          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Notice
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/news"
+            className="px-3 py-2 text-sm text-gray-600 hover:text-primary-600 flex items-center gap-1 border border-gray-200 rounded-lg hover:border-primary-300"
+          >
+            <Newspaper className="w-4 h-4" /> News
+          </Link>
+          <Link
+            href="/admin/notifications"
+            className="px-3 py-2 text-sm text-gray-600 hover:text-primary-600 flex items-center gap-1 border border-gray-200 rounded-lg hover:border-primary-300"
+          >
+            <Bell className="w-4 h-4" /> Notifications
+          </Link>
+          <button
+            onClick={() => { resetForm(); setShowForm(true); }}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Notice
+          </button>
+        </div>
       </div>
 
       {showForm && (

@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Search, Edit2, Trash2, Eye, UserCheck, UserX, RefreshCw, X } from 'lucide-react';
+import Link from 'next/link';
+import { Plus, Search, Edit2, Trash2, Eye, UserCheck, UserX, RefreshCw, X, Award, CreditCard, FileText } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface Student {
@@ -175,13 +176,24 @@ export default function AdminStudentsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Students</h1>
           <p className="text-gray-600 mt-1">Manage all registered students</p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Student
-        </button>
+        <div className="flex items-center gap-2">
+          <Link href="/admin/results" className="px-3 py-2 text-sm text-gray-600 hover:text-primary-600 flex items-center gap-1 border border-gray-200 rounded-lg hover:border-primary-300">
+            <Award className="w-4 h-4" /> Results
+          </Link>
+          <Link href="/admin/payments" className="px-3 py-2 text-sm text-gray-600 hover:text-primary-600 flex items-center gap-1 border border-gray-200 rounded-lg hover:border-primary-300">
+            <CreditCard className="w-4 h-4" /> Payments
+          </Link>
+          <Link href="/admin/applications" className="px-3 py-2 text-sm text-gray-600 hover:text-primary-600 flex items-center gap-1 border border-gray-200 rounded-lg hover:border-primary-300">
+            <FileText className="w-4 h-4" /> Applications
+          </Link>
+          <button
+            onClick={openCreateModal}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Student
+          </button>
+        </div>
       </div>
 
       {error && (

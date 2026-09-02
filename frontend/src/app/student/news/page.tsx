@@ -30,7 +30,9 @@ export default function NewsPage() {
     try {
       setLoading(true);
       setError(null);
-      const data = await api.getNews();
+      const profileRes = await api.getProfile();
+      const programme = profileRes.data?.programme;
+      const data = await api.getNewsForStudent(programme);
       setNews(data.data || []);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch news');

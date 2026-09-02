@@ -1,8 +1,9 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import api from '@/lib/api';
-import { Plus, Trash2, Edit2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2, Edit2, Eye, EyeOff, Newspaper, Bell, Megaphone } from 'lucide-react';
 
 interface NewsArticle {
   id: string;
@@ -74,7 +75,7 @@ export default function AdminNewsPage() {
       coverImage: article.coverImage || '',
       isPublished: article.isPublished,
       isPinned: article.isPinned,
-      targetType: 'ALL',
+      targetType: (article as any).targetType || 'ALL',
     });
     setEditingId(article.id);
     setShowForm(true);
@@ -131,13 +132,29 @@ export default function AdminNewsPage() {
           <h1 className="text-2xl font-bold text-gray-900">News & Updates</h1>
           <p className="text-gray-600 mt-1">Manage news articles and updates</p>
         </div>
-        <button
-          onClick={() => { resetForm(); setShowForm(true); }}
-          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Article
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/notices"
+            className="px-3 py-2 text-sm text-gray-600 hover:text-primary-600 flex items-center gap-1 border border-gray-200 rounded-lg hover:border-primary-300"
+          >
+            <Megaphone className="w-4 h-4" />
+            Notices
+          </Link>
+          <Link
+            href="/admin/notifications"
+            className="px-3 py-2 text-sm text-gray-600 hover:text-primary-600 flex items-center gap-1 border border-gray-200 rounded-lg hover:border-primary-300"
+          >
+            <Bell className="w-4 h-4" />
+            Notifications
+          </Link>
+          <button
+            onClick={() => { resetForm(); setShowForm(true); }}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Article
+          </button>
+        </div>
       </div>
 
       {showForm && (
@@ -194,6 +211,23 @@ export default function AdminNewsPage() {
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Target Audience</label>
+              <select
+                value={formData.targetType}
+                onChange={(e) => setFormData({ ...formData, targetType: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="ALL">All Students & Public</option>
+                <option value="JAMB">JAMB Students Only</option>
+                <option value="WAEC">WAEC Students Only</option>
+                <option value="NECO">NECO Students Only</option>
+                <option value="STUDENT">Students Only (Not Public)</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                "Students Only" keeps the article inside the student portal (won't appear on the public news page).
+              </p>
+            </div>
             <div className="flex gap-4">
               <label className="flex items-center gap-2">
                 <input
@@ -232,6 +266,7 @@ export default function AdminNewsPage() {
             <tr>
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Title</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Category</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Target</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Views</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Date</th>
@@ -241,7 +276,7 @@ export default function AdminNewsPage() {
           <tbody className="divide-y divide-gray-100">
             {articles.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-8 text-gray-500">
+                <td colSpan={7} className="text-center py-8 text-gray-500">
                   No articles yet
                 </td>
               </tr>
@@ -250,6 +285,11 @@ export default function AdminNewsPage() {
                 <tr key={article.id} className="hover:bg-gray-50">
                   <td className="py-3 px-4 text-sm text-gray-900 font-medium max-w-xs truncate">{article.title}</td>
                   <td className="py-3 px-4 text-sm text-gray-500">{article.category}</td>
+                  <td className="py-3 px-4 text-sm">
+                    <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                      {(article as any).targetType || 'ALL'}
+                    </span>
+                  </td>
                   <td className="py-3 px-4 text-sm">
                     <div className="flex gap-2">
                       {article.isPublished ? (

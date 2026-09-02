@@ -11,7 +11,7 @@ const router = Router();
 // Get all published news
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { page = 1, limit = 20, category, targetType } = req.query;
+    const { page = 1, limit = 20, category, targetType, forStudent, programme } = req.query;
 
     const where: any = { isPublished: true, isActive: true };
     if (category) {
@@ -19,6 +19,17 @@ router.get('/', async (req: Request, res: Response) => {
     }
     if (targetType) {
       where.targetType = targetType;
+    }
+
+    // When forStudent=true, only return news targeted to ALL or to the
+    // student's specific programme (so students never see news targeted at
+    // a different audience).
+    if (forStudent === 'true') {
+      const studentProgramme = (programme as string) || '';
+      where.OR = [
+        { targetType: 'ALL' },
+        studentProgramme ? { targetType: studentProgramme } : undefined,
+      ].filter(Boolean);
     }
 
     const [articles, total] = await Promise.all([

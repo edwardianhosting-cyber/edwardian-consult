@@ -111,6 +111,8 @@ export const api = {
   markNotificationRead: (id: string) => fetchAPI(`/notifications/${id}/read`, { method: 'PATCH' }),
   markAllNotificationsRead: () => fetchAPI('/notifications/read-all', { method: 'PATCH' }),
   updateNotificationPreferences: (prefs: any) => fetchAPI('/notifications/preferences', { method: 'PATCH', body: JSON.stringify(prefs) }),
+  getNotificationPreferences: () => fetchAPI('/notifications/preferences'),
+  sendNotification: (data: any) => fetchAPI('/notifications/admin/send', { method: 'POST', body: JSON.stringify(data) }),
   
   // Results
   getResults: () => fetchAPI('/cbt/results'),
@@ -186,7 +188,16 @@ export const api = {
   matchCareers: (subjects: string[]) => fetchAPI('/careers/match', { method: 'POST', body: JSON.stringify({ subjects }) }),
   
   // News
-  getNews: () => fetchAPI('/news'),
+  getNews: (params?: Record<string, string>) => {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    return fetchAPI(`/news${query}`);
+  },
+  getNewsForStudent: (programme?: string) => {
+    const params: Record<string, string> = { forStudent: 'true' };
+    if (programme) params.programme = programme;
+    const query = '?' + new URLSearchParams(params).toString();
+    return fetchAPI(`/news${query}`);
+  },
   getNewsBySlug: (slug: string) => fetchAPI(`/news/${slug}`),
   createNews: (data: any) => fetchAPI('/news', { method: 'POST', body: JSON.stringify(data) }),
   updateNews: (id: string, data: any) => fetchAPI(`/news/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -214,9 +225,29 @@ export const api = {
   
   // Transcript
   getTranscript: () => fetchAPI('/transcripts/'),
-  
+  generateTranscript: () => fetchAPI('/transcripts/generate', { method: 'POST' }),
+
   // Messages
   getMessages: () => fetchAPI('/email/messages'),
+
+  // Referrals
+  getReferrals: () => fetchAPI('/referrals'),
+  getReferralStats: () => fetchAPI('/referrals/stats'),
+  createReferral: (data: { email: string }) => fetchAPI('/referrals', { method: 'POST', body: JSON.stringify(data) }),
+
+  // JAMB Tools
+  getJambSubjects: () => fetchAPI('/jamb/subjects'),
+  getJambCombinations: () => fetchAPI('/jamb/combinations'),
+  getJambSyllabus: () => fetchAPI('/jamb/syllabus'),
+  getJambNews: () => fetchAPI('/jamb/news'),
+  getJambDeadlines: () => fetchAPI('/jamb/deadlines'),
+  checkJambCombination: (data: any) => fetchAPI('/jamb/check-combination', { method: 'POST', body: JSON.stringify(data) }),
+  calculateJambScore: (data: any) => fetchAPI('/jamb/calculate-score', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Documents
+  getMyDocuments: () => fetchAPI('/documents/my'),
+  uploadDocument: (formData: FormData) => fetchFormData('/documents', formData),
+
   
   // User
   updateProfile: (data: any) => fetchAPI('/users/profile', { method: 'PATCH', body: JSON.stringify(data) }),
@@ -296,6 +327,7 @@ export const api = {
   
   // Questions
   createQuestion: (data: any) => fetchAPI('/questions', { method: 'POST', body: JSON.stringify(data) }),
+  updateQuestion: (id: string, data: any) => fetchAPI(`/questions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteQuestion: (id: string) => fetchAPI(`/questions/${id}`, { method: 'DELETE' }),
   downloadQuestionSample: (format = 'excel') => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Send, Users, Mail, MessageSquare, Bell, AlertTriangle, AlertCircle, Info, Calendar, Clock, CheckCircle } from 'lucide-react';
-import { API_BASE } from '@/lib/api';
+import api from '@/lib/api';
 
 interface NotificationForm {
   title: string;
@@ -84,24 +84,11 @@ export default function AdminNotificationCenter() {
 
     try {
       setSending(true);
-      const token = localStorage.getItem('token');
-
-      const res = await fetch(`${API_BASE}/notifications/admin/send`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(form),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setRecipientCount(data.data.recipientCount);
-        setSent(true);
-        setForm(defaultForm);
-        setTimeout(() => setSent(false), 5000);
-      }
+      const data = await api.sendNotification(form);
+      setRecipientCount(data.data.recipientCount);
+      setSent(true);
+      setForm(defaultForm);
+      setTimeout(() => setSent(false), 5000);
     } catch (error) {
       console.error('Failed to send notification:', error);
     } finally {

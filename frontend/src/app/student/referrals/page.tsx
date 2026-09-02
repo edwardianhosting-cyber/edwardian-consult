@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Users, Copy, Gift, TrendingUp, CheckCircle } from 'lucide-react';
-import { API_BASE } from '@/lib/api';
+import api from '@/lib/api';
 
 interface ReferralStats {
   totalReferrals: number;
@@ -45,22 +45,16 @@ export default function ReferralsPage() {
       }
 
       const [statsRes, referralsRes] = await Promise.all([
-        fetch(`${API_BASE}/referrals/stats`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${API_BASE}/referrals`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        api.getReferralStats(),
+        api.getReferrals(),
       ]);
 
-      if (statsRes.ok) {
-        const data = await statsRes.json();
-        setStats(data.data);
+      if (statsRes.data) {
+        setStats(statsRes.data);
       }
 
-      if (referralsRes.ok) {
-        const data = await referralsRes.json();
-        setReferrals(data.data);
+      if (referralsRes.data) {
+        setReferrals(referralsRes.data);
       }
     } catch (error) {
       console.error('Failed to fetch referrals:', error);
@@ -74,15 +68,7 @@ export default function ReferralsPage() {
     if (!email) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await fetch(`${API_BASE}/referrals`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ email }),
-      });
+      await api.createReferral({ email });
       setEmail('');
       fetchData();
     } catch (error) {

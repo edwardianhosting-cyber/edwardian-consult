@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import { Play, Clock, Award, ChevronRight, CheckCircle, XCircle, Trophy, TrendingUp, Calculator, X, AlertTriangle, BookOpen } from 'lucide-react';
 import { api } from '@/lib/api';
 import { API_BASE } from '@/lib/api';
@@ -328,9 +329,9 @@ export default function CBTPracticePage() {
             <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 text-lg">No subjects registered</p>
             <p className="text-gray-400 text-sm mt-1">Go to Courses to add subjects first</p>
-            <a href="/student/courses" className="mt-4 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 inline-block">
+            <Link href="/student/courses" className="mt-4 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 inline-block">
               Add Subjects
-            </a>
+            </Link>
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 gap-4">
@@ -359,7 +360,7 @@ export default function CBTPracticePage() {
         )}
 
         <div className="mt-8 grid sm:grid-cols-3 gap-4">
-          <a href="/student/results" className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-shadow">
+          <Link href="/student/results" className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
               <Award className="w-8 h-8 text-primary-600" />
               <div>
@@ -367,8 +368,8 @@ export default function CBTPracticePage() {
                 <p className="text-sm text-gray-500">See your CBT history</p>
               </div>
             </div>
-          </a>
-          <a href="/student/performance" className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-shadow">
+          </Link>
+          <Link href="/student/performance" className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
               <TrendingUp className="w-8 h-8 text-green-600" />
               <div>
@@ -376,8 +377,8 @@ export default function CBTPracticePage() {
                 <p className="text-sm text-gray-500">AI-powered analysis</p>
               </div>
             </div>
-          </a>
-          <a href="/student/leaderboard" className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-shadow">
+          </Link>
+          <Link href="/student/leaderboard" className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
               <Trophy className="w-8 h-8 text-yellow-600" />
               <div>
@@ -385,7 +386,7 @@ export default function CBTPracticePage() {
                 <p className="text-sm text-gray-500">Compete with others</p>
               </div>
             </div>
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -739,12 +740,12 @@ export default function CBTPracticePage() {
             >
               View Corrections
             </button>
-            <a
+            <Link
               href="/student/results"
               className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
             >
               View Results
-            </a>
+            </Link>
           </div>
         </div>
 

@@ -32,6 +32,8 @@ import {
   Briefcase,
   FileCheck,
   Users,
+  Share2,
+  FilePlus,
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 
@@ -61,6 +63,7 @@ const sidebarSections = [
     items: [
       { name: 'CBT Practice', href: '/student/cbt', icon: GraduationCap },
       { name: 'Mock Exams', href: '/student/mock', icon: FileText },
+      { name: 'JAMB Tools', href: '/student/jamb', icon: Brain },
       { name: 'Mock Results', href: '/student/mock-results', icon: Award },
       { name: 'Results', href: '/student/results', icon: Award },
       { name: 'Performance', href: '/student/performance', icon: Target },
@@ -83,6 +86,8 @@ const sidebarSections = [
       { name: 'Career Guidance', href: '/student/careers', icon: Briefcase },
       { name: 'News & Updates', href: '/student/news', icon: Newspaper },
       { name: 'Notices', href: '/student/notices', icon: FileCheck },
+      { name: 'Documents', href: '/student/documents', icon: FilePlus },
+      { name: 'Referrals', href: '/student/referrals', icon: Share2 },
     ],
   },
   {

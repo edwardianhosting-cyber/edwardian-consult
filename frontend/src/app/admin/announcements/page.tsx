@@ -1,16 +1,19 @@
 ﻿'use client';
 
-import PlaceholderPage from '@/components/PlaceholderPage';
-import { Newspaper } from 'lucide-react';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
-export default function AdminPage() {
+export default function AdminAnnouncementsPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/admin/notices');
+  }, [router]);
+
   return (
-    <PlaceholderPage
-      title='Announcements'
-      description='Manage Announcements'
-      icon={Newspaper}
-      features={['Feature 1', 'Feature 2', 'Feature 3']}
-    />
+    <div className="flex items-center justify-center h-64">
+      <Loader2 className="w-8 h-8 text-primary-600 animate-spin" />
+    </div>
   );
 }
-

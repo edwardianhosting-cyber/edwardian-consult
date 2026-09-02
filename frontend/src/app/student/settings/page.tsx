@@ -1,7 +1,8 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
-import { User, Bell, Shield, Eye, EyeOff, Save, Check, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { User, Bell, Shield, Eye, EyeOff, Save, Check, Loader2, ChevronRight } from 'lucide-react';
 import api from '@/lib/api';
 
 interface NotificationPreferences {
@@ -239,8 +240,18 @@ export default function SettingsPage() {
       {/* Notifications Tab */}
       {activeTab === 'notifications' && (
         <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Notification Preferences</h3>
-          <p className="text-sm text-gray-500 mb-4">Toggle notifications on or off. Changes are saved automatically.</p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Notification Preferences</h3>
+              <p className="text-sm text-gray-500">Toggle notifications on or off. Changes are saved automatically.</p>
+            </div>
+            <Link
+              href="/student/settings/notifications"
+              className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
+            >
+              Advanced Settings <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
           <div className="space-y-6">
             <div>
               <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
