@@ -178,15 +178,15 @@ export default function RegisterPage() {
     classLevel: '',
     programme: '',
 
-    // Exams
+    // Exams — single exam only; can be changed later from the student's profile
     examTypes: [] as string[],
 
-    // JAMB
+    // JAMB / Post-UTME (share the same 4-subject combo)
     jambSubjects: [] as string[],
     targetScore: '',
 
-    // O'Level
-    olevelResults: [] as { subject: string; grade: string; examType: string; year: string }[],
+    // O'Level (WAEC/NECO) — subjects only; grades are added later in profile
+    olevelSubjects: [] as string[],
 
     // Target
     targetInstitution: '',
@@ -210,11 +210,11 @@ export default function RegisterPage() {
     }
   };
 
-  const toggleExamType = (exam: string) => {
-    const exams = formData.examTypes.includes(exam)
-      ? formData.examTypes.filter((e) => e !== exam)
-      : [...formData.examTypes, exam];
-    updateFormData({ examTypes: exams });
+  // Single-select: picking a new exam replaces the previous choice, and any
+  // subjects already picked for the old exam type are cleared since JAMB/
+  // Post-UTME and O'Level use different pickers.
+  const selectExamType = (exam: string) => {
+    updateFormData({ examTypes: [exam], jambSubjects: [], olevelSubjects: [] });
   };
 
   const toggleJambSubject = (subject: string) => {
@@ -225,10 +225,25 @@ export default function RegisterPage() {
     }
   };
 
+  const toggleOlevelSubject = (subject: string) => {
+    if (formData.olevelSubjects.includes(subject)) {
+      updateFormData({ olevelSubjects: formData.olevelSubjects.filter((s) => s !== subject) });
+    } else if (formData.olevelSubjects.length < 9) {
+      updateFormData({ olevelSubjects: [...formData.olevelSubjects, subject] });
+    }
+  };
+
+  // The selected exam determines how many steps this student goes through:
+  // Admission Target only applies to JAMB / Post-UTME candidates.
+  const selectedExam = formData.examTypes[0] || '';
+  const needsAdmissionTarget = selectedExam === 'JAMB' || selectedExam === 'Post-UTME';
+  const totalSteps = needsAdmissionTarget ? 5 : 4;
+  const visibleSteps = needsAdmissionTarget ? steps : steps.filter((s) => s.id !== 5);
+
   const nextStep = () => {
     setError('');
     if (validateStep(currentStep)) {
-      setCurrentStep((prev) => Math.min(prev + 1, steps.length));
+      setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
     }
   };
 
@@ -253,18 +268,25 @@ export default function RegisterPage() {
         break;
       case 3:
         if (formData.examTypes.length === 0) {
-          setError('Please select at least one examination');
+          setError('Please select the examination you are preparing for');
           return false;
         }
         break;
       case 4:
-        // JAMB and Post-UTME share the same subject combination, so one
-        // picker covers both. O'Level (WAEC/NECO) never needs a picker here.
+        // JAMB and Post-UTME share the same subject combination.
         if (
-          (formData.examTypes.includes('JAMB') || formData.examTypes.includes('Post-UTME')) &&
+          (selectedExam === 'JAMB' || selectedExam === 'Post-UTME') &&
           formData.jambSubjects.length !== 4
         ) {
           setError('Please select exactly 4 subjects for your JAMB/Post-UTME combination');
+          return false;
+        }
+        // O'Level candidates pick their own subject list (up to 9).
+        if (
+          (selectedExam === 'WAEC' || selectedExam === 'NECO') &&
+          formData.olevelSubjects.length === 0
+        ) {
+          setError('Please select at least one O\'Level subject');
           return false;
         }
         break;
@@ -282,7 +304,7 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
 
-    if (!validateStep(4) || !validateStep(5)) return;
+    if (!validateStep(4) || (needsAdmissionTarget && !validateStep(5))) return;
 
     setLoading(true);
 
@@ -499,15 +521,20 @@ export default function RegisterPage() {
         return (
           <div className="space-y-6">
             <h3 className="text-xl font-semibold text-gray-900">Examination Selection</h3>
-            <p className="text-sm text-gray-600">Select the examinations you are preparing for</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <p className="text-sm text-gray-600">
+              Select the one examination you're preparing for right now. You can change this later from your
+              profile.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3" role="radiogroup" aria-label="Examination">
               {programmeOptions.map((exam) => (
                 <button
                   key={exam.value}
                   type="button"
-                  onClick={() => toggleExamType(exam.value)}
+                  role="radio"
+                  aria-checked={selectedExam === exam.value}
+                  onClick={() => selectExamType(exam.value)}
                   className={`p-4 rounded-xl border-2 text-center transition-all ${
-                    formData.examTypes.includes(exam.value)
+                    selectedExam === exam.value
                       ? 'border-primary-500 bg-primary-50 text-primary-700'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
@@ -516,10 +543,10 @@ export default function RegisterPage() {
                 </button>
               ))}
             </div>
-            {formData.examTypes.length > 0 && (
+            {selectedExam && (
               <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                 <p className="text-sm text-green-700">
-                  Selected: {formData.examTypes.join(', ')}
+                  Selected: {programmeOptions.find((p) => p.value === selectedExam)?.label}
                 </p>
               </div>
             )}
@@ -527,17 +554,14 @@ export default function RegisterPage() {
         );
 
       case 4: {
-        const wantsJamb = formData.examTypes.includes('JAMB');
-        const wantsPostUtme = formData.examTypes.includes('Post-UTME');
-        const wantsOlevel = formData.examTypes.includes('WAEC') || formData.examTypes.includes('NECO');
+        const wantsJamb = selectedExam === 'JAMB';
+        const wantsPostUtme = selectedExam === 'Post-UTME';
+        const wantsOlevel = selectedExam === 'WAEC' || selectedExam === 'NECO';
         const showSubjectPicker = wantsJamb || wantsPostUtme;
 
-        // Label adapts to what the student actually picked, since JAMB and
-        // Post-UTME use the same 4-subject combination.
-        let pickerLabel = 'Exam Subjects';
-        if (wantsJamb && wantsPostUtme) pickerLabel = 'JAMB & Post-UTME Subjects';
-        else if (wantsPostUtme) pickerLabel = 'Post-UTME Subjects';
-        else if (wantsJamb) pickerLabel = 'JAMB Subjects';
+        // Label adapts to the exam picked, since JAMB and Post-UTME use the
+        // same 4-subject combination.
+        const pickerLabel = wantsPostUtme ? 'Post-UTME Subjects' : 'JAMB Subjects';
 
         return (
           <div className="space-y-6">
@@ -548,10 +572,11 @@ export default function RegisterPage() {
                 <h4 className="font-medium text-gray-900 mb-3">
                   {pickerLabel} <span className="text-sm text-gray-500">(Select exactly 4)</span>
                 </h4>
-                <p className="text-sm text-gray-500 mb-3">
-                  Post-UTME screening uses the same subject combination you register for JAMB, so you only need to
-                  pick these once.
-                </p>
+                {wantsPostUtme && (
+                  <p className="text-sm text-gray-500 mb-3">
+                    Post-UTME screening uses the same subject combination you register for JAMB.
+                  </p>
+                )}
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {jambSubjects.map((subject) => (
                     <button
@@ -577,28 +602,39 @@ export default function RegisterPage() {
 
             {wantsOlevel && (
               <div>
-                <h4 className="font-medium text-gray-900 mb-3">O'Level Subjects</h4>
+                <h4 className="font-medium text-gray-900 mb-3">
+                  O'Level Subjects <span className="text-sm text-gray-500">(Select up to 9)</span>
+                </h4>
                 <p className="text-sm text-gray-500 mb-3">
-                  These are shown for reference only and can't be selected here — you'll add your actual O'Level
-                  subjects and grades later from your student profile.
+                  Pick the subjects you're sitting for {selectedExam}. You'll add your actual grades later from
+                  your student profile once you have your results.
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {waecNecoSubjects.slice(0, 12).map((subject) => (
-                    <div
+                  {waecNecoSubjects.map((subject) => (
+                    <button
                       key={subject}
-                      aria-disabled="true"
-                      className="p-2 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-400 cursor-not-allowed select-none"
+                      type="button"
+                      onClick={() => toggleOlevelSubject(subject)}
+                      disabled={!formData.olevelSubjects.includes(subject) && formData.olevelSubjects.length >= 9}
+                      className={`p-2 rounded-lg border text-sm transition-all ${
+                        formData.olevelSubjects.includes(subject)
+                          ? 'border-primary-500 bg-primary-50 text-primary-700'
+                          : 'border-gray-200 hover:border-gray-300 disabled:opacity-50'
+                      }`}
                     >
                       {subject}
-                    </div>
+                    </button>
                   ))}
                 </div>
+                <p className="mt-2 text-sm text-gray-500">
+                  Selected: {formData.olevelSubjects.length}/9
+                </p>
               </div>
             )}
 
             {!showSubjectPicker && !wantsOlevel && (
               <p className="text-sm text-gray-500">
-                No subject selection is needed for the examination(s) you chose. You can continue to the next step.
+                No subject selection is needed for the examination you chose. You can continue.
               </p>
             )}
           </div>
@@ -638,7 +674,7 @@ export default function RegisterPage() {
                   ))}
                 </select>
               </div>
-              {(formData.examTypes.includes('JAMB') || formData.examTypes.includes('Post-UTME')) && (
+              {needsAdmissionTarget && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Target JAMB/Post-UTME Score</label>
                   <input
@@ -709,7 +745,7 @@ export default function RegisterPage() {
 
         {/* Progress Steps */}
         <div className="flex items-center justify-center mb-8">
-          {steps.map((step, index) => {
+          {visibleSteps.map((step, index) => {
             const Icon = step.icon;
             const isActive = step.id === currentStep;
             const isCompleted = step.id < currentStep;
@@ -726,7 +762,7 @@ export default function RegisterPage() {
                 >
                   {isCompleted ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                 </div>
-                {index < steps.length - 1 && (
+                {index < visibleSteps.length - 1 && (
                   <div
                     className={`w-12 h-1 ${
                       step.id < currentStep ? 'bg-green-500' : 'bg-gray-200'
@@ -761,7 +797,7 @@ export default function RegisterPage() {
                 Back
               </button>
 
-              {currentStep < steps.length ? (
+              {currentStep < totalSteps ? (
                 <button
                   type="button"
                   onClick={nextStep}

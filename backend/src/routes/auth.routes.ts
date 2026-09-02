@@ -28,9 +28,12 @@ const registerSchema = z.object({
   // Exams
   examTypes: z.array(z.string()).optional(),
 
-  // JAMB
+  // JAMB / Post-UTME
   jambSubjects: z.array(z.string()).optional(),
   targetScore: z.string().optional().nullable(),
+
+  // O'Level (WAEC/NECO) — subjects only, grades added later in profile
+  olevelSubjects: z.array(z.string()).optional(),
 
   // Target
   targetInstitution: z.string().optional().nullable(),
@@ -113,6 +116,7 @@ router.post('/register', async (req: Request, res: Response) => {
         examTypes: validated.examTypes || [],
         jambSubjects: validated.jambSubjects || [],
         targetScore: validated.targetScore || null,
+        olevelSubjects: validated.olevelSubjects || [],
 
         // Target
         targetInstitution: validated.targetInstitution || validated.targetSchool || null,
@@ -156,6 +160,7 @@ router.post('/register', async (req: Request, res: Response) => {
           programme: user.programme,
           examTypes: user.examTypes,
           jambSubjects: user.jambSubjects,
+          olevelSubjects: user.olevelSubjects,
           targetInstitution: user.targetInstitution,
           targetCourse: user.targetCourse,
           classLevel: user.classLevel,
@@ -251,6 +256,7 @@ router.post('/login', async (req: Request, res: Response) => {
           programme: user.programme,
           examTypes: user.examTypes,
           jambSubjects: user.jambSubjects,
+          olevelSubjects: user.olevelSubjects,
           targetInstitution: user.targetInstitution,
           targetCourse: user.targetCourse,
           classLevel: user.classLevel,
@@ -359,6 +365,7 @@ router.get('/me', async (req: Request, res: Response) => {
         programme: true,
         examTypes: true,
         jambSubjects: true,
+        olevelSubjects: true,
         targetScore: true,
         targetInstitution: true,
         targetCourse: true,
