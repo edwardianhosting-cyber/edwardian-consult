@@ -3,29 +3,9 @@
 import { useEffect, useState } from 'react';
 import { BookOpen, Plus, X, Check } from 'lucide-react';
 import { api } from '@/lib/api';
+import { ALL_SUBJECTS } from '@/lib/subjects';
 
-const COMMON_SUBJECTS = [
-  'English Language',
-  'Mathematics',
-  'Physics',
-  'Chemistry',
-  'Biology',
-  'Economics',
-  'Government',
-  'Literature in English',
-  'Christian Religious Studies',
-  'Geography',
-  'Accounting',
-  'Commerce',
-  'Agricultural Science',
-  'Computer Studies',
-  'Technical Drawing',
-  'Food and Nutrition',
-  'Home Management',
-  'Music',
-  'Fine Art',
-  'History',
-];
+const COMMON_SUBJECTS = ALL_SUBJECTS;
 
 export default function CoursesPage() {
   const [subjects, setSubjects] = useState<string[]>([]);

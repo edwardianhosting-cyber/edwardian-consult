@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { GraduationCap, Mail, User, Phone, Camera, Upload, Calendar, MapPin, BookOpen, Target, ChevronRight, ChevronLeft, Check } from 'lucide-react';
 import { authApi } from '@/lib/api';
+import { JAMB_SUBJECTS, WAEC_NECO_SUBJECTS } from '@/lib/subjects';
 
 const steps = [
   { id: 1, name: 'Personal', icon: User },
@@ -36,56 +37,9 @@ const programmeOptions = [
   { value: 'IJMB', label: 'IJMB' },
 ];
 
-const jambSubjects = [
-  'English Language',
-  'Mathematics',
-  'Physics',
-  'Chemistry',
-  'Biology',
-  'Economics',
-  'Government',
-  'Literature in English',
-  'Christian Religious Studies',
-  'Islamic Religious Studies',
-  'Commerce',
-  'Accounting',
-  'Geography',
-  'History',
-  'Agricultural Science',
-  'Further Mathematics',
-  'Technical Drawing',
-  'Civic Education',
-];
+const jambSubjects = JAMB_SUBJECTS;
 
-const waecNecoSubjects = [
-  'English Language',
-  'Mathematics',
-  'Physics',
-  'Chemistry',
-  'Biology',
-  'Economics',
-  'Government',
-  'Literature in English',
-  'Christian Religious Studies',
-  'Islamic Religious Studies',
-  'Commerce',
-  'Accounting',
-  'Geography',
-  'History',
-  'Agricultural Science',
-  'Further Mathematics',
-  'Technical Drawing',
-  'Civic Education',
-  'French',
-  'Igbo',
-  'Yoruba',
-  'Hausa',
-  'Fine Art',
-  'Music',
-  'Home Economics',
-  'Food and Nutrition',
-  'Clothing and Textiles',
-];
+const waecNecoSubjects = WAEC_NECO_SUBJECTS;
 
 const nigerianStates = [
   'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',

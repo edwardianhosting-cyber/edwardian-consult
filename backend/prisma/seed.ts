@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { ALL_SUBJECTS, CORE_SUBJECTS, SCIENCE_SUBJECTS, COMMERCIAL_SUBJECTS, ART_SUBJECTS, ICT_SUBJECTS, VOCATIONAL_SUBJECTS } from '../src/lib/subjects';
 
 const prisma = new PrismaClient();
 
@@ -54,13 +55,15 @@ async function main() {
       portalId: 'EIEC/2026/0001',
       parentAccessCode: 'PAR-STU-0001',
       programme: 'JAMB',
+      examTypes: ['JAMB'],
+      jambSubjects: ['English Language', 'General Mathematics', 'Physics', 'Chemistry'],
       targetInstitution: 'University of Lagos',
       state: 'Lagos',
     },
   });
 
   // Create sample questions
-  const subjects = ['English Language', 'Mathematics', 'Physics', 'Chemistry', 'Biology'];
+  const subjects = ['English Language', 'General Mathematics', 'Physics', 'Chemistry', 'Biology', 'Economics', 'Government', 'Literature in English', 'Geography', 'History'];
   const examTypes = ['JAMB', 'POST_UTME', 'WAEC', 'NECO'];
 
   for (const subject of subjects) {
@@ -98,6 +101,26 @@ async function main() {
     },
   });
 
+  // Seed StudySubject table so the Study Materials page has subjects to
+  // match against a student's registered jambSubjects. Each subject is
+  // created with its category (Core/Science/Commercial/Art/ICT/Vocational)
+  // for filtering in the admin UI. `code` is a slug of the subject name
+  // since `StudySubject.code` is unique.
+  for (const name of ALL_SUBJECTS) {
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+    await prisma.studySubject.upsert({
+      where: { name },
+      update: { isActive: true, gradeLevel: 'SSS1-SSS3', code: slug },
+      create: {
+        name,
+        code: slug,
+        gradeLevel: 'SSS1-SSS3',
+        isActive: true,
+      },
+    });
+  }
+
   // Create sample news
   await prisma.newsArticle.upsert({
     where: { slug: 'ui-2026-2027-admission-screening' },
@@ -128,6 +151,7 @@ async function main() {
   });
 
   console.log('Seed data created successfully!');
+  console.log(`Seeded ${ALL_SUBJECTS.length} study subjects.`);
   console.log('');
   console.log('=== DEMO CREDENTIALS ===');
   console.log('Admin: admin@edwardianconsult.com / Admin@123');
