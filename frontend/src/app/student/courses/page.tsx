@@ -87,9 +87,6 @@ export default function CoursesPage() {
     }
   }
 
-  const availableSubjects = COMMON_SUBJECTS.filter(
-    (s) => !Array.isArray(subjects) || !subjects.includes(s)
-  );
   const atLimit = subjects.length >= maxSubjects;
 
   if (loading) {
