@@ -151,6 +151,7 @@ app.use('/api/idcard', idcardRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/transcripts', transcriptRoutes);
 app.use('/api/study', studyRoutes);
+app.use('/api/study-material', studyMaterialRoutes);
 app.use('/api/study-schedules', studyScheduleRoutes);
 app.use('/api/timetable', timetableRoutes);
 app.use('/api/admission', admissionRoutes);
