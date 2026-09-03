@@ -73,7 +73,7 @@ router.get('/', authenticate, authorize('ADMIN', 'TUTOR'), async (req: Request, 
 // Get all students (admin only)
 router.get('/students', authenticate, authorize('ADMIN', 'TUTOR'), async (req: Request, res: Response) => {
   try {
-    const { page = 1, limit = 20, search, targetExam, isActive } = req.query;
+    const { page = 1, limit = 20, search, programme, examType, isActive } = req.query;
 
     const where: any = { role: 'STUDENT' };
 
@@ -85,8 +85,12 @@ router.get('/students', authenticate, authorize('ADMIN', 'TUTOR'), async (req: R
       ];
     }
 
-    if (targetExam) {
-      where.targetExam = targetExam;
+    if (programme) {
+      where.programme = programme;
+    }
+
+    if (examType) {
+      where.examTypes = { array_contains: examType };
     }
 
     if (isActive !== undefined) {
@@ -183,8 +187,23 @@ router.put('/students/:id', authenticate, authorize('ADMIN'), async (req: Reques
       fullName: z.string().optional(),
       email: z.string().email().optional(),
       phone: z.string().optional(),
-      targetExam: z.enum(['JAMB', 'POST_UTME', 'WAEC', 'NECO', 'JUPEB']).optional(),
-      targetSchool: z.string().optional(),
+      programme: z.enum(['JAMB', 'POST_UTME', 'WAEC', 'NECO', 'JUPEB']).optional(),
+      examTypes: z.array(z.string()).optional(),
+      jambSubjects: z.array(z.string()).optional(),
+      olevelResults: z.array(z.object({
+        subject: z.string(),
+        grade: z.string(),
+        examYear: z.number().int().optional(),
+        examType: z.string().optional(),
+      })).optional(),
+      targetInstitution: z.string().optional(),
+      targetCourse: z.string().optional(),
+      secondChoiceInstitution: z.string().optional(),
+      secondChoiceCourse: z.string().optional(),
+      admissionYear: z.string().optional(),
+      targetScore: z.string().optional(),
+      currentSchool: z.string().optional(),
+      classLevel: z.string().optional(),
       isActive: z.boolean().optional(),
     });
 
