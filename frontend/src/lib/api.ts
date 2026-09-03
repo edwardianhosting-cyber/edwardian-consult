@@ -136,9 +136,14 @@ export const api = {
   createMaterial: (data: any) => fetchAPI('/study-material', { method: 'POST', body: JSON.stringify(data) }),
   updateMaterial: (id: string, data: any) => fetchAPI(`/study-material/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteMaterial: (id: string) => fetchAPI(`/study-material/${id}`, { method: 'DELETE' }),
-  uploadMaterialFile: (file: File) => {
+  uploadMaterialFile: (file: File, options?: { type?: string; topicId?: string; title?: string; description?: string; order?: number }) => {
     const formData = new FormData();
     formData.append('file', file);
+    if (options?.type) formData.append('type', options.type);
+    if (options?.topicId) formData.append('topicId', options.topicId);
+    if (options?.title) formData.append('title', options.title);
+    if (options?.description) formData.append('description', options.description);
+    if (options?.order !== undefined) formData.append('order', String(options.order));
     return fetchFormData('/study-material/upload', formData);
   },
   getAssignments: () => fetchAPI('/assignments'),

@@ -3,10 +3,10 @@ import { uploadToCloudinary } from './cloudinary.service';
 import * as XLSX from 'xlsx';
 
 export async function uploadQuestionImage(file: Express.Multer.File): Promise<{ url: string }> {
-  const url = await uploadToCloudinary(file.buffer, 'questions', 'image');
+  const result = await uploadToCloudinary(file.buffer, 'questions', 'image');
 
   return {
-    url,
+    url: result.url,
   };
 }
 

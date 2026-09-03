@@ -111,6 +111,8 @@ export async function createStudyResource(data: {
   type: string;
   content?: string;
   fileUrl?: string;
+  imageUrl?: string;
+  textContent?: string;
   fileSize?: number;
   mimeType?: string;
   duration?: number;

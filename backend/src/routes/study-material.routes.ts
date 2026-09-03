@@ -20,6 +20,7 @@ import {
   uploadStudyMaterialFile,
   getAllStudyMaterials,
 } from '../services/study-material.service';
+import { getFileCategory, saveBufferToDisk } from '../lib/local-file-storage';
 
 const router = Router();
 
@@ -165,12 +166,26 @@ router.post('/upload', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), upl
       return res.status(400).json({ success: false, message: 'No file provided' });
     }
 
-    const fileType = req.body.type as 'pdf' | 'word' | 'video' | 'audio';
-    if (!['pdf', 'word', 'video', 'audio'].includes(fileType)) {
+    const fileType = req.body.type as 'pdf' | 'word' | 'video' | 'audio' | 'image';
+    if (!['pdf', 'word', 'video', 'audio', 'image'].includes(fileType)) {
       return res.status(400).json({ success: false, message: 'Invalid file type' });
     }
 
-    const result = await uploadStudyMaterialFile(req.file, fileType);
+    const category = getFileCategory(req.file.mimetype);
+    const useCloudinary = fileType === 'pdf' || fileType === 'word';
+    let url = '';
+    let textContent: string | undefined;
+    let imageUrl: string | undefined;
+
+    if (useCloudinary) {
+      const result = await uploadStudyMaterialFile(req.file, fileType);
+      url = result.url;
+      textContent = result.textContent;
+      imageUrl = result.imageUrl;
+    } else {
+      const localCategory = category === 'other' ? 'other' : category;
+      url = saveBufferToDisk(req.file.buffer, req.file.mimetype, localCategory as 'image' | 'video' | 'audio');
+    }
 
     let resource: any = null;
     const topicId = req.body.topicId as string | undefined;
@@ -182,15 +197,15 @@ router.post('/upload', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), upl
         topicId,
         title,
         type: fileType.toUpperCase(),
-        content: description || result.textContent || undefined,
-        fileUrl: result.url,
+        content: description || textContent || undefined,
+        fileUrl: url,
         fileSize: req.file.size,
         mimeType: req.file.mimetype,
-        imageUrl: result.imageUrl,
+        imageUrl,
       });
     }
 
-    res.status(201).json({ success: true, data: { ...result, resource } });
+    res.status(201).json({ success: true, data: { url, textContent, imageUrl, resource } });
   } catch (error) {
     console.error('Upload error:', error);
     res.status(500).json({ success: false, message: 'Failed to upload file' });

@@ -196,15 +196,13 @@ export default function AdminMaterialsPage() {
     setUploadingFile(true);
     setError(null);
     try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('type', resourceForm.type.toLowerCase());
-      formData.append('topicId', selectedTopic.id);
-      formData.append('title', resourceForm.title);
-      formData.append('description', resourceForm.description);
-      formData.append('order', String(resourceForm.order));
-
-      const result = await api.uploadMaterialFile(selectedFile);
+      const result = await api.uploadMaterialFile(selectedFile, {
+        type: resourceForm.type.toLowerCase(),
+        topicId: selectedTopic.id,
+        title: resourceForm.title,
+        description: resourceForm.description,
+        order: resourceForm.order,
+      });
       setSuccess('Resource uploaded successfully');
       closeModal();
       fetchResources(selectedTopic.id);

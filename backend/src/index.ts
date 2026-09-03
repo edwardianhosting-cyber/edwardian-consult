@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import multer from 'multer';
 import dotenv from 'dotenv';
+import path from 'path';
 
 // Load environment variables
 dotenv.config();
@@ -49,6 +50,14 @@ app.set('trust proxy', 1);
 
 // Multer config for multipart uploads
 const upload = multer({ storage: multer.memoryStorage() });
+
+// Local uploads directory
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
+const fs = require('fs');
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
+app.use('/uploads', express.static(UPLOAD_DIR));
 
 // Security middleware
 app.use(helmet());
