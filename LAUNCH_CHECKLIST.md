@@ -78,9 +78,7 @@ UPDATE "User" SET "passwordHash" = '<bcrypt-hash-of-new-password>' WHERE "id" = 
    - `DATABASE_URL` → `postgresql://neondb_owner:npg_S1nRIhXK6qyb@ep-wandering-forest-ay59vucq-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require`
    - `JWT_SECRET` → generate a new strong random string
    - `FRONTEND_URL` → `https://edwardian-consult.vercel.app` (or your final frontend domain)
-   - `PAYSTACK_SECRET_KEY` and `PAYSTACK_PUBLIC_KEY` → from your Paystack dashboard
-   - `PAYSTACK_WEBHOOK_SECRET` → from Paystack webhook settings
-   - `PHP_MAILER_KEY` → already set in render.yaml as a generated value; confirm it matches `eiec-mailer-2026`
+    - `PHP_MAILER_KEY` → already set in render.yaml as a generated value; confirm it matches `eiec-mailer-2026`
    - `TERMII_API_KEY` → from Termii dashboard
    - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` → from Cloudinary dashboard
 3. **Build command:** `npm install && npm run prisma:generate && npm run build`

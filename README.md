@@ -33,7 +33,6 @@ edward-ian-consult/
 
 - Node.js 18+
 - PostgreSQL database (Neon.tech or Supabase recommended)
-- Paystack account (for payments)
 - PHP Mailer hosted on Whogohost (for emails)
 - Termii account (for SMS - optional)
 
@@ -62,8 +61,6 @@ JWT_SECRET="your-secret-key"
 PORT=5000
 NODE_ENV=development
 FRONTEND_URL="http://localhost:3000"
-PAYSTACK_SECRET_KEY="sk_test_..."
-PAYSTACK_PUBLIC_KEY="pk_test_..."
 PHP_MAILER_URL="https://edwardianeducationalconsult.com.ng/mailer/send.php"
 PHP_MAILER_KEY="eiec-mailer-2026"
 FROM_EMAIL="registrar@edwardianeducationalconsult.com.ng"
@@ -75,7 +72,6 @@ TERMII_SENDER_ID="EdwardIan"
 ```env
 NEXT_PUBLIC_API_URL="http://localhost:5000"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
-NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY="pk_test_..."
 ```
 
 ### 3. Initialize Database
@@ -124,8 +120,6 @@ Access the application:
     JWT_SECRET=generate_a_random_secret
     NODE_ENV=production
     FRONTEND_URL=https://your-frontend.vercel.app
-    PAYSTACK_SECRET_KEY=sk_live_...
-    PAYSTACK_PUBLIC_KEY=pk_live_...
     PHP_MAILER_URL=https://edwardianeducationalconsult.com.ng/mailer/send.php
     PHP_MAILER_KEY=your_mailer_key
     FROM_EMAIL=registrar@edwardianeducationalconsult.com.ng
@@ -153,8 +147,7 @@ Access the application:
 4. **Set environment variables**:
     ```
     NEXT_PUBLIC_API_URL=https://your-backend.onrender.com
-    NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_live_...
-    ```
+  ```
 
 5. **Deploy!**
 
@@ -176,9 +169,6 @@ Access the application:
 | GET | `/api/cbt/exams/:id` | Get exam with questions |
 | POST | `/api/cbt/submit` | Submit CBT exam |
 | GET | `/api/cbt/results` | Get user's results |
-| POST | `/api/payments/initialize` | Initialize payment |
-| POST | `/api/payments/verify` | Verify payment |
-| POST | `/api/payments/webhook` | Paystack webhook |
 | GET | `/api/news` | List news articles |
 | POST | `/api/email/send-broadcast` | Send email broadcast |
 | GET | `/api/verification/:code` | Verify certificate |
@@ -211,8 +201,8 @@ After running `npm run seed`:
 - Zod validation
 
 **Integrations:**
-- Paystack (payments)
-- Brevo (emails)
+- ERCAS (payments)
+- PHP Mailer on Whogohost (emails)
 - Termii (SMS)
 - Cloudinary (file storage)
 

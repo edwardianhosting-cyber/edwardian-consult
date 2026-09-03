@@ -92,7 +92,7 @@ export async function depositToWallet(userId: string, amount: number, reference?
     userId,
     type: 'PAYMENT_RECORD',
     title: `Wallet Deposit - ₦${amount.toLocaleString()}`,
-    description: 'Wallet funding via Paystack',
+    description: 'Wallet funding',
     reference: reference || `DEP-${Date.now()}`,
     metadata: { type: 'deposit', amount },
   });
