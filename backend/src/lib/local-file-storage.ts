@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { v4 as uuid } from 'uuid';
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
 const BASE_URL = (process.env.BACKEND_URL || 'http://localhost:5000').replace(/\/$/, '');
@@ -18,7 +17,7 @@ export function getFileCategory(mimeType: string): 'image' | 'video' | 'audio' |
 
 export function saveBufferToDisk(buffer: Buffer, mimeType: string, category: 'image' | 'video' | 'audio'): string {
   const ext = getExtension(mimeType);
-  const filename = `${uuid()}${ext}`;
+  const filename = `${crypto.randomUUID()}${ext}`;
   const dir = path.join(UPLOAD_DIR, 'study-materials', category);
   fs.mkdirSync(dir, { recursive: true });
   const filepath = path.join(dir, filename);
