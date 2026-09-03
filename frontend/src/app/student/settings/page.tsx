@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { User, Bell, Shield, Eye, EyeOff, Save, Check, Loader2, ChevronRight } from 'lucide-react';
+import { User, Bell, Shield, Eye, EyeOff, Save, Check, Loader2, ChevronRight, Settings, BookOpen, Plus, X, AlertCircle, Info } from 'lucide-react';
 import api from '@/lib/api';
+import { ALL_SUBJECTS } from '@/lib/subjects';
 
 interface NotificationPreferences {
   dashboard: {
@@ -62,10 +63,38 @@ export default function SettingsPage() {
     confirm: '',
   });
 
+  const [examProgramme, setExamProgramme] = useState('');
+  const [examTypes, setExamTypes] = useState<string[]>([]);
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [subjectsLoading, setSubjectsLoading] = useState(true);
+  const [savingSubjects, setSavingSubjects] = useState(false);
+  const [savingExam, setSavingExam] = useState(false);
+  const [examError, setExamError] = useState<string | null>(null);
+  const [examSuccess, setExamSuccess] = useState<string | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [customSubject, setCustomSubject] = useState('');
+
   useEffect(() => {
     fetchProfile();
     fetchNotificationPreferences();
+    fetchExamSettings();
   }, []);
+
+  async function fetchExamSettings() {
+    try {
+      const data = await api.getProfile();
+      const user = (data as any).data || data;
+      setExamProgramme(user?.programme || '');
+      setExamTypes((user?.examTypes as string[]) || []);
+      const subjectsRes = await api.getMySubjects();
+      const list = Array.isArray(subjectsRes) ? subjectsRes : Array.isArray((subjectsRes as any)?.data) ? (subjectsRes as any).data : [];
+      setSubjects(list);
+    } catch (error) {
+      console.error('Failed to fetch exam settings:', error);
+    } finally {
+      setSubjectsLoading(false);
+    }
+  }
 
   async function fetchProfile() {
     try {
@@ -151,6 +180,7 @@ export default function SettingsPage() {
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
+    { id: 'examination', label: 'Examination', icon: BookOpen },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'security', label: 'Security', icon: Shield },
   ];
@@ -232,6 +262,146 @@ export default function SettingsPage() {
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
               {saved ? 'Saved!' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Examination Tab */}
+      {activeTab === 'examination' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Examination Type</h3>
+                <p className="text-sm text-gray-500">Choose your programme and exam types. This controls your subject limit and notifications.</p>
+              </div>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Primary Programme</label>
+                <select
+                  value={examProgramme}
+                  onChange={(e) => setExamProgramme(e.target.value)}
+                  disabled={savingExam}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
+                >
+                  <option value="">Select a programme…</option>
+                  <option value="JAMB">JAMB UTME</option>
+                  <option value="POST_UTME">Post-UTME</option>
+                  <option value="WAEC">O'Level (WAEC)</option>
+                  <option value="NECO">O'Level (NECO)</option>
+                  <option value="JUPEB">JUPEB</option>
+                  <option value="IJMB">IJMB</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Exam Types</label>
+                <div className="flex flex-wrap gap-2">
+                  {['JAMB', 'POST_UTME', 'WAEC', 'NECO', 'JUPEB', 'IJMB'].map((type) => {
+                    const active = examTypes.includes(type);
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() =>
+                          setExamTypes((prev) =>
+                            prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+                          )
+                        }
+                        disabled={savingExam}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors disabled:opacity-50 ${
+                          active
+                            ? 'bg-primary-600 text-white border-primary-600'
+                            : 'bg-white text-gray-700 border-gray-200 hover:border-primary-300'
+                        }`}
+                      >
+                        {type.replace('_', ' ')}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-xs text-gray-500">
+                Programme: <span className="font-medium text-gray-700">{examProgramme || 'Not set'}</span>
+              </p>
+              <button
+                onClick={async () => {
+                  setSavingExam(true);
+                  setExamError(null);
+                  setExamSuccess(null);
+                  try {
+                    await api.updateProfile({ programme: examProgramme || null, examTypes: examTypes });
+                    setExamSuccess('Examination settings updated');
+                    setTimeout(() => setExamSuccess(null), 4000);
+                  } catch (err: any) {
+                    setExamError(err.message || 'Failed to update examination settings');
+                  } finally {
+                    setSavingExam(false);
+                  }
+                }}
+                disabled={savingExam}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 text-sm"
+              >
+                {savingExam ? 'Saving…' : 'Save Examination Settings'}
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">My Subjects</h3>
+                <p className="text-sm text-gray-500">Add or remove subjects for your current programme.</p>
+              </div>
+            </div>
+            {examError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm mb-4">
+                {examError}
+              </div>
+            )}
+            {examSuccess && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm mb-4 flex items-center gap-2">
+                <Check className="w-4 h-4" />
+                {examSuccess}
+              </div>
+            )}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+              {subjects.map((subject) => (
+                <div key={subject} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm font-medium text-gray-900">{subject}</span>
+                  <button
+                    onClick={async () => {
+                      setSavingSubjects(true);
+                      setExamError(null);
+                      try {
+                        const next = subjects.filter((s) => s !== subject);
+                        const res = await api.updateMySubjects(next);
+                        const list = Array.isArray(res) ? res : Array.isArray((res as any)?.data) ? (res as any).data : next;
+                        setSubjects(list);
+                      } catch (err: any) {
+                        setExamError(err.message || 'Failed to remove subject');
+                      } finally {
+                        setSavingSubjects(false);
+                      }
+                    }}
+                    disabled={savingSubjects}
+                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowAddModal(true)}
+              disabled={savingSubjects}
+              className="px-4 py-2 border border-dashed border-gray-300 text-gray-700 rounded-lg hover:border-primary-400 hover:text-primary-700 flex items-center gap-2 disabled:opacity-50"
+            >
+              <Plus className="w-4 h-4" />
+              Add Subject
             </button>
           </div>
         </div>
@@ -401,6 +571,109 @@ export default function SettingsPage() {
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
               {saved ? 'Password Changed!' : 'Change Password'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Add Subject</h2>
+                <p className="text-sm text-gray-500">Add a subject to your registered list.</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAddModal(false);
+                  setCustomSubject('');
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-2">Select from common subjects:</p>
+              <div className="flex flex-wrap gap-2">
+                {ALL_SUBJECTS.filter((s) => !subjects.includes(s)).map((subject) => (
+                  <button
+                    key={subject}
+                    onClick={async () => {
+                      setSavingSubjects(true);
+                      setExamError(null);
+                      try {
+                        const res = await api.updateMySubjects([...subjects, subject]);
+                        const list = Array.isArray(res) ? res : Array.isArray((res as any)?.data) ? (res as any).data : [...subjects, subject];
+                        setSubjects(list);
+                        setShowAddModal(false);
+                        setCustomSubject('');
+                      } catch (err: any) {
+                        setExamError(err.message || 'Failed to add subject');
+                      } finally {
+                        setSavingSubjects(false);
+                      }
+                    }}
+                    disabled={savingSubjects}
+                    className="px-3 py-1.5 bg-primary-50 text-primary-700 rounded-lg text-sm hover:bg-primary-100 transition-colors disabled:opacity-50"
+                  >
+                    {subject}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 mb-2">Or enter a custom subject:</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={customSubject}
+                  onChange={(e) => setCustomSubject(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (customSubject.trim() && !subjects.includes(customSubject.trim())) {
+                        setSavingSubjects(true);
+                        setExamError(null);
+                        api.updateMySubjects([...subjects, customSubject.trim()])
+                          .then((res) => {
+                            const list = Array.isArray(res) ? res : Array.isArray((res as any)?.data) ? (res as any).data : [...subjects, customSubject.trim()];
+                            setSubjects(list);
+                            setShowAddModal(false);
+                            setCustomSubject('');
+                          })
+                          .catch((err: any) => setExamError(err.message || 'Failed to add subject'))
+                          .finally(() => setSavingSubjects(false));
+                      }
+                    }
+                  }}
+                  placeholder="e.g., Further Mathematics"
+                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <button
+                  onClick={async () => {
+                    if (!customSubject.trim() || subjects.includes(customSubject.trim())) return;
+                    setSavingSubjects(true);
+                    setExamError(null);
+                    try {
+                      const res = await api.updateMySubjects([...subjects, customSubject.trim()]);
+                      const list = Array.isArray(res) ? res : Array.isArray((res as any)?.data) ? (res as any).data : [...subjects, customSubject.trim()];
+                      setSubjects(list);
+                      setShowAddModal(false);
+                      setCustomSubject('');
+                    } catch (err: any) {
+                      setExamError(err.message || 'Failed to add subject');
+                    } finally {
+                      setSavingSubjects(false);
+                    }
+                  }}
+                  disabled={savingSubjects || !customSubject.trim()}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
