@@ -5,8 +5,6 @@ import Link from 'next/link';
 import { BookOpen, Settings, AlertCircle, Info } from 'lucide-react';
 import api from '@/lib/api';
 
-const COMMON_SUBJECTS = ALL_SUBJECTS;
-
 const EXAM_TYPE_OPTIONS = [
   { value: 'JAMB', label: 'JAMB' },
   { value: 'POST_UTME', label: 'Post-UTME' },
