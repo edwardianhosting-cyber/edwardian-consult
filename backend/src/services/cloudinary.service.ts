@@ -10,14 +10,18 @@ cloudinary.config({
 export async function uploadToCloudinary(
   buffer: Buffer,
   folder: string,
-  resourceType: 'image' | 'auto' | 'video' | 'raw' = 'auto'
-): Promise<string> {
+  resourceType: 'image' | 'auto' | 'video' | 'raw' = 'auto',
+  eager?: any[]
+): Promise<{ url: string; eager?: any[] }> {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder, resource_type: resourceType },
+      { folder, resource_type: resourceType, eager },
       (error, result) => {
         if (error) return reject(error);
-        resolve(result?.secure_url || '');
+        resolve({
+          url: result?.secure_url || '',
+          eager: result?.eager,
+        });
       }
     );
 

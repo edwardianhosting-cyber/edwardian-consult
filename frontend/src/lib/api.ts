@@ -129,6 +129,10 @@ export const api = {
   
   // Study Materials
   getMaterials: () => fetchAPI('/study-material/materials'),
+  getMaterialsHierarchy: () => fetchAPI('/study-material/materials/hierarchy'),
+  getStudySubject: (id: string) => fetchAPI(`/study-material/subjects/${id}`),
+  getStudyTopics: (subjectId: string) => fetchAPI(`/study-material/subjects/${subjectId}/topics`),
+  getStudyResources: (topicId: string) => fetchAPI(`/study-material/topics/${topicId}/resources`),
   createMaterial: (data: any) => fetchAPI('/study-material', { method: 'POST', body: JSON.stringify(data) }),
   updateMaterial: (id: string, data: any) => fetchAPI(`/study-material/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteMaterial: (id: string) => fetchAPI(`/study-material/${id}`, { method: 'DELETE' }),
@@ -374,9 +378,18 @@ export const contactApi = {
   // Study Subjects API
   export const studyApi = {
     getSubjects: () => fetchAPI('/study-material/subjects'),
+    getSubject: (id: string) => fetchAPI(`/study-material/subjects/${id}`),
     createSubject: (data: any) => fetchAPI('/study-material/subjects', { method: 'POST', body: JSON.stringify(data) }),
     updateSubject: (id: string, data: any) => fetchAPI(`/study-material/subjects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteSubject: (id: string) => fetchAPI(`/study-material/subjects/${id}`, { method: 'DELETE' }),
+    getTopics: (subjectId: string) => fetchAPI(`/study-material/subjects/${subjectId}/topics`),
+    createTopic: (data: any) => fetchAPI('/study-material/topics', { method: 'POST', body: JSON.stringify(data) }),
+    updateTopic: (id: string, data: any) => fetchAPI(`/study-material/topics/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteTopic: (id: string) => fetchAPI(`/study-material/topics/${id}`, { method: 'DELETE' }),
+    getResources: (topicId: string) => fetchAPI(`/study-material/topics/${topicId}/resources`),
+    createResource: (data: any) => fetchAPI('/study-material/resources', { method: 'POST', body: JSON.stringify(data) }),
+    updateResource: (id: string, data: any) => fetchAPI(`/study-material/resources/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteResource: (id: string) => fetchAPI(`/study-material/resources/${id}`, { method: 'DELETE' }),
   };
 
 // Default export for backward compatibility

@@ -8,6 +8,8 @@ export const CORE_SUBJECTS = [
   'English Language',
   'General Mathematics',
   'Civic Education',
+  'Health Education',
+  'Physical Education',
 ] as const;
 
 // Science class subjects
@@ -21,6 +23,11 @@ export const SCIENCE_SUBJECTS = [
   'Computer Studies',
   'Data Processing',
   'Technical Drawing',
+  'Animal Husbandry',
+  'Fisheries',
+  'Horticulture and Crop Production',
+  'Livestock Farming',
+  'Food and Nutrition',
 ] as const;
 
 // Commercial class subjects
@@ -31,27 +38,41 @@ export const COMMERCIAL_SUBJECTS = [
   'Marketing',
   'Office Practice',
   'Insurance',
-  'Government',
-  'Computer Studies',
-  'Data Processing',
+  'Business Studies',
+  'Store Keeping',
+  'Store Management',
+  'Book Keeping',
+  'Business Management',
+  'Salesmanship',
+  'Principles of Cost Accounting',
+  'Typing',
+  'Shorthand',
+  'Keyboard',
 ] as const;
 
 // Art class subjects
 export const ART_SUBJECTS = [
   'Literature in English',
   'Government',
+  'History',
   'Christian Religious Studies',
   'Islamic Religious Studies',
-  'History',
-  'Economics',
-  'Geography',
-  'Nigerian Language',
   'French',
-  'Fine Arts',
+  'Arabic',
   'Music',
+  'Visual Arts',
+  'Fine Art',
   'Yoruba',
   'Igbo',
   'Hausa',
+  'Edo',
+  'Efik',
+  'Ibibio',
+  'Nigerian Language',
+  'Photography',
+  'Ceramics',
+  'Picture Making',
+  'Painting and Decorating',
 ] as const;
 
 // Technology & ICT
@@ -60,19 +81,50 @@ export const ICT_SUBJECTS = [
   'Data Processing',
   'Computer Science',
   'ICT',
+  'Information Communication Technology',
+  'Graphic Design',
+  'Printing Practice',
+  'Solar Photovoltaic Installation and Maintenance',
+  'Computer Hardware and GSM Repairs',
+  'GSM Phones Maintenance and Repairs',
 ] as const;
 
 // Vocational subjects
 export const VOCATIONAL_SUBJECTS = [
-  'Food and Nutrition',
   'Home Management',
+  'Home Economics',
   'Clothing and Textiles',
-  'Fisheries',
-  'Animal Husbandry',
   'Catering Craft Practice',
   'Garment Making',
-  'Photography',
   'Tourism',
+  'Mining',
+  'Blocklaying',
+  'Bricklaying and Concrete Work',
+  'Dyeing and Bleaching',
+  'Beauty and Cosmetology',
+  'Cosmetology',
+  'Fashion Design and Garment Making',
+  'Leather Goods Manufacturing',
+  'Textile Trade',
+  'Carpentry and Joinery',
+  'Furniture Making',
+  'Auto Mechanics',
+  'Auto Body Repair and Spray Painting',
+  'Auto Electrical Work',
+  'Auto Parts Merchandising',
+  'Air Conditioning and Refrigeration',
+  'Welding and Fabrication',
+  'Plumbing and Pipe Fitting',
+  'Basic Electricity',
+  'Applied Electricity',
+  'Electronics',
+  'Basic Electronics',
+  'Electronics Works',
+  'Metal Work',
+  'Woodwork',
+  'Wood Work',
+  'Machine Woodworking',
+  'Building Construction',
 ] as const;
 
 // Combined deduped master list (registration/CBT pickers, My Courses)
@@ -87,11 +139,10 @@ export const ALL_SUBJECTS: readonly string[] = Array.from(
   ])
 ).sort() as string[];
 
-// JAMB picks (no Civic Education, no vocationals, no Nigerian languages
-// beyond the JAMB-recognised ones; mirrors the official JAMB subject list).
+// JAMB picks (mirrors the official JAMB subject list — no vocationals, no Arabic, etc.)
 export const JAMB_SUBJECTS: readonly string[] = [
   'English Language',
-  'Mathematics',
+  'General Mathematics',
   'Physics',
   'Chemistry',
   'Biology',
@@ -101,7 +152,7 @@ export const JAMB_SUBJECTS: readonly string[] = [
   'Christian Religious Studies',
   'Islamic Religious Studies',
   'Commerce',
-  'Accounting',
+  'Financial Accounting',
   'Geography',
   'History',
   'Agricultural Science',
@@ -120,7 +171,7 @@ export const JAMB_SUBJECTS: readonly string[] = [
   'Fine Arts',
 ];
 
-// WAEC / NECO picks include the broader curriculum (vocationals, languages, art).
+// WAEC / NECO picks include the broader curriculum (vocationals, languages, art, technical).
 export const WAEC_NECO_SUBJECTS: readonly string[] = Array.from(
   new Set([
     ...ALL_SUBJECTS,

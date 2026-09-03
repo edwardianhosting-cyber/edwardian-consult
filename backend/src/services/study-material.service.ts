@@ -147,11 +147,25 @@ export async function deleteStudyResource(id: string) {
   });
 }
 
-export async function uploadStudyMaterialFile(file: Express.Multer.File, type: 'pdf' | 'word' | 'video' | 'audio'): Promise<{ url: string; textContent?: string }> {
-  const resourceType = type === 'pdf' || type === 'word' ? 'raw' : type === 'video' || type === 'audio' ? 'video' : 'auto';
-  const url = await uploadToCloudinary(file.buffer, 'study-materials', resourceType);
+export async function uploadStudyMaterialFile(file: Express.Multer.File, type: 'pdf' | 'word' | 'video' | 'audio'): Promise<{ url: string; textContent?: string; imageUrl?: string }> {
+  let resourceType: 'image' | 'auto' | 'video' | 'raw' = 'auto';
+  let eager: any[] | undefined;
 
-  let textContent;
+  if (type === 'pdf') {
+    resourceType = 'raw';
+    eager = [
+      { format: 'jpg', quality: 'auto', width: 800, crop: 'limit' },
+    ];
+  } else if (type === 'word') {
+    resourceType = 'raw';
+  } else if (type === 'video' || type === 'audio') {
+    resourceType = 'video';
+  }
+
+  const result = await uploadToCloudinary(file.buffer, 'study-materials', resourceType, eager);
+  const url = result.url;
+
+  let textContent: string | undefined;
 
   if (type === 'pdf') {
     try {
@@ -165,15 +179,20 @@ export async function uploadStudyMaterialFile(file: Express.Multer.File, type: '
   } else if (type === 'word') {
     try {
       const mammoth = await import('mammoth');
-      const result = await mammoth.extractRawText({ buffer: file.buffer });
-      textContent = result.value;
+      const extractResult = await mammoth.extractRawText({ buffer: file.buffer });
+      textContent = extractResult.value;
     } catch (error) {
       console.error('Word text extraction failed:', error);
       textContent = '';
     }
   }
 
-  return { url, textContent };
+  let imageUrl: string | undefined;
+  if (type === 'pdf' && result.eager && result.eager.length > 0) {
+    imageUrl = result.eager[0]?.secure_url;
+  }
+
+  return { url, textContent, imageUrl };
 }
 
 export async function getAllStudyMaterials() {

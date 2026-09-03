@@ -36,6 +36,18 @@ router.get('/subjects', authenticate, async (req: Request, res: Response) => {
   }
 });
 
+router.get('/subjects/:id', authenticate, async (req: Request, res: Response) => {
+  try {
+    const subject = await getStudySubjectById(req.params.id);
+    if (!subject) {
+      return res.status(404).json({ success: false, message: 'Subject not found' });
+    }
+    res.json({ success: true, data: subject });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch subject' });
+  }
+});
+
 router.post('/subjects', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
   try {
     const subject = await createStudySubject(req.body);
@@ -159,8 +171,28 @@ router.post('/upload', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), upl
     }
 
     const result = await uploadStudyMaterialFile(req.file, fileType);
-    res.status(201).json({ success: true, data: result });
+
+    let resource: any = null;
+    const topicId = req.body.topicId as string | undefined;
+    const title = req.body.title as string | undefined;
+    const description = req.body.description as string | undefined;
+
+    if (topicId && title) {
+      resource = await createStudyResource({
+        topicId,
+        title,
+        type: fileType.toUpperCase(),
+        content: description || result.textContent || undefined,
+        fileUrl: result.url,
+        fileSize: req.file.size,
+        mimeType: req.file.mimetype,
+        imageUrl: result.imageUrl,
+      });
+    }
+
+    res.status(201).json({ success: true, data: { ...result, resource } });
   } catch (error) {
+    console.error('Upload error:', error);
     res.status(500).json({ success: false, message: 'Failed to upload file' });
   }
 });
@@ -205,12 +237,52 @@ router.get('/materials', authenticate, async (req: Request, res: Response) => {
       subject: m.topic?.subject?.name || 'General',
       type: m.type,
       fileUrl: m.fileUrl,
+      imageUrl: m.imageUrl,
+      textContent: m.textContent,
       description: m.content,
       createdAt: m.createdAt,
     }));
     res.json({ success: true, data: formatted });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch materials' });
+  }
+});
+
+router.get('/materials/hierarchy', authenticate, async (req: Request, res: Response) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: { jambSubjects: true, role: true },
+    });
+
+    const userSubjects = (user?.jambSubjects as string[]) || [];
+    const isStudent = user?.role === 'STUDENT';
+
+    const where: any = { isActive: true };
+    if (isStudent && userSubjects.length > 0) {
+      where.name = { in: userSubjects };
+    }
+
+    const subjects = await prisma.studySubject.findMany({
+      where,
+      orderBy: { name: 'asc' },
+      include: {
+        topics: {
+          where: { isActive: true },
+          orderBy: { order: 'asc' },
+          include: {
+            resources: {
+              where: { isActive: true },
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    res.json({ success: true, data: subjects });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch materials hierarchy' });
   }
 });
 

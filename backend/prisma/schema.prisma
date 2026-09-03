@@ -256,6 +256,8 @@ model StudyResource {
   type        String   @default("TEXT")
   content     String?
   fileUrl     String?
+  imageUrl    String?
+  textContent String?
   fileSize    Int?
   mimeType    String?
   duration    Int?
