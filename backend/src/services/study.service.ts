@@ -213,6 +213,15 @@ export async function updateUserSubjects(userId: string, subjects: string[]): Pr
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error('User not found');
 
+  const max = maxSubjectsForProgramme(user.examTypes as string[] | undefined, user.programme);
+  if (subjects.length > max) {
+    throw new Error(
+      `You can register a maximum of ${max} subject${max === 1 ? '' : 's'} for ${
+        max === 4 ? 'JAMB / Post-UTME' : 'O\'Level (WAEC / NECO)'
+      }. Please remove ${subjects.length - max} subject${subjects.length - max === 1 ? '' : 's'} before saving.`
+    );
+  }
+
   const updated = await prisma.user.update({
     where: { id: userId },
     data: { jambSubjects: subjects },
@@ -220,4 +229,19 @@ export async function updateUserSubjects(userId: string, subjects: string[]): Pr
   });
 
   return (updated.jambSubjects as string[]) || [];
+}
+
+export function maxSubjectsForProgramme(
+  examTypes: string[] | undefined,
+  programme: string | null | undefined
+): number {
+  const types = (examTypes || []).map((t) => t.toUpperCase());
+  const prog = (programme || '').toUpperCase();
+  if (types.includes('JAMB') || types.includes('POST_UTME') || prog === 'JAMB' || prog === 'POST-UTME' || prog === 'POST_UTME') {
+    return 4;
+  }
+  if (types.includes('WAEC') || types.includes('NECO') || prog === 'WAEC' || prog === 'NECO') {
+    return 9;
+  }
+  return 9; // default to O'Level limit when unspecified
 }

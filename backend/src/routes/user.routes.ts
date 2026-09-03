@@ -414,11 +414,36 @@ router.delete('/:id', authenticate, authorize('ADMIN'), async (req: Request, res
 router.patch('/profile', authenticate, async (req: Request, res: Response) => {
   try {
     const updateSchema = z.object({
+      // Read-only on the frontend — included here so the backend stays
+      // consistent if anything ever calls it, but ignored in the update.
       fullName: z.string().min(2).optional(),
       phone: z.string().optional(),
+
+      // Editable fields
+      currentSchool: z.string().optional().nullable(),
+      classLevel: z.string().optional().nullable(),
+      programme: z.string().optional().nullable(),
+      examTypes: z.array(z.string()).optional(),
+      jambSubjects: z.array(z.string()).optional(),
+      olevelResults: z.array(z.string()).optional(),
+      targetScore: z.string().optional().nullable(),
+      targetInstitution: z.string().optional().nullable(),
+      targetCourse: z.string().optional().nullable(),
+      secondChoiceInstitution: z.string().optional().nullable(),
+      secondChoiceCourse: z.string().optional().nullable(),
+      admissionYear: z.string().optional().nullable(),
+      address: z.string().optional().nullable(),
+      state: z.string().optional().nullable(),
+      lga: z.string().optional().nullable(),
+      notificationPreferences: z.any().optional(),
     });
 
     const validated = updateSchema.parse(req.body);
+
+    // Drop read-only fields from the update payload — these can only be
+    // changed by an admin or through a re-verification flow.
+    delete (validated as any).fullName;
+    delete (validated as any).phone;
 
     const user = await prisma.user.update({
       where: { id: req.user!.userId },
@@ -430,6 +455,21 @@ router.patch('/profile', authenticate, async (req: Request, res: Response) => {
         phone: true,
         portalId: true,
         role: true,
+        programme: true,
+        examTypes: true,
+        jambSubjects: true,
+        olevelResults: true,
+        currentSchool: true,
+        classLevel: true,
+        targetScore: true,
+        targetInstitution: true,
+        targetCourse: true,
+        secondChoiceInstitution: true,
+        secondChoiceCourse: true,
+        admissionYear: true,
+        address: true,
+        state: true,
+        lga: true,
       },
     });
 
