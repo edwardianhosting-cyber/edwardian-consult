@@ -18,10 +18,12 @@ interface WhohostResponse {
 }
 
 export function generateStudentEmail(fullName: string, portalId: string): string {
-  const surname = fullName.split(' ')[0]?.toLowerCase() || 'student';
-  const cleanSurname = surname.replace(/[^a-z]/g, '');
-  const portalNumber = portalId.split('/').pop() || '0000';
-  return `${cleanSurname}${portalNumber}@${DOMAIN}`;
+  const parts = fullName.trim().split(/\s+/);
+  const firstName = (parts[0] || 'student').toLowerCase().replace(/[^a-z]/g, '');
+  const middleInitial = (parts[1]?.[0] || '').toLowerCase();
+  const year = new Date().getFullYear().toString().slice(-2);
+  const localPart = `${middleInitial}${firstName}${year}` || `student${year}`;
+  return `${localPart}@${DOMAIN}`;
 }
 
 export async function createStudentEmailAccount(
