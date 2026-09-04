@@ -2,7 +2,7 @@ import { prisma } from '../lib/prisma';
 
 function getNextOccurrence(dayOfWeek: string, time: string): Date {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const targetDay = days.indexOf(dayOfWeek);
+  let targetDay = days.indexOf(dayOfWeek);
   if (targetDay === -1) targetDay = 1;
 
   const now = new Date();
