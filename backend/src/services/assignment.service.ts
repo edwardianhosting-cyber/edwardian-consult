@@ -45,7 +45,6 @@ export async function getPublishedAssignmentsForUser(userId: string) {
     where,
     include: {
       questions: { orderBy: { order: 'asc' } },
-      createdBy: { select: { fullName: true, email: true } },
     },
     orderBy: { createdAt: 'desc' },
   });

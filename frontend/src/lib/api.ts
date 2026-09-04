@@ -387,6 +387,11 @@ export const contactApi = {
     createSubject: (data: any) => fetchAPI('/study-material/subjects', { method: 'POST', body: JSON.stringify(data) }),
     updateSubject: (id: string, data: any) => fetchAPI(`/study-material/subjects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteSubject: (id: string) => fetchAPI(`/study-material/subjects/${id}`, { method: 'DELETE' }),
+    uploadSyllabus: (subjectId: string, file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return fetchFormData(`/study-material/subjects/${subjectId}/syllabus`, formData);
+    },
     getTopics: (subjectId: string) => fetchAPI(`/study-material/subjects/${subjectId}/topics`),
     createTopic: (data: any) => fetchAPI('/study-material/topics', { method: 'POST', body: JSON.stringify(data) }),
     updateTopic: (id: string, data: any) => fetchAPI(`/study-material/topics/${id}`, { method: 'PUT', body: JSON.stringify(data) }),

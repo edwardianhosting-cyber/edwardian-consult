@@ -858,11 +858,13 @@ model StudySchedule {
   description     String?
   subject         String
   topic           String?
-  scheduledAt     DateTime
+  dayOfWeek       String
+  time            String
   durationMinutes Int      @default(30)
   reminderEnabled Boolean  @default(true)
   isCompleted     Boolean  @default(false)
   completedAt     DateTime?
+  scheduledAt     DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

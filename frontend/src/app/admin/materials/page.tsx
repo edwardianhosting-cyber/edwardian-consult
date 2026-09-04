@@ -258,6 +258,28 @@ export default function AdminMaterialsPage() {
     }
   }
 
+  async function uploadSyllabus(subjectId: string) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.doc,.docx,.txt';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      setSaving(true);
+      setError(null);
+      try {
+        await studyApi.uploadSyllabus(subjectId, file);
+        setSuccess('Syllabus uploaded and topics generated');
+        fetchSubjects();
+      } catch (err: any) {
+        setError(err.message || 'Failed to upload syllabus');
+      } finally {
+        setSaving(false);
+      }
+    };
+    input.click();
+  }
+
   async function deleteTopic(id: string) {
     if (!confirm('Delete this topic? All resources will also be removed.')) return;
     setSaving(true);
@@ -403,6 +425,9 @@ export default function AdminMaterialsPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => uploadSyllabus(subject.id)} className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded" title="Upload syllabus">
+                            <Upload className="w-4 h-4" />
+                          </button>
                           <button onClick={() => { setSelectedSubject(subject); setView('topics'); }} className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded" title="View topics">
                             <BookOpen className="w-4 h-4" />
                           </button>

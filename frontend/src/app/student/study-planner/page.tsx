@@ -10,12 +10,15 @@ interface StudySchedule {
   description?: string;
   subject: string;
   topic?: string;
-  scheduledAt: string;
+  dayOfWeek: string;
+  time: string;
   durationMinutes: number;
   reminderEnabled: boolean;
   isCompleted: boolean;
   completedAt?: string;
 }
+
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export default function StudyPlannerPage() {
   const [schedules, setSchedules] = useState<StudySchedule[]>([]);
@@ -27,7 +30,8 @@ export default function StudyPlannerPage() {
     description: '',
     subject: '',
     topic: '',
-    scheduledAt: '',
+    dayOfWeek: 'Monday',
+    time: '08:00',
     durationMinutes: 30,
     reminderEnabled: true,
   });
@@ -59,7 +63,8 @@ export default function StudyPlannerPage() {
         description: '',
         subject: '',
         topic: '',
-        scheduledAt: '',
+        dayOfWeek: 'Monday',
+        time: '08:00',
         durationMinutes: 30,
         reminderEnabled: true,
       });
@@ -171,12 +176,24 @@ export default function StudyPlannerPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Day</label>
+              <select
+                value={formData.dayOfWeek}
+                onChange={(e) => setFormData({ ...formData, dayOfWeek: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+              >
+                {DAYS.map((day) => (
+                  <option key={day} value={day}>{day}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
               <input
-                type="datetime-local"
+                type="time"
                 required
-                value={formData.scheduledAt}
-                onChange={(e) => setFormData({ ...formData, scheduledAt: e.target.value })}
+                value={formData.time}
+                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
               />
             </div>
@@ -269,8 +286,12 @@ export default function StudyPlannerPage() {
                         </span>
                       )}
                       <span className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {schedule.dayOfWeek}
+                      </span>
+                      <span className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
-                        {new Date(schedule.scheduledAt).toLocaleString()}
+                        {schedule.time}
                       </span>
                       <span>{schedule.durationMinutes} mins</span>
                       {schedule.reminderEnabled && !schedule.isCompleted && (

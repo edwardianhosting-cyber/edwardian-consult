@@ -19,6 +19,7 @@ import {
   deleteStudyResource,
   uploadStudyMaterialFile,
   getAllStudyMaterials,
+  uploadSyllabus,
 } from '../services/study-material.service';
 import { getFileCategory, saveBufferToDisk } from '../lib/local-file-storage';
 
@@ -73,6 +74,26 @@ router.delete('/subjects/:id', authenticate, authorize('ADMIN', 'TEACHER', 'TUTO
     res.json({ success: true, message: 'Subject deleted' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to delete subject' });
+  }
+});
+
+router.post('/subjects/:subjectId/syllabus', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), upload.single('file'), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No syllabus file provided' });
+    }
+
+    const subjectId = req.params.subjectId;
+    const subject = await getStudySubjectById(subjectId);
+    if (!subject) {
+      return res.status(404).json({ success: false, message: 'Subject not found' });
+    }
+
+    const result = await uploadSyllabus(req.file, subjectId);
+    res.status(201).json({ success: true, data: result });
+  } catch (error) {
+    console.error('Syllabus upload error:', error);
+    res.status(500).json({ success: false, message: 'Failed to upload syllabus' });
   }
 });
 

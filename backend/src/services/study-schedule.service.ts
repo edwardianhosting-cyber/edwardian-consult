@@ -1,14 +1,39 @@
 import { prisma } from '../lib/prisma';
 
+function getNextOccurrence(dayOfWeek: string, time: string): Date {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const targetDay = days.indexOf(dayOfWeek);
+  if (targetDay === -1) targetDay = 1;
+
+  const now = new Date();
+  const currentDay = now.getDay();
+  const [hours, minutes] = time.split(':').map(Number);
+  const result = new Date(now);
+  result.setHours(hours, minutes || 0, 0, 0);
+
+  const diff = targetDay - currentDay;
+  if (diff < 0 || (diff === 0 && result <= now)) {
+    result.setDate(result.getDate() + 7 + diff);
+  } else if (diff === 0) {
+    result.setDate(result.getDate() + 7);
+  } else {
+    result.setDate(result.getDate() + diff);
+  }
+
+  return result;
+}
+
 export async function createStudySchedule(userId: string, data: {
   title: string;
   description?: string;
   subject: string;
   topic?: string;
-  scheduledAt: string;
+  dayOfWeek: string;
+  time: string;
   durationMinutes?: number;
   reminderEnabled?: boolean;
 }) {
+  const scheduledAt = getNextOccurrence(data.dayOfWeek, data.time);
   return prisma.studySchedule.create({
     data: {
       userId,
@@ -16,7 +41,9 @@ export async function createStudySchedule(userId: string, data: {
       description: data.description,
       subject: data.subject,
       topic: data.topic,
-      scheduledAt: new Date(data.scheduledAt),
+      dayOfWeek: data.dayOfWeek,
+      time: data.time,
+      scheduledAt,
       durationMinutes: data.durationMinutes || 30,
       reminderEnabled: data.reminderEnabled ?? true,
     },
@@ -37,12 +64,18 @@ export async function updateStudySchedule(userId: string, scheduleId: string, da
 
   if (!schedule) throw new Error('Schedule not found');
 
+  const updateData: any = { ...data };
+  if (data.dayOfWeek || data.time) {
+    const dayOfWeek = data.dayOfWeek || schedule.dayOfWeek;
+    const time = data.time || schedule.time;
+    updateData.dayOfWeek = dayOfWeek;
+    updateData.time = time;
+    updateData.scheduledAt = getNextOccurrence(dayOfWeek, time);
+  }
+
   return prisma.studySchedule.update({
     where: { id: scheduleId },
-    data: {
-      ...data,
-      scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : undefined,
-    },
+    data: updateData,
   });
 }
 

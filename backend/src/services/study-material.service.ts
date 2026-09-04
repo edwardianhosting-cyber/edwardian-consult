@@ -210,3 +210,57 @@ export async function getAllStudyMaterials() {
     orderBy: { createdAt: 'desc' },
   });
 }
+
+export async function uploadSyllabus(file: Express.Multer.File, subjectId: string) {
+  let text = '';
+
+  if (file.mimetype === 'application/pdf') {
+    const pdfParse = await import('pdf-parse');
+    const data = await (pdfParse.default || pdfParse)(file.buffer);
+    text = data.text;
+  } else if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.mimetype === 'application/msword') {
+    const mammoth = await import('mammoth');
+    const result = await mammoth.extractRawText({ buffer: file.buffer });
+    text = result.value;
+  } else {
+    text = file.buffer.toString('utf-8');
+  }
+
+  const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  const topicNames: string[] = [];
+  const seen = new Set<string>();
+
+  for (const line of lines) {
+    const cleaned = line
+      .replace(/^#+\s*/, '')
+      .replace(/^\d+[\.\)\-]\s*/, '')
+      .replace(/^[A-Z][a-z]+[\.,]\s*/, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const meaningful = cleaned.length > 3 && cleaned.length < 120;
+    const looksLikeHeading = /^[A-Z][A-Za-z0-9\-/, ]{2,}$/.test(cleaned) || /^(Topic|Unit|Week|Chapter)\s*\d*/i.test(cleaned);
+    const isNotNoise = !/^(page|contents|table of contents|syllabus|subject|code|grade|teacher|time|venue|duration|notes|signature)/i.test(cleaned);
+
+    if (meaningful && (looksLikeHeading || cleaned.length < 80) && isNotNoise) {
+      const normalized = cleaned.replace(/^\d+[\.\)\-]\s*/, '').trim();
+      if (!seen.has(normalized.toLowerCase())) {
+        seen.add(normalized.toLowerCase());
+        topicNames.push(normalized);
+      }
+    }
+  }
+
+  const topics: { id: string; name: string }[] = [];
+  for (let i = 0; i < topicNames.length; i++) {
+    const topic = await createStudyTopic({
+      subjectId,
+      name: topicNames[i],
+      description: `Syllabus topic ${i + 1}`,
+      order: i,
+    });
+    topics.push({ id: topic.id, name: topic.name });
+  }
+
+  return { text, topics };
+}
