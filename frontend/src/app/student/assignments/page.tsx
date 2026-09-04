@@ -1,8 +1,9 @@
 ﻿'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import { ClipboardList, Calendar, Upload, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { ClipboardList, Calendar, Upload, CheckCircle, Clock, AlertCircle, AlertTriangle } from 'lucide-react';
 
 interface Assignment {
   id: string;
@@ -17,14 +18,58 @@ interface Assignment {
 }
 
 export default function AssignmentsPage() {
+  const router = useRouter();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
+  const [showLeaveWarning, setShowLeaveWarning] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
 
   useEffect(() => {
     fetchAssignments();
   }, []);
+
+  useEffect(() => {
+    if (!submitting) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [submitting]);
+
+  useEffect(() => {
+    if (!submitting) return;
+
+    const dispose = router.beforePopState(() => {
+      setPendingNavigation(() => () => router.back());
+      setShowLeaveWarning(true);
+      return false;
+    });
+
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const link = target.closest('a[href]') as HTMLAnchorElement | null;
+      if (link && link.href && !link.href.includes('#') && !link.href.includes(window.location.origin + window.location.pathname)) {
+        e.preventDefault();
+        const href = link.getAttribute('href');
+        setPendingNavigation(() => () => {
+          if (href) router.push(href);
+        });
+        setShowLeaveWarning(true);
+      }
+    };
+
+    document.addEventListener('click', handleClick, true);
+    return () => {
+      document.removeEventListener('click', handleClick, true);
+      dispose();
+    };
+  }, [submitting, router]);
 
   async function fetchAssignments() {
     try {
@@ -73,6 +118,19 @@ export default function AssignmentsPage() {
     };
 
     fileInput.click();
+  }
+
+  function confirmLeave() {
+    setShowLeaveWarning(false);
+    if (pendingNavigation) {
+      pendingNavigation();
+      setPendingNavigation(null);
+    }
+  }
+
+  function cancelLeave() {
+    setShowLeaveWarning(false);
+    setPendingNavigation(null);
   }
 
   function getStatusIcon(status: string) {
@@ -193,6 +251,33 @@ export default function AssignmentsPage() {
               )}
             </div>
           ))}
+        </div>
+      )}
+      {showLeaveWarning && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-8 h-8 text-yellow-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Leave Page?</h3>
+              <p className="text-gray-600">You are currently submitting an assignment. If you leave now, the submission may be interrupted. Do you want to continue?</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={cancelLeave}
+                className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-medium"
+              >
+                Continue Submission
+              </button>
+              <button
+                onClick={confirmLeave}
+                className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium"
+              >
+                Leave Page
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

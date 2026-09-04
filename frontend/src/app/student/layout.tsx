@@ -29,11 +29,9 @@ import {
   Brain,
   Medal,
   Newspaper,
-  Briefcase,
   FileCheck,
   Users,
   Share2,
-  FilePlus,
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 
@@ -75,18 +73,13 @@ const sidebarSections = [
     items: [
       { name: 'Admission Hub', href: '/student/admission', icon: GraduationCap },
       { name: 'Institution Match', href: '/student/institutions', icon: Search },
-      { name: 'My Applications', href: '/student/applications', icon: ClipboardList },
-      { name: 'Admission Tracker', href: '/student/tracker', icon: Target },
     ],
   },
   {
     title: 'RESOURCES',
     items: [
-      { name: 'Scholarships', href: '/student/scholarships', icon: Medal },
-      { name: 'Career Guidance', href: '/student/careers', icon: Briefcase },
       { name: 'News & Updates', href: '/student/news', icon: Newspaper },
       { name: 'Notices', href: '/student/notices', icon: FileCheck },
-      { name: 'Documents', href: '/student/documents', icon: FilePlus },
       { name: 'Referrals', href: '/student/referrals', icon: Share2 },
     ],
   },

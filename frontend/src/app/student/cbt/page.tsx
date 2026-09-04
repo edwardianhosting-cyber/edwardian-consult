@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Play, Clock, Award, ChevronRight, CheckCircle, XCircle, Trophy, TrendingUp, Calculator, X, AlertTriangle, BookOpen } from 'lucide-react';
 import { api } from '@/lib/api';
 import { API_BASE } from '@/lib/api';
@@ -65,6 +66,9 @@ export default function CBTPracticePage() {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hasSubmitted = useRef(false);
+  const router = useRouter();
+  const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
+  const [showLeaveWarning, setShowLeaveWarning] = useState(false);
 
   useEffect(() => {
     fetchSubjects();
@@ -89,6 +93,36 @@ export default function CBTPracticePage() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [examStarted]);
+
+  useEffect(() => {
+    if (phase === 'exam' && !showResult && examStarted) {
+      const dispose = router.beforePopState(() => {
+        setPendingNavigation(() => () => router.back());
+        setShowLeaveWarning(true);
+        return false;
+      });
+      return dispose;
+    }
+  }, [phase, showResult, examStarted, router]);
+
+  useEffect(() => {
+    if (phase === 'exam' && !showResult && examStarted) {
+      const handleClick = (e: MouseEvent) => {
+        const target = e.target as HTMLElement;
+        const link = target.closest('a[href]') as HTMLAnchorElement | null;
+        if (link && link.href && !link.href.includes('#') && !link.href.includes(window.location.origin + window.location.pathname)) {
+          e.preventDefault();
+          const href = link.getAttribute('href');
+          setPendingNavigation(() => () => {
+            if (href) router.push(href);
+          });
+          setShowLeaveWarning(true);
+        }
+      };
+      document.addEventListener('click', handleClick, true);
+      return () => document.removeEventListener('click', handleClick, true);
+    }
+  }, [phase, showResult, examStarted, router]);
 
   useEffect(() => {
     if (phase === 'exam' && timeLeft > 0 && !showResult) {
@@ -208,6 +242,16 @@ export default function CBTPracticePage() {
     handleSubmitCBT();
   }
 
+  function confirmLeave() {
+    setShowLeaveWarning(false);
+    handleSubmitCBT();
+  }
+
+  function cancelLeave() {
+    setShowLeaveWarning(false);
+    setPendingNavigation(null);
+  }
+
   function selectAnswer(questionId: string, optionIndex: number) {
     setAnswers(prev => ({ ...prev, [questionId]: optionIndex }));
   }
@@ -260,6 +304,8 @@ export default function CBTPracticePage() {
     setShowCorrections(false);
     setCorrections([]);
     setSelectedSubject(null);
+    setPendingNavigation(null);
+    setShowLeaveWarning(false);
     hasSubmitted.current = false;
   }
 
@@ -684,6 +730,36 @@ export default function CBTPracticePage() {
                   className="flex-1 px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 font-medium"
                 >
                   End Practice
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Leave Warning Modal */}
+        {showLeaveWarning && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertTriangle className="w-8 h-8 text-yellow-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Leave Practice?</h3>
+                <p className="text-gray-600">If you leave now, your practice will be automatically submitted. Do you want to continue?</p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={cancelLeave}
+                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-medium"
+                >
+                  Continue Practice
+                </button>
+                <button
+                  onClick={confirmLeave}
+                  disabled={loading}
+                  className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 font-medium"
+                >
+                  {loading ? 'Submitting...' : 'Leave & Submit'}
                 </button>
               </div>
             </div>

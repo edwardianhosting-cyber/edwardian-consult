@@ -18,9 +18,7 @@ import {
   X,
   ChevronDown,
   School,
-  Briefcase,
   Newspaper,
-  ClipboardList,
   Shield,
   BarChart3,
   MessageSquare,
@@ -78,8 +76,6 @@ const sidebarSections = [
     title: 'ADMISSION',
     items: [
       { name: 'Institutions', href: '/admin/institutions', icon: School },
-      { name: 'Applications', href: '/admin/applications', icon: ClipboardList },
-      { name: 'Admission Tracker', href: '/admin/admission-tracker', icon: Target },
     ],
   },
   {
@@ -110,10 +106,7 @@ const sidebarSections = [
   {
     title: 'RESOURCES',
     items: [
-      { name: 'Scholarships', href: '/admin/scholarships', icon: Briefcase },
-      { name: 'Career Guidance', href: '/admin/careers', icon: Briefcase },
       { name: 'News & Articles', href: '/admin/news', icon: Newspaper },
-      { name: 'Documents', href: '/admin/documents', icon: FileText },
     ],
   },
   {
