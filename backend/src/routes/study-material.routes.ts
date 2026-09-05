@@ -31,7 +31,10 @@ const upload = multer({ storage: multer.memoryStorage() });
 // Subjects
 router.get('/subjects', authenticate, async (req: Request, res: Response) => {
   try {
-    const subjects = await getStudySubjects();
+    const subjects = await getStudySubjects({
+      isActive: req.query.isActive === 'false' ? false : req.query.isActive === 'true' ? true : undefined,
+      examType: req.query.examType as string | undefined,
+    });
     res.json({ success: true, data: subjects });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch subjects' });

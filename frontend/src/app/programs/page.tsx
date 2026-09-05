@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowRight, CheckCircle, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 
 interface Program {
   id: string;
@@ -236,47 +236,35 @@ export default function ProgramsPage() {
                 key={program.id}
                 className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group"
               >
-                {/* Card Header */}
-                <div className="p-6 pb-4">
-                  <div className="w-14 h-14 bg-primary-50 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary-600 transition-colors">
-                    {renderIcon(program.icon, 'h-7 w-7 text-primary-600 group-hover:text-white')}
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{program.title}</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">{program.description}</p>
-                </div>
+                 {/* Card Header */}
+                 <div className="p-6 pb-4">
+                   <div className="w-14 h-14 bg-primary-50 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary-600 transition-colors">
+                     {renderIcon(program.icon, 'h-7 w-7 text-primary-600 group-hover:text-white')}
+                   </div>
+                   <h3 className="text-xl font-bold text-gray-900 mb-2">{program.title}</h3>
+                   <p className="text-gray-600 text-sm leading-relaxed">{program.description}</p>
+                 </div>
 
-                {/* Features */}
-                <div className="px-6 pb-4">
-                  <ul className="space-y-2">
-                    {program.features.slice(0, 4).map((feature, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
-                        <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Card Footer */}
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-2xl font-bold text-gray-900">
-                        {formatPrice(program.price)}
-                      </span>
-                      {program.duration && (
-                        <p className="text-xs text-gray-500 mt-0.5">{program.duration}</p>
-                      )}
-                    </div>
-                    <Link
-                      href={program.price === 0 ? '/register' : `/register?program=${program.slug}`}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent-500 text-primary-900 font-semibold rounded-xl hover:bg-accent-400 transition-all text-sm"
-                    >
-                      {program.price === 0 ? 'Become a Student' : 'Enroll Now'}
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </div>
-                </div>
+                 {/* Card Footer */}
+                 <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                   <div className="flex items-center justify-between">
+                     <div>
+                       <span className="text-2xl font-bold text-gray-900">
+                         {formatPrice(program.price)}
+                       </span>
+                       {program.duration && (
+                         <p className="text-xs text-gray-500 mt-0.5">{program.duration}</p>
+                       )}
+                     </div>
+                     <Link
+                       href={program.price === 0 ? '/register' : `/register?program=${program.slug}`}
+                       className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent-500 text-primary-900 font-semibold rounded-xl hover:bg-accent-400 transition-all text-sm"
+                     >
+                       {program.price === 0 ? 'Become a Student' : 'Enroll Now'}
+                       <ArrowRight className="h-4 w-4" />
+                     </Link>
+                   </div>
+                 </div>
               </div>
             ))}
           </div>

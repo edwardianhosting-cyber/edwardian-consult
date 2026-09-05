@@ -52,18 +52,27 @@ router.delete('/:id', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), asyn
 router.get('/sample', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
   try {
     const sampleData = [
-      { subject: 'Mathematics', examType: 'JAMB', institution: 'UI', year: 2024, topic: 'Algebra', difficulty: 'MEDIUM', text: 'What is the value of x in 2x + 5 = 15?', options: '7|8|9|10', correctOption: 1, explanation: 'Subtract 5 from both sides then divide by 2' },
-      { subject: 'English', examType: 'WAEC', institution: 'NECO', year: 2023, topic: 'Grammar', difficulty: 'EASY', text: 'Choose the correct option: She ___ to school every day.', options: 'go|goes|going|gone', correctOption: 1, explanation: 'Third person singular present tense adds -es' },
-      { subject: 'Physics', examType: 'POST-UTME', institution: 'UNILAG', year: 2024, topic: 'Electricity', difficulty: 'HARD', text: 'Calculate the current in a circuit with 10V and 5Ω.', options: '1A|2A|3A|4A', correctOption: 1, explanation: "Ohm's Law: I = V/R = 10/5 = 2A" },
-      { subject: 'Chemistry', examType: 'JAMB', institution: 'OAU', year: 2023, topic: 'Organic Chemistry', difficulty: 'MEDIUM', text: 'What is the molecular formula of Ethane?', options: 'C2H4|C2H6|C3H8|CH4', correctOption: 1, explanation: 'Ethane has 2 carbons and 6 hydrogens' },
+      { question: 'What is the value of x in 2x + 5 = 15?', options: '7|8|9|10', answer: 1, explanation: 'Subtract 5 from both sides then divide by 2' },
+      { question: 'Choose the correct option: She ___ to school every day.', options: 'go|goes|going|gone', answer: 1, explanation: 'Third person singular present tense adds -es' },
+      { question: 'Calculate the current in a circuit with 10V and 5Ω.', options: '1A|2A|3A|4A', answer: 1, explanation: "Ohm's Law: I = V/R = 10/5 = 2A" },
+      { question: 'What is the molecular formula of Ethane?', options: 'C2H4|C2H6|C3H8|CH4', answer: 1, explanation: 'Ethane has 2 carbons and 6 hydrogens' },
     ];
+
+    const format = String(req.query.format || 'excel').toLowerCase();
+
+    if (format === 'csv') {
+      const headers = Object.keys(sampleData[0]).join(',');
+      const rows = sampleData.map(row => Object.values(row).map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+      const csv = [headers, ...rows].join('\n');
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="questions-sample.csv"');
+      return res.send(csv);
+    }
 
     const worksheet = XLSX.utils.json_to_sheet(sampleData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Questions');
-
     const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename="questions-sample.xlsx"');
     res.send(buffer);
@@ -91,14 +100,23 @@ router.post('/bulk-upload', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR')
       return res.status(400).json({ success: false, message: 'No file provided' });
     }
 
+    const defaults = {
+      subject: req.body.subject,
+      examType: req.body.examType,
+      institution: req.body.institution,
+      year: req.body.year ? parseInt(req.body.year, 10) : undefined,
+      topic: req.body.topic,
+      difficulty: req.body.difficulty,
+    };
+
     const fileName = req.file.originalname.toLowerCase();
     let result;
 
     if (fileName.endsWith('.csv')) {
       const csvText = req.file.buffer.toString('utf-8');
-      result = await bulkCreateQuestionsFromCSV(csvText);
+      result = await bulkCreateQuestionsFromCSV(csvText, defaults);
     } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-      result = await bulkCreateQuestionsFromExcel(req.file.buffer);
+      result = await bulkCreateQuestionsFromExcel(req.file.buffer, defaults);
     } else {
       return res.status(400).json({ success: false, message: 'Unsupported file format. Please upload CSV or Excel file.' });
     }

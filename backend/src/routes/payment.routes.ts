@@ -11,6 +11,7 @@ import {
   getUserPayments,
   getPaymentStats,
   getAdminPaymentStats,
+  getPaymentById,
 } from '../services/ercas.service';
 
 const router = Router();
@@ -129,6 +130,22 @@ router.get('/stats', authenticate, async (req: Request, res: Response) => {
     res.json({ success: true, data: stats });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch stats' });
+  }
+});
+
+// Get single payment by ID
+router.get('/:id', authenticate, async (req: Request, res: Response) => {
+  try {
+    const payment = await getPaymentById(req.params.id);
+    if (!payment) {
+      return res.status(404).json({ success: false, message: 'Payment not found' });
+    }
+    if (payment.userId !== req.user!.userId && req.user!.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+    res.json({ success: true, data: payment });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch payment' });
   }
 });
 

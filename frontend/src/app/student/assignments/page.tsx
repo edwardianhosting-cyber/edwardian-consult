@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import api from '@/lib/api';
 import { ClipboardList, Calendar, Upload, CheckCircle, Clock, AlertCircle, AlertTriangle } from 'lucide-react';
 
@@ -19,12 +19,14 @@ interface Assignment {
 
 export default function AssignmentsPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [showLeaveWarning, setShowLeaveWarning] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
+  const prevPathnameRef = useRef(pathname);
 
   useEffect(() => {
     fetchAssignments();
@@ -45,11 +47,15 @@ export default function AssignmentsPage() {
   useEffect(() => {
     if (!submitting) return;
 
-    const dispose = router.beforePopState(() => {
-      setPendingNavigation(() => () => router.back());
+    if (prevPathnameRef.current !== pathname) {
+      setPendingNavigation(() => () => {});
       setShowLeaveWarning(true);
-      return false;
-    });
+    }
+    prevPathnameRef.current = pathname;
+  }, [pathname, submitting]);
+
+  useEffect(() => {
+    if (!submitting) return;
 
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -65,10 +71,7 @@ export default function AssignmentsPage() {
     };
 
     document.addEventListener('click', handleClick, true);
-    return () => {
-      document.removeEventListener('click', handleClick, true);
-      dispose();
-    };
+    return () => document.removeEventListener('click', handleClick, true);
   }, [submitting, router]);
 
   async function fetchAssignments() {

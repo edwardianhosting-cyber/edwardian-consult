@@ -19,8 +19,18 @@ export default function LeaderboardPage() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [userExamType, setUserExamType] = useState<string>('');
   const [selectedExamType, setSelectedExamType] = useState<string>('');
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      const examTypes = user.examTypes || [];
+      if (examTypes.length > 0) {
+        setSelectedExamType(examTypes[0]);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -38,18 +48,6 @@ export default function LeaderboardPage() {
       setLoading(false);
     }
   }
-
-  useEffect(() => {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      const examTypes = user.examTypes || [];
-      if (examTypes.length > 0) {
-        setUserExamType(examTypes[0]);
-        setSelectedExamType(examTypes[0]);
-      }
-    }
-  }, []);
 
   if (loading) {
     return (
@@ -85,21 +83,6 @@ export default function LeaderboardPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Leaderboard</h1>
         <p className="text-gray-600 mt-1">Top performing students</p>
-      </div>
-
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Exam Type</label>
-        <select
-          value={selectedExamType}
-          onChange={(e) => setSelectedExamType(e.target.value)}
-          className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
-        >
-          <option value="">All Exams</option>
-          <option value="JAMB">JAMB</option>
-          <option value="WAEC">WAEC</option>
-          <option value="NECO">NECO</option>
-          <option value="POST-UTME">POST-UTME</option>
-        </select>
       </div>
 
       {entries.length === 0 ? (

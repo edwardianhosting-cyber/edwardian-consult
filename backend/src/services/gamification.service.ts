@@ -132,32 +132,55 @@ export async function getUserBadges(userId: string) {
 }
 
 export async function getLeaderboard(limit = 50, examType?: string) {
-  const where: any = {};
-  if (examType) {
-    where.subject = examType;
-  }
-
-  const results = await prisma.cbtResult.groupBy({
-    by: ['userId'],
-    where,
-    _sum: { correctAnswers: true, totalQuestions: true },
-    _count: { id: true },
-    orderBy: { _sum: { correctAnswers: 'desc' } },
-    take: limit,
+  const cbtResults = await prisma.cbtResult.findMany({
+    where: examType
+      ? {
+          exam: {
+            examType,
+          },
+        }
+      : undefined,
+    include: {
+      exam: true,
+    },
+    orderBy: {
+      correctAnswers: 'desc',
+    },
   });
 
-  const userIds = results.map(r => r.userId);
+  const grouped = cbtResults.reduce((acc, result) => {
+    if (!acc[result.userId]) {
+      acc[result.userId] = {
+        userId: result.userId,
+        correctAnswers: 0,
+        totalQuestions: 0,
+        count: 0,
+      };
+    }
+
+    acc[result.userId].correctAnswers += result.correctAnswers;
+    acc[result.userId].totalQuestions += result.totalQuestions;
+    acc[result.userId].count += 1;
+
+    return acc;
+  }, {} as Record<string, { userId: string; correctAnswers: number; totalQuestions: number; count: number }>);
+
+  const sorted = Object.values(grouped)
+    .sort((a, b) => b.correctAnswers - a.correctAnswers)
+    .slice(0, limit);
+
+  const userIds = sorted.map((r) => r.userId);
   const users = await prisma.user.findMany({
     where: { id: { in: userIds } },
     select: { id: true, fullName: true, avatar: true, portalId: true, examTypes: true },
   });
 
-  const userMap = new Map(users.map(u => [u.id, u]));
+  const userMap = new Map(users.map((u) => [u.id, u]));
 
-  return results.map((r, index) => {
+  return sorted.map((r, index) => {
     const user = userMap.get(r.userId);
-    const totalQ = r._sum.totalQuestions || 1;
-    const correct = r._sum.correctAnswers || 0;
+    const totalQ = r.totalQuestions || 1;
+    const correct = r.correctAnswers || 0;
     return {
       rank: index + 1,
       userId: r.userId,
@@ -165,7 +188,7 @@ export async function getLeaderboard(limit = 50, examType?: string) {
       avatar: user?.avatar,
       portalId: user?.portalId,
       examTypes: user?.examTypes || [],
-      cbtCount: r._count.id,
+      cbtCount: r.count,
       totalQuestions: totalQ,
       correctAnswers: correct,
       accuracy: Math.round((correct / totalQ) * 100),
@@ -176,5 +199,10 @@ export async function getLeaderboard(limit = 50, examType?: string) {
 export async function getUserRank(userId: string) {
   const leaderboard = await getLeaderboard(1000);
   const userEntry = leaderboard.find(e => e.userId === userId);
-  return userEntry || null;
+  if (!userEntry || userEntry.rank > 10) return null;
+  return {
+    rank: userEntry.rank,
+    accuracy: userEntry.accuracy,
+    cbtCount: userEntry.cbtCount,
+  };
 }

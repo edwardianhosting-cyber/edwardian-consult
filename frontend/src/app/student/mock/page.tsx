@@ -39,8 +39,7 @@ export default function MockPage() {
 
   async function startExam(examId: string) {
     try {
-      const result = await api.generateCBT({ subject: examId, questionCount: 40 });
-      window.location.href = `/student/cbt?examId=${result.data?.examId || examId}&mode=mock`;
+      window.location.href = `/student/cbt?examId=${examId}&mode=mock`;
     } catch (err: any) {
       alert(err.message || 'Failed to start exam');
     }

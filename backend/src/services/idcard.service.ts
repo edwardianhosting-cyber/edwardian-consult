@@ -1,8 +1,8 @@
 import QRCode from 'qrcode';
 import { prisma } from '../lib/prisma';
 
-const SCHOOL_NAME = 'EDUCATIONAL CONSULT';
-const SCHOOL_SHORT = 'EDUCONSULT';
+const SCHOOL_NAME = 'Edwardian Educational Consult';
+const SCHOOL_SHORT = 'EEC';
 
 export async function generateStudentIdCard(userId: string) {
   const user = await prisma.user.findUnique({
@@ -32,7 +32,7 @@ export async function generateStudentIdCard(userId: string) {
       schoolName: SCHOOL_NAME,
       schoolShort: SCHOOL_SHORT,
       cardType: 'STUDENT ID CARD',
-      passportUrl: user.passportUrl || user.documents[0]?.fileUrl || null,
+      passportUrl: user.avatar || user.passportUrl || user.documents[0]?.fileUrl || null,
       fullName: user.fullName,
       studentId: user.portalId,
       programme: user.programme || 'N/A',
@@ -40,15 +40,24 @@ export async function generateStudentIdCard(userId: string) {
       dateOfBirth: user.dateOfBirth ? formatDate(user.dateOfBirth) : 'N/A',
       validUntil: formatDate(validUntil),
       qrCode: qrCodeDataUrl,
+      gender: user.gender || 'N/A',
+      state: user.state || 'N/A',
     },
     back: {
       studentId: user.portalId,
+      fullName: user.fullName,
       programme: user.programme || 'N/A',
-      department: user.targetCourse || 'N/A',
-      session: `${new Date().getFullYear()}/${new Date().getFullYear() + 1}`,
-      registrationDate: formatDate(user.createdAt),
+      classLevel: user.classLevel || 'N/A',
+      targetCourse: user.targetCourse || 'N/A',
+      targetInstitution: user.targetInstitution || 'N/A',
       phone: user.phone,
+      email: user.studentEmail || user.email,
+      address: user.address || 'N/A',
+      state: user.state || 'N/A',
+      lga: user.lga || 'N/A',
       emergencyContact: user.parentPhone || 'N/A',
+      registrationDate: formatDate(user.createdAt),
+      validUntil: formatDate(validUntil),
       verificationUrl,
     },
     verification: {

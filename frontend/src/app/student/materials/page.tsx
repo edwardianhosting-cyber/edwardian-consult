@@ -28,6 +28,7 @@ interface StudySubject {
   name: string;
   description?: string;
   code?: string;
+  examType?: string;
   topics: StudyTopic[];
 }
 
@@ -40,16 +41,17 @@ export default function MaterialsPage() {
   const [selectedTopic, setSelectedTopic] = useState<StudyTopic | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedExamType, setSelectedExamType] = useState<string>('');
 
   useEffect(() => {
     fetchHierarchy();
-  }, []);
+  }, [selectedExamType]);
 
   async function fetchHierarchy() {
     try {
       setLoading(true);
       setError(null);
-      const data = await api.getMaterialsHierarchy();
+      const data = await api.getMaterialsHierarchy(selectedExamType || undefined);
       setSubjects(data.data || []);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch materials');
@@ -449,9 +451,4 @@ function ResourceCard({ resource }: { resource: StudyResource }) {
             className="inline-flex items-center gap-2 px-4 py-2 bg-primary-50 text-primary-600 rounded-lg hover:bg-primary-100"
           >
             Open File
-          </a>
-        </div>
-      )}
-    </div>
-  );
-}
+          </

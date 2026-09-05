@@ -6,25 +6,7 @@ export async function getWalletItems(userId: string) {
     orderBy: { createdAt: 'desc' },
   });
 
-  // Group by type
-  const grouped: Record<string, any[]> = {
-    ID_CARD: [],
-    CERTIFICATE: [],
-    RECEIPT: [],
-    RESULT: [],
-    ADMISSION_DOC: [],
-    APPLICATION_DOC: [],
-    PAYMENT_RECORD: [],
-    ACADEMIC_RECORD: [],
-  };
-
-  for (const item of items) {
-    if (grouped[item.type]) {
-      grouped[item.type].push(item);
-    }
-  }
-
-  return grouped;
+  return items;
 }
 
 export async function addWalletItem(params: {

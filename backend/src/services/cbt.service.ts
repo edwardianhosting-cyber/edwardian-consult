@@ -340,23 +340,150 @@ export async function getMockExamsForUser(userId: string) {
   });
 }
 
+export async function getAllMockExamsForTeacher(userId: string) {
+  return prisma.exam.findMany({
+    where: {
+      examType: 'MOCK',
+      isActive: true,
+    },
+    include: {
+      questions: {
+        include: { question: true },
+        orderBy: { order: 'asc' },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+export async function getAllMockExamsForAdmin() {
+  return prisma.exam.findMany({
+    where: {
+      examType: 'MOCK',
+    },
+    include: {
+      questions: {
+        include: { question: true },
+        orderBy: { order: 'asc' },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+export async function getAdminCBTStats() {
+  const [totalExams, totalResults, publishedExams, draftExams] = await Promise.all([
+    prisma.exam.count({ where: { examType: 'MOCK' } }),
+    prisma.cbtResult.count(),
+    prisma.exam.count({ where: { examType: 'MOCK', isPublished: true } }),
+    prisma.exam.count({ where: { examType: 'MOCK', isPublished: false } }),
+  ]);
+
+  const avgScore = totalResults > 0
+    ? await prisma.cbtResult.aggregate({ _avg: { score: true } })
+    : { _avg: { score: 0 } };
+
+  const recentResults = await prisma.cbtResult.findMany({
+    take: 10,
+    orderBy: { completedAt: 'desc' },
+    include: {
+      user: {
+        select: { fullName: true, email: true },
+      },
+      exam: {
+        select: { title: true, subject: true },
+      },
+    },
+  });
+
+  return {
+    totalExams,
+    totalResults,
+    publishedExams,
+    draftExams,
+    averageScore: Math.round(avgScore._avg.score || 0),
+    recentResults,
+  };
+}
+
+export async function getAllCBTResultsForAdmin(page = 1, limit = 20) {
+  const [results, total] = await Promise.all([
+    prisma.cbtResult.findMany({
+      take: limit,
+      skip: (page - 1) * limit,
+      orderBy: { completedAt: 'desc' },
+      include: {
+        user: {
+          select: { fullName: true, email: true },
+        },
+        exam: {
+          select: { title: true, subject: true },
+        },
+      },
+    }),
+    prisma.cbtResult.count(),
+  ]);
+
+  return {
+    results,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
+}
+
+export async function getFilteredCBTResultsForAdmin(type?: string, examType?: string, page = 1, limit = 50) {
+  const where: any = {};
+  if (type && type !== 'ALL') {
+    where.type = type;
+  }
+  if (examType && examType !== 'ALL') {
+    where.examType = examType;
+  }
+
+  const [results, total] = await Promise.all([
+    prisma.cbtResult.findMany({
+      where,
+      take: limit,
+      skip: (page - 1) * limit,
+      orderBy: { completedAt: 'desc' },
+      include: {
+        user: {
+          select: { fullName: true, email: true },
+        },
+        exam: {
+          select: { title: true, subject: true, examType: true },
+        },
+      },
+    }),
+    prisma.cbtResult.count({ where }),
+  ]);
+
+  return {
+    results,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
+}
+
 export async function createMockExam(teacherId: string, data: {
   title: string;
   subject: string;
   duration: number;
-  totalMarks: number;
-  questionIds: string[];
+  totalMarks?: number;
+  questionIds?: string[];
+  questions?: any[];
 }) {
+  const questionIds = data.questionIds || (data.questions || []).map((q: any) => q.id).filter(Boolean);
+  const totalMarks = data.totalMarks || questionIds.length * 5;
+
   const exam = await prisma.exam.create({
     data: {
       title: data.title,
       examType: 'MOCK',
       subject: data.subject,
       duration: data.duration,
-      totalMarks: data.totalMarks,
+      totalMarks,
       isPublished: false,
       questions: {
-        create: data.questionIds.map((questionId, index) => ({
+        create: questionIds.map((questionId, index) => ({
           questionId,
           order: index + 1,
         })),
@@ -384,6 +511,56 @@ export async function unpublishMockExam(id: string) {
   return prisma.exam.update({
     where: { id },
     data: { isPublished: false, publishedAt: null },
+  });
+}
+
+export async function updateMockExam(id: string, data: {
+  title: string;
+  subject: string;
+  duration: number;
+  totalMarks?: number;
+  questionIds?: string[];
+  questions?: any[];
+}) {
+  const questionIds = data.questionIds || (data.questions || []).map((q: any) => q.id).filter(Boolean);
+  const totalMarks = data.totalMarks || questionIds.length * 5;
+
+  const exam = await prisma.exam.update({
+    where: { id },
+    data: {
+      title: data.title,
+      subject: data.subject,
+      duration: data.duration,
+      totalMarks,
+    },
+  });
+
+  await prisma.examQuestion.deleteMany({
+    where: { examId: id },
+  });
+
+  await prisma.examQuestion.createMany({
+    data: questionIds.map((questionId, index) => ({
+      examId: id,
+      questionId,
+      order: index + 1,
+    })),
+  });
+
+  return prisma.exam.findUnique({
+    where: { id },
+    include: {
+      questions: {
+        include: { question: true },
+        orderBy: { order: 'asc' },
+      },
+    },
+  });
+}
+
+export async function deleteMockExam(id: string) {
+  return prisma.exam.delete({
+    where: { id },
   });
 }
 
@@ -479,6 +656,58 @@ export async function getPerformanceAnalysis(userId: string) {
     weaknesses: weaknesses.sort((a, b) => a.average - b.average),
     recommendations,
     progressOverTime,
+  };
+}
+
+export async function getCBTResultById(userId: string, resultId: string) {
+  const result = await prisma.cbtResult.findFirst({
+    where: { id: resultId, userId },
+    include: {
+      exam: {
+        include: {
+          questions: {
+            include: { question: true },
+            orderBy: { order: 'asc' },
+          },
+        },
+      },
+    },
+  });
+
+  if (!result || !result.exam) return null;
+
+  const userAnswers = result.userAnswers as Record<string, { selected: number; correct: boolean }> | null;
+
+  const corrections = result.exam.questions.map((eq, index) => {
+    const answer = userAnswers?.[eq.question.id];
+    return {
+      questionNumber: index + 1,
+      question: eq.question.text,
+      options: eq.question.options as string[],
+      correctOption: eq.question.correctOption,
+      userAnswer: answer?.selected ?? -1,
+      isCorrect: answer?.correct ?? false,
+      explanation: eq.question.explanation,
+      topic: eq.question.topic,
+      difficulty: eq.question.difficulty,
+    };
+  });
+
+  return {
+    result: {
+      id: result.id,
+      subject: result.subject,
+      type: result.type,
+      score: result.score,
+      totalQuestions: result.totalQuestions,
+      correctAnswers: result.correctAnswers,
+      wrongAnswers: result.wrongAnswers,
+      skippedAnswers: result.skippedAnswers,
+      durationUsed: result.durationUsed,
+      completedAt: result.completedAt,
+      weakTopics: result.weakTopics,
+    },
+    corrections,
   };
 }
 

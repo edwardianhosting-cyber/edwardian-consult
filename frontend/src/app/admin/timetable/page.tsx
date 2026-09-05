@@ -13,11 +13,22 @@ interface TimetableEntry {
   venue?: string;
   type?: string;
   examType?: string;
-  classLevel?: string;
+}
+
+interface StudySubject {
+  id: string;
+  name: string;
+}
+
+interface Teacher {
+  id: string;
+  fullName: string;
 }
 
 export default function AdminTimetablePage() {
   const [entries, setEntries] = useState<TimetableEntry[]>([]);
+  const [subjects, setSubjects] = useState<StudySubject[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -28,11 +39,12 @@ export default function AdminTimetablePage() {
     venue: '',
     type: 'CLASS',
     examType: '',
-    classLevel: '',
   });
 
   useEffect(() => {
     fetchEntries();
+    fetchSubjects();
+    fetchTeachers();
   }, []);
 
   async function fetchEntries() {
@@ -44,6 +56,28 @@ export default function AdminTimetablePage() {
       alert(err.message || 'Failed to fetch timetable');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchSubjects() {
+    try {
+      const data = await api.studyApi.getSubjects();
+      setSubjects(data.data || []);
+    } catch (err) {
+      console.error('Failed to fetch subjects:', err);
+    }
+  }
+
+  async function fetchTeachers() {
+    try {
+      const data = await api.getUsers({ role: 'TEACHER' });
+      const users = (data as any).data || [];
+      const teacherList = users
+        .filter((user: any) => user.role === 'TEACHER')
+        .map((user: any) => ({ id: user.id, fullName: user.fullName }));
+      setTeachers(teacherList);
+    } catch (err) {
+      console.error('Failed to fetch teachers:', err);
     }
   }
 
@@ -60,7 +94,6 @@ export default function AdminTimetablePage() {
         venue: '',
         type: 'CLASS',
         examType: '',
-        classLevel: '',
       });
       fetchEntries();
     } catch (err: any) {
@@ -132,22 +165,30 @@ export default function AdminTimetablePage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-              <input
-                type="text"
+              <select
                 required
                 value={formData.subject}
                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
-              />
+              >
+                <option value="">Select subject...</option>
+                {subjects.map((subject) => (
+                  <option key={subject.id} value={subject.name}>{subject.name}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Instructor</label>
-              <input
-                type="text"
+              <select
                 value={formData.instructor}
                 onChange={(e) => setFormData({ ...formData, instructor: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
-              />
+              >
+                <option value="">Select instructor...</option>
+                {teachers.map((teacher) => (
+                  <option key={teacher.id} value={teacher.fullName}>{teacher.fullName}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Venue</label>
@@ -183,15 +224,6 @@ export default function AdminTimetablePage() {
                 <option>NECO</option>
                 <option>POST-UTME</option>
               </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Class Level</label>
-              <input
-                type="text"
-                value={formData.classLevel}
-                onChange={(e) => setFormData({ ...formData, classLevel: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
-              />
             </div>
             <div className="lg:col-span-4 flex gap-3">
               <button type="submit" className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2">

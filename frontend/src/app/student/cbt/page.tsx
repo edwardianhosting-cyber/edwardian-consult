@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Play, Clock, Award, ChevronRight, CheckCircle, XCircle, Trophy, TrendingUp, Calculator, X, AlertTriangle, BookOpen } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { Play, Clock, Award, ChevronRight, CheckCircle, XCircle, Trophy, TrendingUp, Calculator, X, AlertTriangle, BookOpen, Globe } from 'lucide-react';
 import { api } from '@/lib/api';
 import { API_BASE } from '@/lib/api';
 
@@ -63,12 +63,15 @@ export default function CBTPracticePage() {
   const [prevValue, setPrevValue] = useState<number | null>(null);
   const [operator, setOperator] = useState<string | null>(null);
   const [waitingForOperand, setWaitingForOperand] = useState(false);
+  const [userExamTypes, setUserExamTypes] = useState<string[]>([]);
+  const [selectedExamCategory, setSelectedExamCategory] = useState<string>('JAMB');
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hasSubmitted = useRef(false);
   const router = useRouter();
+  const pathname = usePathname();
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
-  const [showLeaveWarning, setShowLeaveWarning] = useState(false);
+  const prevPathnameRef = useRef(pathname);
 
   useEffect(() => {
     fetchSubjects();
@@ -95,15 +98,33 @@ export default function CBTPracticePage() {
   }, [examStarted]);
 
   useEffect(() => {
-    if (phase === 'exam' && !showResult && examStarted) {
-      const dispose = router.beforePopState(() => {
-        setPendingNavigation(() => () => router.back());
-        setShowLeaveWarning(true);
-        return false;
-      });
-      return dispose;
+    async function fetchUserProfile() {
+      try {
+        const data = await api.getProfile();
+        const user = (data as any).data || data;
+        const examTypes = (user?.examTypes as string[]) || [];
+        setUserExamTypes(examTypes);
+        if (examTypes.length > 0) {
+          const normalized = examTypes.map(t => t.toUpperCase());
+          const preferred = normalized.find(t => ['JAMB', 'WAEC', 'NECO', 'POST_UTME', 'JUPEB', 'IJMB'].includes(t)) || normalized[0];
+          setSelectedExamCategory(preferred);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user profile for exam types:', error);
+      }
     }
-  }, [phase, showResult, examStarted, router]);
+    fetchUserProfile();
+  }, []);
+
+  useEffect(() => {
+    if (phase === 'exam' && !showResult && examStarted) {
+      if (prevPathnameRef.current !== pathname) {
+        setPendingNavigation(() => () => {});
+        setShowLeaveWarning(true);
+      }
+    }
+    prevPathnameRef.current = pathname;
+  }, [pathname, phase, showResult, examStarted]);
 
   useEffect(() => {
     if (phase === 'exam' && !showResult && examStarted) {
@@ -194,7 +215,7 @@ export default function CBTPracticePage() {
       const questionCount = examType === 'PRACTICE' ? 50 : 50;
       const res = await api.generateCBT({
         subject: selectedSubject!,
-        examType: 'JAMB',
+        examType: selectedExamCategory,
         questionCount,
       });
 
@@ -311,47 +332,19 @@ export default function CBTPracticePage() {
 
   // Calculator
   function handleCalcInput(value: string) {
-    if (waitingForOperand) {
-      setCalcDisplay(value);
-      setWaitingForOperand(false);
-    } else {
-      setCalcDisplay(prev => prev === '0' ? value : prev + value);
-    }
+    setCalcDisplay(prev => prev === '0' && !isNaN(Number(value)) ? value : prev + value);
+  }
+
+  function handleCalcFunction(fn: string) {
+    setCalcDisplay(prev => prev === '0' ? `${fn}(` : `${prev}${fn}(`);
+  }
+
+  function handleCalcConstant(value: string) {
+    setCalcDisplay(prev => prev === '0' ? value : `${prev}${value}`);
   }
 
   function handleCalcOperator(nextOp: string) {
-    const inputValue = parseFloat(calcDisplay);
-
-    if (prevValue === null) {
-      setPrevValue(inputValue);
-    } else if (operator) {
-      const result = calculate(prevValue, inputValue, operator);
-      setCalcDisplay(String(result));
-      setPrevValue(result);
-    }
-
-    setWaitingForOperand(true);
-    setOperator(nextOp);
-  }
-
-  function calculate(a: number, b: number, op: string): number {
-    switch (op) {
-      case '+': return a + b;
-      case '-': return a - b;
-      case '*': return a * b;
-      case '/': return b !== 0 ? a / b : 0;
-      default: return b;
-    }
-  }
-
-  function handleCalcEquals() {
-    if (operator && prevValue !== null) {
-      const result = calculate(prevValue, parseFloat(calcDisplay), operator);
-      setCalcDisplay(String(result));
-      setPrevValue(null);
-      setOperator(null);
-      setWaitingForOperand(true);
-    }
+    setCalcDisplay(prev => `${prev}${nextOp}`);
   }
 
   function handleCalcClear() {
@@ -359,6 +352,41 @@ export default function CBTPracticePage() {
     setPrevValue(null);
     setOperator(null);
     setWaitingForOperand(false);
+  }
+
+  function handleCalcBackspace() {
+    setCalcDisplay(prev => prev.length > 1 ? prev.slice(0, -1) : '0');
+  }
+
+  function handleCalcEquals() {
+    let expression = calcDisplay
+      .replace(/×/g, '*')
+      .replace(/÷/g, '/')
+      .replace(/π/g, 'Math.PI')
+      .replace(/e(?![A-Za-z])/g, 'Math.E')
+      .replace(/\^/g, '**');
+
+    expression = expression.replace(/\bsin\(([^)]+)\)/g, (_, args) => `Math.sin((${args})*Math.PI/180)`);
+    expression = expression.replace(/\bcos\(([^)]+)\)/g, (_, args) => `Math.cos((${args})*Math.PI/180)`);
+    expression = expression.replace(/\btan\(([^)]+)\)/g, (_, args) => `Math.tan((${args})*Math.PI/180)`);
+    expression = expression.replace(/\bsqrt\(/g, 'Math.sqrt(');
+    expression = expression.replace(/\blog\(/g, 'Math.log10(');
+    expression = expression.replace(/\bln\(/g, 'Math.log(');
+
+    try {
+      const sanitized = expression.replace(/[^0-9+\-*/().%MathsincostqrtlgtenPI\s]/g, '');
+      const result = Function(`"use strict"; return (${sanitized})`)();
+      if (!Number.isFinite(result)) {
+        setCalcDisplay('Error');
+        return;
+      }
+      setCalcDisplay(String(Math.round(result * 1000000000) / 1000000000));
+      setPrevValue(null);
+      setOperator(null);
+      setWaitingForOperand(false);
+    } catch {
+      setCalcDisplay('Error');
+    }
   }
 
   // Phase: Subjects Selection
@@ -369,6 +397,28 @@ export default function CBTPracticePage() {
           <h1 className="text-2xl font-bold text-gray-900">CBT Practice</h1>
           <p className="text-gray-600 mt-1">Practice with past questions and mock exams</p>
         </div>
+
+        {userExamTypes.length > 0 && (
+          <div className="mb-6 bg-white rounded-xl border border-gray-100 p-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Practice Exam Type</label>
+            <div className="flex flex-wrap gap-2">
+              {userExamTypes.map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setSelectedExamCategory(type.toUpperCase())}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    selectedExamCategory === type.toUpperCase()
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <Globe className="w-4 h-4 inline mr-1" />
+                  {type}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {subjects.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-xl border border-gray-100">
@@ -467,6 +517,8 @@ export default function CBTPracticePage() {
               <ul className="space-y-1 text-sm text-yellow-800">
                 <li>• Do not refresh or leave the page during the exam</li>
                 <li>• The timer cannot be paused once started</li>
+                <li>• Leaving or closing the page will automatically submit your exam</li>
+                <li>• Navigating away requires confirmation and will submit your attempt</li>
                 <li>• Ensure you have a stable internet connection</li>
                 <li>• You can navigate between questions using the question palette</li>
                 <li>• Submit before time runs out to avoid auto-submission</li>
@@ -655,6 +707,20 @@ export default function CBTPracticePage() {
                   <div className="text-right text-xl font-mono font-bold text-gray-900 break-all">
                     {calcDisplay}
                   </div>
+                </div>
+                <div className="grid grid-cols-5 gap-2 mb-2">
+                  <button onClick={() => handleCalcFunction('sin')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">sin</button>
+                  <button onClick={() => handleCalcFunction('cos')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">cos</button>
+                  <button onClick={() => handleCalcFunction('tan')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">tan</button>
+                  <button onClick={() => handleCalcFunction('sqrt')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">√</button>
+                  <button onClick={() => handleCalcOperator('^')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">x^y</button>
+                  <button onClick={() => handleCalcFunction('log')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">log</button>
+                  <button onClick={() => handleCalcFunction('ln')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">ln</button>
+                  <button onClick={() => handleCalcConstant('Math.PI')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">π</button>
+                  <button onClick={() => handleCalcConstant('Math.E')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">e</button>
+                  <button onClick={() => handleCalcInput('(')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">(</button>
+                  <button onClick={() => handleCalcInput(')')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">)</button>
+                  <button onClick={handleCalcBackspace} className="p-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-xs font-medium">⌫</button>
                 </div>
                 <div className="grid grid-cols-4 gap-2">
                   <button onClick={handleCalcClear} className="col-span-2 p-2 bg-red-100 text-red-700 rounded hover:bg-red-200 text-sm font-medium">C</button>

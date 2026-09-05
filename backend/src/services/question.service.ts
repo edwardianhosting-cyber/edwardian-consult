@@ -10,28 +10,35 @@ export async function uploadQuestionImage(file: Express.Multer.File): Promise<{ 
   };
 }
 
-function parseQuestionRow(row: Record<string, any>, lineIndex: number): { data?: any; error?: string } | null {
-  const subject = String(row.subject || row.Subject || row.SUBJECT || '').trim();
-  const examType = String(row.examType || row.ExamType || row.EXAM_TYPE || row['Exam Type'] || '').trim();
-  const institution = String(row.institution || row.Institution || row.INSTITUTION || '').trim();
-  const yearStr = String(row.year || row.Year || row.YEAR || '').trim();
-  const topic = String(row.topic || row.Topic || row.TOPIC || '').trim();
-  const difficulty = String(row.difficulty || row.Difficulty || row.DIFFICULTY || 'MEDIUM').trim().toUpperCase();
-  const text = String(row.text || row.Text || row.TEXT || row.question || row.Question || row.QUESTION || '').trim();
+function parseQuestionRow(row: Record<string, any>, lineIndex: number, defaults?: {
+  subject?: string;
+  examType?: string;
+  institution?: string;
+  year?: number;
+}): { data?: any; error?: string } | null {
+  const subject = String(row.subject || row.Subject || row.SUBJECT || defaults?.subject || '').trim();
+  const examType = String(row.examType || row.ExamType || row.EXAM_TYPE || row['Exam Type'] || defaults?.examType || '').trim();
+  const institution = String(row.institution || row.Institution || row.INSTITUTION || defaults?.institution || '').trim();
+  const yearStr = String(row.year || row.Year || row.YEAR || defaults?.year || '').trim();
+  const text = String(row.question || row.text || row.Text || row.TEXT || '').trim();
   const options = String(row.options || row.Options || row.OPTIONS || '').trim();
-  const correctOptionStr = String(row.correctOption || row.CorrectOption || row.CORRECT_OPTION || row['Correct Option'] || '').trim();
+  const correctOptionStr = String(row.answer || row.Answer || row.ANSWER || row.correctOption || row.CorrectOption || row.CORRECT_OPTION || row['Correct Option'] || '').trim();
   const explanation = String(row.explanation || row.Explanation || row.EXPLANATION || '').trim();
   const imageUrl = String(row.imageUrl || row.ImageUrl || row.IMAGE_URL || row['Image URL'] || '').trim();
 
-  if (!subject || !examType || !yearStr || !text || !options || !correctOptionStr) {
+  const finalSubject = subject || defaults?.subject;
+  const finalExamType = examType || defaults?.examType;
+  const finalInstitution = institution || defaults?.institution || '';
+  const finalYear = yearStr ? parseInt(yearStr, 10) : (defaults?.year || 0);
+
+  if (!finalSubject || !finalExamType || !finalYear || !text || !options || !correctOptionStr) {
     return { error: `Row ${lineIndex}: missing required fields` };
   }
 
   const correctOption = parseInt(correctOptionStr, 10);
-  const year = parseInt(yearStr, 10);
 
-  if (isNaN(correctOption) || isNaN(year)) {
-    return { error: `Row ${lineIndex}: invalid year or correctOption` };
+  if (isNaN(correctOption)) {
+    return { error: `Row ${lineIndex}: invalid correctOption` };
   }
 
   const optionsArray = options.split('|').map((opt: string) => opt.trim()).filter(Boolean);
@@ -45,12 +52,10 @@ function parseQuestionRow(row: Record<string, any>, lineIndex: number): { data?:
 
   return {
     data: {
-      subject,
-      examType,
-      institution: institution || undefined,
-      year,
-      topic: topic || undefined,
-      difficulty: ['EASY', 'MEDIUM', 'HARD'].includes(difficulty) ? difficulty : 'MEDIUM',
+      subject: finalSubject,
+      examType: finalExamType,
+      institution: finalInstitution || undefined,
+      year: finalYear,
       text,
       imageUrl: imageUrl || undefined,
       options: optionsArray,
@@ -61,7 +66,12 @@ function parseQuestionRow(row: Record<string, any>, lineIndex: number): { data?:
   };
 }
 
-export async function bulkCreateQuestionsFromCSV(csvText: string): Promise<{ created: number; errors: string[] }> {
+export async function bulkCreateQuestionsFromCSV(csvText: string, defaults?: {
+  subject?: string;
+  examType?: string;
+  institution?: string;
+  year?: number;
+}): Promise<{ created: number; errors: string[] }> {
   const lines = csvText.split(/\r?\n/).filter((line) => line.trim() !== '' && !line.trim().startsWith('#'));
   let created = 0;
   const errors: string[] = [];
@@ -76,7 +86,7 @@ export async function bulkCreateQuestionsFromCSV(csvText: string): Promise<{ cre
       row[header] = values[index] || '';
     });
 
-    const parsed = parseQuestionRow(row, i + 2);
+    const parsed = parseQuestionRow(row, i + 2, defaults);
     if (parsed?.error) {
       errors.push(parsed.error);
       continue;
@@ -95,7 +105,12 @@ export async function bulkCreateQuestionsFromCSV(csvText: string): Promise<{ cre
   return { created, errors };
 }
 
-export async function bulkCreateQuestionsFromExcel(buffer: Buffer): Promise<{ created: number; errors: string[] }> {
+export async function bulkCreateQuestionsFromExcel(buffer: Buffer, defaults?: {
+  subject?: string;
+  examType?: string;
+  institution?: string;
+  year?: number;
+}): Promise<{ created: number; errors: string[] }> {
   const workbook = XLSX.read(buffer, { type: 'buffer' });
   const sheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[sheetName];
@@ -106,7 +121,7 @@ export async function bulkCreateQuestionsFromExcel(buffer: Buffer): Promise<{ cr
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i] as Record<string, any>;
-    const parsed = parseQuestionRow(row, i + 2);
+    const parsed = parseQuestionRow(row, i + 2, defaults);
 
     if (parsed?.error) {
       errors.push(parsed.error);

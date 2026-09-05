@@ -99,6 +99,7 @@ export const api = {
     const query = type ? `?page=${page}&type=${type}` : `?page=${page}`;
     return fetchAPI(`/cbt/results${query}`);
   },
+  getCBTResult: (id: string) => fetchAPI(`/cbt/results/${id}`),
   getMockResults: () => api.getCBTResults(1, 'MOCK'),
   getPerformance: () => fetchAPI('/cbt/performance'),
   
@@ -122,6 +123,7 @@ export const api = {
     const query = examType ? `?examType=${encodeURIComponent(examType)}` : '';
     return fetchAPI(`/gamification/leaderboard${query}`);
   },
+  getMyRank: () => fetchAPI('/gamification/rank'),
   
   // Badges
   getBadges: () => fetchAPI('/gamification/badges'),
@@ -152,6 +154,15 @@ export const api = {
   
   // Mock Exams
   getMockExams: () => fetchAPI('/cbt/mock-exams'),
+  getAllMockExams: () => fetchAPI('/cbt/mock-exams/admin/all'),
+  
+  // Admin - CBT
+  adminGetAllMockExams: () => fetchAPI('/cbt/admin/mock-exams'),
+  adminGetCBTStats: () => fetchAPI('/cbt/admin/stats'),
+  adminGetAllCBTResults: (page = 1, limit = 20) => {
+    const query = `?page=${page}&limit=${limit}`;
+    return fetchAPI(`/cbt/admin/results${query}`);
+  },
   
   // Study Planner
   getStudyPlans: () => fetchAPI('/study/plans'),
@@ -180,8 +191,34 @@ export const api = {
   getAdmissionStatus: () => fetchAPI('/admission/tracker'),
   getAdmissionHub: () => fetchAPI('/admission/hub'),
   getInstitutions: () => fetchAPI('/admission/institutions'),
+  getAdmissionAnnouncements: () => fetchAPI('/admission/announcements'),
   submitApplication: (data: any) => fetchAPI('/admission/apply', { method: 'POST', body: JSON.stringify(data) }),
   updateMyApplicationStatus: (id: string, status: string) => fetchAPI(`/admission/my-applications/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  
+  // Admin - Admission
+  adminCreateInstitution: (data: any) => fetchAPI('/admission/institutions', { method: 'POST', body: JSON.stringify(data) }),
+  adminUpdateInstitution: (id: string, data: any) => fetchAPI(`/admission/institutions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  adminDeleteInstitution: (id: string) => fetchAPI(`/admission/institutions/${id}`, { method: 'DELETE' }),
+  adminCreateCourse: (data: any) => fetchAPI('/admission/courses', { method: 'POST', body: JSON.stringify(data) }),
+  adminUpdateCourse: (id: string, data: any) => fetchAPI(`/admission/courses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  adminDeleteCourse: (id: string) => fetchAPI(`/admission/courses/${id}`, { method: 'DELETE' }),
+  adminGetAllCourses: (params?: { institutionId?: string; search?: string }) => {
+    const query = params ? '?' + new URLSearchParams(params as any).toString() : '';
+    return fetchAPI(`/admission/courses${query}`);
+  },
+  adminGetAdmissionAnnouncements: () => fetchAPI('/admission/announcements'),
+  adminGetAdmissionAnnouncement: (id: string) => fetchAPI(`/admission/announcements/${id}`),
+  adminCreateAdmissionAnnouncement: (data: any) => fetchAPI('/admission/announcements', { method: 'POST', body: JSON.stringify(data) }),
+  adminUpdateAdmissionAnnouncement: (id: string, data: any) => fetchAPI(`/admission/announcements/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  adminDeleteAdmissionAnnouncement: (id: string) => fetchAPI(`/admission/announcements/${id}`, { method: 'DELETE' }),
+  
+  // Upload
+  uploadImage: (file: File, folder?: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', folder || 'uploads');
+    return fetchAPI('/upload/image', { method: 'POST', body: formData });
+  },
   
   // Scholarships
   getScholarships: () => fetchAPI('/scholarships'),
@@ -221,7 +258,8 @@ export const api = {
   deleteNotice: (id: string) => fetchAPI(`/notices/${id}`, { method: 'DELETE' }),
   
   // Payments
-  getPayments: () => fetchAPI('/payments/my-payments'),
+  getPayments: () => fetchAPI('/payments/'),
+  getPayment: (id: string) => fetchAPI(`/payments/${id}`),
   
   // Wallet
   getWalletItems: () => fetchAPI('/wallet'),
@@ -243,6 +281,7 @@ export const api = {
   getReferrals: () => fetchAPI('/referrals'),
   getReferralStats: () => fetchAPI('/referrals/stats'),
   createReferral: (data: { email: string }) => fetchAPI('/referrals', { method: 'POST', body: JSON.stringify(data) }),
+  applyReferralCode: (code: string) => fetchAPI('/referrals/apply', { method: 'POST', body: JSON.stringify({ code }) }),
 
   // JAMB Tools
   getJambSubjects: () => fetchAPI('/jamb/subjects'),
@@ -253,6 +292,20 @@ export const api = {
   checkJambCombination: (data: any) => fetchAPI('/jamb/check-combination', { method: 'POST', body: JSON.stringify(data) }),
   calculateJambScore: (data: any) => fetchAPI('/jamb/calculate-score', { method: 'POST', body: JSON.stringify(data) }),
 
+  // Admin - JAMB
+  adminGetJambDeadlines: () => fetchAPI('/jamb/admin/deadlines'),
+  adminCreateJambDeadline: (data: any) => fetchAPI('/jamb/admin/deadlines', { method: 'POST', body: JSON.stringify(data) }),
+  adminUpdateJambDeadline: (id: string, data: any) => fetchAPI(`/jamb/admin/deadlines/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  adminDeleteJambDeadline: (id: string) => fetchAPI(`/jamb/admin/deadlines/${id}`, { method: 'DELETE' }),
+  adminGetJambSubjects: () => fetchAPI('/jamb/admin/subjects'),
+  adminCreateJambSubject: (data: any) => fetchAPI('/jamb/admin/subjects', { method: 'POST', body: JSON.stringify(data) }),
+  adminUpdateJambSubject: (id: string, data: any) => fetchAPI(`/jamb/admin/subjects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  adminDeleteJambSubject: (id: string) => fetchAPI(`/jamb/admin/subjects/${id}`, { method: 'DELETE' }),
+  adminGetJambSyllabus: () => fetchAPI('/jamb/admin/syllabus'),
+  adminCreateJambSyllabus: (data: any) => fetchAPI('/jamb/admin/syllabus', { method: 'POST', body: JSON.stringify(data) }),
+  adminUpdateJambSyllabus: (id: string, data: any) => fetchAPI(`/jamb/admin/syllabus/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  adminDeleteJambSyllabus: (id: string) => fetchAPI(`/jamb/admin/syllabus/${id}`, { method: 'DELETE' }),
+
   // Documents
   getMyDocuments: () => fetchAPI('/documents/my'),
   uploadDocument: (formData: FormData) => fetchFormData('/documents', formData),
@@ -261,6 +314,11 @@ export const api = {
   // User
   updateProfile: (data: any) => fetchAPI('/users/profile', { method: 'PATCH', body: JSON.stringify(data) }),
   changePassword: (data: any) => fetchAPI('/users/change-password', { method: 'POST', body: JSON.stringify(data) }),
+  uploadAvatar: (file: File) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    return fetchFormData('/users/avatar', formData);
+  },
   
   // Admin - Users
   getUsers: (params?: Record<string, string>) => {
@@ -276,6 +334,8 @@ export const api = {
   
   // Admin - Stats
   getStats: () => fetchAPI('/users/stats'),
+  getAnalyticsStats: () => fetchAPI('/analytics/stats'),
+  getAnalyticsTimeSeries: (range: '7d' | '30d' | '90d') => fetchAPI(`/analytics/timeseries?range=${range}`),
   
   // Admin - Settings
   getSettings: () => fetchAPI('/settings'),
@@ -294,9 +354,16 @@ export const api = {
     formData.append('image', file);
     return fetchFormData('/questions/upload-image', formData);
   },
-  uploadQuestionsFile: (file: File) => {
+  uploadQuestionsFile: (file: File, defaults?: { subject?: string; examType?: string; institution?: string; year?: number }) => {
     const formData = new FormData();
     formData.append('file', file);
+    if (defaults) {
+      Object.entries(defaults).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          formData.append(key, String(value));
+        }
+      });
+    }
     return fetchFormData('/questions/bulk-upload', formData);
   },
   getAllQuestions: (params?: Record<string, string>) => {
@@ -382,7 +449,10 @@ export const contactApi = {
   
   // Study Subjects API
   export const studyApi = {
-    getSubjects: () => fetchAPI('/study-material/subjects'),
+    getSubjects: (params?: { examType?: string }) => {
+      const query = params?.examType ? `?examType=${encodeURIComponent(params.examType)}` : '';
+      return fetchAPI(`/study-material/subjects${query}`);
+    },
     getSubject: (id: string) => fetchAPI(`/study-material/subjects/${id}`),
     createSubject: (data: any) => fetchAPI('/study-material/subjects', { method: 'POST', body: JSON.stringify(data) }),
     updateSubject: (id: string, data: any) => fetchAPI(`/study-material/subjects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -396,10 +466,16 @@ export const contactApi = {
     createTopic: (data: any) => fetchAPI('/study-material/topics', { method: 'POST', body: JSON.stringify(data) }),
     updateTopic: (id: string, data: any) => fetchAPI(`/study-material/topics/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteTopic: (id: string) => fetchAPI(`/study-material/topics/${id}`, { method: 'DELETE' }),
-    getResources: (topicId: string) => fetchAPI(`/study-material/topics/${topicId}/resources`),
+    getResources: (topicId: string) => fetchAPI(`/study-material/resources/${topicId}`),
     createResource: (data: any) => fetchAPI('/study-material/resources', { method: 'POST', body: JSON.stringify(data) }),
     updateResource: (id: string, data: any) => fetchAPI(`/study-material/resources/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteResource: (id: string) => fetchAPI(`/study-material/resources/${id}`, { method: 'DELETE' }),
+    uploadFile: (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return fetchFormData('/study-material/upload', formData);
+    },
+    getAllMaterials: () => fetchAPI('/study-material/all'),
   };
 
 // Default export for backward compatibility

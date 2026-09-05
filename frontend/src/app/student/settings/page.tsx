@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { User, Bell, Shield, Eye, EyeOff, Save, Check, Loader2, ChevronRight, Settings, BookOpen, Plus, X, AlertCircle, Info } from 'lucide-react';
+import { User, Bell, Shield, Eye, EyeOff, Save, Check, Loader2, ChevronRight, Settings, BookOpen, Plus, X, AlertCircle, Info, MapPin, School, Target, GraduationCap } from 'lucide-react';
 import api from '@/lib/api';
 import { ALL_SUBJECTS } from '@/lib/subjects';
 
@@ -42,6 +42,43 @@ const defaultPreferences: NotificationPreferences = {
   },
 };
 
+const NIGERIAN_STATES = [
+  'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
+  'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT - Abuja', 'Gombe',
+  'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos',
+  'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto',
+  'Taraba', 'Yobe', 'Zamfara',
+];
+
+const CLASS_LEVELS = ['SS1', 'SS2', 'SS3', 'Graduate', 'Other'];
+
+const PROGRAMME_OPTIONS = [
+  { value: 'JAMB', label: 'JAMB UTME' },
+  { value: 'POST_UTME', label: 'Post-UTME' },
+  { value: 'WAEC', label: "O'Level (WAEC)" },
+  { value: 'NECO', label: "O'Level (NECO)" },
+  { value: 'JUPEB', label: 'JUPEB' },
+  { value: 'IJMB', label: 'IJMB' },
+];
+
+interface ProfileForm {
+  fullName: string;
+  email: string;
+  phone: string;
+  address: string;
+  state: string;
+  lga: string;
+  currentSchool: string;
+  classLevel: string;
+  programme: string;
+  targetScore: string;
+  targetInstitution: string;
+  targetCourse: string;
+  secondChoiceInstitution: string;
+  secondChoiceCourse: string;
+  admissionYear: string;
+}
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -49,10 +86,22 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState<ProfileForm>({
     fullName: '',
     email: '',
     phone: '',
+    address: '',
+    state: '',
+    lga: '',
+    currentSchool: '',
+    classLevel: '',
+    programme: '',
+    targetScore: '',
+    targetInstitution: '',
+    targetCourse: '',
+    secondChoiceInstitution: '',
+    secondChoiceCourse: '',
+    admissionYear: '',
   });
 
   const [notifications, setNotifications] = useState<NotificationPreferences>(defaultPreferences);
@@ -63,7 +112,6 @@ export default function SettingsPage() {
     confirm: '',
   });
 
-  const [examProgramme, setExamProgramme] = useState('');
   const [examTypes, setExamTypes] = useState<string[]>([]);
   const [subjects, setSubjects] = useState<string[]>([]);
   const [subjectsLoading, setSubjectsLoading] = useState(true);
@@ -84,7 +132,6 @@ export default function SettingsPage() {
     try {
       const data = await api.getProfile();
       const user = (data as any).data || data;
-      setExamProgramme(user?.programme || '');
       setExamTypes((user?.examTypes as string[]) || []);
       const subjectsRes = await api.getMySubjects();
       const list = Array.isArray(subjectsRes) ? subjectsRes : Array.isArray((subjectsRes as any)?.data) ? (subjectsRes as any).data : [];
@@ -104,6 +151,18 @@ export default function SettingsPage() {
         fullName: user.fullName || '',
         email: user.email || '',
         phone: user.phone || '',
+        address: user.address || '',
+        state: user.state || '',
+        lga: user.lga || '',
+        currentSchool: user.currentSchool || '',
+        classLevel: user.classLevel || '',
+        programme: user.programme || '',
+        targetScore: user.targetScore || '',
+        targetInstitution: user.targetInstitution || '',
+        targetCourse: user.targetCourse || '',
+        secondChoiceInstitution: user.secondChoiceInstitution || '',
+        secondChoiceCourse: user.secondChoiceCourse || '',
+        admissionYear: user.admissionYear || '',
       });
     } catch (error) {
       console.error('Failed to fetch profile:', error);
@@ -127,7 +186,22 @@ export default function SettingsPage() {
   async function saveProfile() {
     setLoading(true);
     try {
-      await api.updateProfile(profile);
+      await api.updateProfile({
+        fullName: profile.fullName || undefined,
+        phone: profile.phone || undefined,
+        address: profile.address || null,
+        state: profile.state || null,
+        lga: profile.lga || null,
+        currentSchool: profile.currentSchool || null,
+        classLevel: profile.classLevel || null,
+        programme: profile.programme || null,
+        targetScore: profile.targetScore || null,
+        targetInstitution: profile.targetInstitution || null,
+        targetCourse: profile.targetCourse || null,
+        secondChoiceInstitution: profile.secondChoiceInstitution || null,
+        secondChoiceCourse: profile.secondChoiceCourse || null,
+        admissionYear: profile.admissionYear || null,
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
@@ -215,46 +289,209 @@ export default function SettingsPage() {
 
       {/* Profile Tab */}
       {activeTab === 'profile' && (
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Settings</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name
-              </label>
-              <input
-                type="text"
-                value={profile.fullName}
-                onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="Enter your full name"
-              />
+        <div className="space-y-6">
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Settings</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={profile.fullName}
+                  onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="Enter your full name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={profile.email}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="Enter your email"
+                  disabled
+                />
+                <p className="text-xs text-gray-400 mt-1">Email cannot be changed</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={profile.phone}
+                  onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="Enter your phone number"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address
-              </label>
-              <input
-                type="email"
-                value={profile.email}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="Enter your email"
-                disabled
-              />
-              <p className="text-xs text-gray-400 mt-1">Email cannot be changed</p>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-primary-600" />
+              Contact & Location
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                <textarea
+                  value={profile.address}
+                  onChange={(e) => setProfile({ ...profile, address: e.target.value })}
+                  rows={2}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="Enter your address"
+                />
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                  <select
+                    value={profile.state}
+                    onChange={(e) => setProfile({ ...profile, state: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  >
+                    <option value="">Select state…</option>
+                    {NIGERIAN_STATES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">LGA</label>
+                  <input
+                    type="text"
+                    value={profile.lga}
+                    onChange={(e) => setProfile({ ...profile, lga: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="Local Government Area"
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                value={profile.phone}
-                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="Enter your phone number"
-              />
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <School className="w-5 h-5 text-primary-600" />
+              Academic Information
+            </h3>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Current School</label>
+                <input
+                  type="text"
+                  value={profile.currentSchool}
+                  onChange={(e) => setProfile({ ...profile, currentSchool: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="e.g., Kings College Lagos"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Class Level</label>
+                <select
+                  value={profile.classLevel}
+                  onChange={(e) => setProfile({ ...profile, classLevel: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option value="">Select class…</option>
+                  {CLASS_LEVELS.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Primary Programme</label>
+                <select
+                  value={profile.programme}
+                  onChange={(e) => setProfile({ ...profile, programme: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option value="">Select programme…</option>
+                  {PROGRAMME_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Target className="w-5 h-5 text-primary-600" />
+              Target Institution & Course
+            </h3>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">First Choice Institution</label>
+                <input
+                  type="text"
+                  value={profile.targetInstitution}
+                  onChange={(e) => setProfile({ ...profile, targetInstitution: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="e.g., University of Lagos"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">First Choice Course</label>
+                <input
+                  type="text"
+                  value={profile.targetCourse}
+                  onChange={(e) => setProfile({ ...profile, targetCourse: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="e.g., Computer Science"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Second Choice Institution</label>
+                <input
+                  type="text"
+                  value={profile.secondChoiceInstitution}
+                  onChange={(e) => setProfile({ ...profile, secondChoiceInstitution: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="e.g., University of Ibadan"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Second Choice Course</label>
+                <input
+                  type="text"
+                  value={profile.secondChoiceCourse}
+                  onChange={(e) => setProfile({ ...profile, secondChoiceCourse: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="e.g., Mathematics"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Admission Year</label>
+                <input
+                  type="text"
+                  value={profile.admissionYear}
+                  onChange={(e) => setProfile({ ...profile, admissionYear: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="e.g., 2027"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Target Score</label>
+                <input
+                  type="text"
+                  value={profile.targetScore}
+                  onChange={(e) => setProfile({ ...profile, targetScore: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="e.g., 280"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
             <button
               onClick={saveProfile}
               disabled={loading}
@@ -281,18 +518,15 @@ export default function SettingsPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Primary Programme</label>
                 <select
-                  value={examProgramme}
-                  onChange={(e) => setExamProgramme(e.target.value)}
+                  value={profile.programme}
+                  onChange={(e) => setProfile({ ...profile, programme: e.target.value })}
                   disabled={savingExam}
                   className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
                 >
                   <option value="">Select a programme…</option>
-                  <option value="JAMB">JAMB UTME</option>
-                  <option value="POST_UTME">Post-UTME</option>
-                  <option value="WAEC">O'Level (WAEC)</option>
-                  <option value="NECO">O'Level (NECO)</option>
-                  <option value="JUPEB">JUPEB</option>
-                  <option value="IJMB">IJMB</option>
+                  {PROGRAMME_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -325,7 +559,7 @@ export default function SettingsPage() {
             </div>
             <div className="mt-4 flex items-center justify-between">
               <p className="text-xs text-gray-500">
-                Programme: <span className="font-medium text-gray-700">{examProgramme || 'Not set'}</span>
+                Programme: <span className="font-medium text-gray-700">{profile.programme || 'Not set'}</span>
               </p>
               <button
                 onClick={async () => {
@@ -333,7 +567,7 @@ export default function SettingsPage() {
                   setExamError(null);
                   setExamSuccess(null);
                   try {
-                    await api.updateProfile({ programme: examProgramme || null, examTypes: examTypes });
+                    await api.updateProfile({ programme: profile.programme || null, examTypes });
                     setExamSuccess('Examination settings updated');
                     setTimeout(() => setExamSuccess(null), 4000);
                   } catch (err: any) {

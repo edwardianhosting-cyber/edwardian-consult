@@ -2,11 +2,12 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
-import { CheckCircle, Mail, ArrowRight, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle, Mail, ArrowRight, AlertTriangle, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 
 function SuccessContent() {
   const [countdown, setCountdown] = useState(10);
   const [showSpamHelp, setShowSpamHelp] = useState(false);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -23,6 +24,20 @@ function SuccessContent() {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user.referralCode) {
+          setReferralCode(user.referralCode);
+        }
+      } catch (e) {
+        console.error('Failed to parse user data:', e);
+      }
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
       <div className="max-w-md w-full">
@@ -37,6 +52,19 @@ function SuccessContent() {
           <p className="text-gray-600 mb-6">
             Your account has been created. Your login details have been sent to your email address.
           </p>
+
+          {/* Referral Code */}
+          {referralCode && (
+            <div className="bg-primary-50 border border-primary-200 rounded-xl p-4 mb-4 text-left">
+              <div className="flex items-center gap-2 mb-2">
+                <Lock className="h-4 w-4 text-primary-600" />
+                <p className="text-sm font-semibold text-primary-800">Referral Code Applied</p>
+              </div>
+              <p className="text-xs text-primary-700">
+                You registered with referral code: <span className="font-mono font-bold">{referralCode}</span>
+              </p>
+            </div>
+          )}
 
           {/* Email Notification */}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 text-left">

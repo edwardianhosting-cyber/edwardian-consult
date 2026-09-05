@@ -3,8 +3,12 @@ import { authenticate, authorize, hashPassword, generatePortalId, generateParent
 import prisma from '../lib/prisma';
 import { z } from 'zod';
 import { verifyPassword } from '../lib/auth';
+import multer from 'multer';
+import { uploadToCloudinary } from '../services/cloudinary.service';
 
 const router = Router();
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Get users (admin only) - supports role filter
 router.get('/', authenticate, authorize('ADMIN', 'TUTOR'), async (req: Request, res: Response) => {
@@ -455,6 +459,7 @@ router.patch('/profile', authenticate, async (req: Request, res: Response) => {
       state: z.string().optional().nullable(),
       lga: z.string().optional().nullable(),
       notificationPreferences: z.any().optional(),
+      avatar: z.string().url().optional().nullable(),
     });
 
     const validated = updateSchema.parse(req.body);
@@ -489,6 +494,7 @@ router.patch('/profile', authenticate, async (req: Request, res: Response) => {
         address: true,
         state: true,
         lga: true,
+        avatar: true,
       },
     });
 
@@ -499,6 +505,39 @@ router.patch('/profile', authenticate, async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     return res.status(400).json({ success: false, message: error.message || 'Failed to update profile' });
+  }
+});
+
+// Upload avatar
+router.post('/avatar', authenticate, upload.single('avatar'), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+
+    const result = await uploadToCloudinary(req.file.buffer, 'avatars', 'image');
+    
+    const user = await prisma.user.update({
+      where: { id: req.user!.userId },
+      data: { avatar: result.url },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        phone: true,
+        portalId: true,
+        role: true,
+        avatar: true,
+      },
+    });
+
+    return res.json({
+      success: true,
+      message: 'Avatar uploaded successfully',
+      data: user,
+    });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message || 'Failed to upload avatar' });
   }
 });
 

@@ -7,6 +7,9 @@ interface CreateInstitutionParams {
   location?: string;
   state?: string;
   website?: string;
+  logo?: string;
+  coverImage?: string;
+  description?: string;
 }
 
 export async function createInstitution(params: CreateInstitutionParams) {
@@ -18,12 +21,15 @@ export async function createInstitution(params: CreateInstitutionParams) {
       location: params.location,
       state: params.state,
       website: params.website,
+      logo: params.logo,
+      coverImage: params.coverImage,
+      description: params.description,
     },
   });
 }
 
 export async function getInstitutions(filters?: { type?: string; state?: string }) {
-  const where: any = { isActive: true };
+  const where: any = {};
   if (filters?.type) where.type = filters.type;
   if (filters?.state) where.state = filters.state;
 
@@ -32,6 +38,17 @@ export async function getInstitutions(filters?: { type?: string; state?: string 
     include: { courses: true },
     orderBy: { name: 'asc' },
   });
+}
+
+export async function updateInstitution(id: string, data: Partial<CreateInstitutionParams>) {
+  return prisma.institution.update({
+    where: { id },
+    data,
+  });
+}
+
+export async function deleteInstitution(id: string) {
+  return prisma.institution.delete({ where: { id } });
 }
 
 interface CreateCourseParams {
@@ -44,6 +61,8 @@ interface CreateCourseParams {
   postUtmeCutoff?: number;
   applicationFee?: number;
   deadline?: Date;
+  coverImage?: string;
+  description?: string;
 }
 
 export async function createInstitutionCourse(params: CreateCourseParams) {
@@ -58,8 +77,35 @@ export async function createInstitutionCourse(params: CreateCourseParams) {
       postUtmeCutoff: params.postUtmeCutoff,
       applicationFee: params.applicationFee,
       deadline: params.deadline,
+      coverImage: params.coverImage,
+      description: params.description,
     },
   });
+}
+
+export async function getAllInstitutionCourses(filters?: { institutionId?: string; search?: string }) {
+  const where: any = {};
+  if (filters?.institutionId) where.institutionId = filters.institutionId;
+  if (filters?.search) {
+    where.name = { contains: filters.search, mode: 'insensitive' };
+  }
+
+  return prisma.institutionCourse.findMany({
+    where,
+    include: { institution: true },
+    orderBy: { id: 'desc' },
+  });
+}
+
+export async function updateInstitutionCourse(id: string, data: Partial<CreateCourseParams>) {
+  return prisma.institutionCourse.update({
+    where: { id },
+    data,
+  });
+}
+
+export async function deleteInstitutionCourse(id: string) {
+  return prisma.institutionCourse.delete({ where: { id } });
 }
 
 export async function matchInstitutions(userId: string) {
@@ -85,6 +131,8 @@ export async function matchInstitutions(userId: string) {
       type: course.institution.type,
       location: course.institution.location,
       state: course.institution.state,
+      logo: course.institution.logo,
+      coverImage: course.institution.coverImage,
     },
     course: course.name,
     utmeCutoff: course.utmeCutoff,
@@ -95,6 +143,8 @@ export async function matchInstitutions(userId: string) {
     postUtmeCutoff: course.postUtmeCutoff,
     applicationFee: course.applicationFee,
     deadline: course.deadline,
+    coverImage: course.coverImage,
+    description: course.description,
   }));
 }
 
@@ -109,7 +159,7 @@ export async function checkCourseEligibility(userId: string, courseName: string,
 
   return courses.map(course => {
     const meetsUtme = utmeScore >= (course.utmeCutoff || 0);
-    const olevelCount = olevelResults.filter(r => ['A1', 'B2', 'B3', 'C4', 'C5', 'C6'].includes(r.grade)).length;
+    const olevelCount = olevelResults.filter((r: any) => ['A1', 'B2', 'B3', 'C4', 'C5', 'C6'].includes(r.grade)).length;
     const meetsOlevel = olevelCount >= 5;
 
     return {
@@ -125,7 +175,6 @@ export async function checkCourseEligibility(userId: string, courseName: string,
   });
 }
 
-// Admission Tracker
 export async function createAdmissionApplication(userId: string, data: {
   institutionId: string;
   courseId: string;
@@ -151,7 +200,6 @@ export async function getAdmissionTracker(userId: string) {
     where: { userId },
     include: {
       institution: { select: { name: true, abbreviation: true } },
-      course: { select: { name: true } },
     },
     orderBy: { choiceNumber: 'asc' },
   });
@@ -226,6 +274,8 @@ export async function getAdmissionHub(userId: string) {
       type: course.institution.type,
       location: course.institution.location,
       state: course.institution.state,
+      logo: course.institution.logo,
+      coverImage: course.institution.coverImage,
     },
     course: course.name,
     utmeCutoff: course.utmeCutoff,
@@ -233,6 +283,8 @@ export async function getAdmissionHub(userId: string) {
     deadline: course.deadline,
     postUtmeRequired: course.postUtmeRequired,
     postUtmeCutoff: course.postUtmeCutoff,
+    coverImage: course.coverImage,
+    description: course.description,
   }));
 }
 

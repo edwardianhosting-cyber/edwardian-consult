@@ -1,53 +1,73 @@
 'use client';
 
-import { useState } from 'react';
-import { HelpCircle, MessageCircle, Mail, Phone, ChevronDown, ChevronUp, BookOpen, Video, FileText } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { HelpCircle, MessageCircle, Mail, Phone, ChevronDown, ChevronUp, BookOpen } from 'lucide-react';
+import api from '@/lib/api';
 
 interface FAQ {
   question: string;
   answer: string;
 }
 
+interface SupportSettings {
+  supportEmail?: string;
+  supportPhone?: string;
+  supportWhatsApp?: string;
+  supportFaqs?: string;
+}
+
 export default function HelpPage() {
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
   const [showUserGuide, setShowUserGuide] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [support, setSupport] = useState<SupportSettings>({
+    supportEmail: 'support@edwardianeducationalconsult.com.ng',
+    supportPhone: '+234 800 000 0000',
+    supportWhatsApp: 'https://wa.me/2348000000000',
+    supportFaqs: '[]',
+  });
+  const [faqs, setFaqs] = useState<FAQ[]>([]);
 
-  const faqs: FAQ[] = [
-    {
-      question: 'How do I start practicing for JAMB?',
-      answer:
-        'Go to the CBT Practice section from the sidebar. Select your subject and start practicing with our comprehensive question bank.',
-    },
-    {
-      question: 'How can I check my results?',
-      answer:
-        'Your results will appear in the Results section after completing any mock exam or CBT practice session.',
-    },
-    {
-      question: 'How do I contact my tutor?',
-      answer:
-        'Use the Messages section to send messages to your tutors or administrators.',
-    },
-    {
-      question: 'Can I download study materials?',
-      answer:
-        'Yes, visit the Study Materials section to access and download PDF notes and past questions.',
-    },
-    {
-      question: 'How do I reset my password?',
-      answer:
-        'Go to Settings > Security tab to change your password. You will need to enter your current password first.',
-    },
-    {
-      question: 'How can my parents track my progress?',
-      answer:
-        'Your parents can use the Parent Portal with the Portal ID and Access Code provided during registration.',
-    },
-  ];
+  useEffect(() => {
+    fetchSupportSettings();
+  }, []);
 
-  const resources = [
-    { title: 'User Guide', icon: BookOpen, description: 'Complete guide to using the platform' },
-  ];
+  async function fetchSupportSettings() {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await api.getSettings();
+      const settings: SupportSettings = (data as any)?.data || {};
+      setSupport(settings);
+      try {
+        const parsedFaqs = JSON.parse(settings.supportFaqs || '[]');
+        if (Array.isArray(parsedFaqs)) {
+          setFaqs(parsedFaqs);
+        } else {
+          setFaqs([]);
+        }
+      } catch {
+        setFaqs([]);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to load support settings');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const emailHref = support.supportEmail ? `mailto:${support.supportEmail}` : undefined;
+  const whatsappHref = support.supportWhatsApp || 'https://wa.me/2348000000000';
+  const phoneHref = support.supportPhone ? `tel:${support.supportPhone.replace(/\s/g, '')}` : undefined;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -56,20 +76,28 @@ export default function HelpPage() {
         <p className="text-gray-600 mt-1">Get help with using the platform</p>
       </div>
 
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+          {error}
+        </div>
+      )}
+
       {/* Contact Options */}
       <div className="grid sm:grid-cols-3 gap-4 mb-8">
+        {emailHref && (
+          <a
+            href={emailHref}
+            className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-shadow text-center"
+          >
+            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <Mail className="w-6 h-6 text-blue-600" />
+            </div>
+            <h3 className="font-semibold text-gray-900">Email Us</h3>
+            <p className="text-sm text-gray-500">{support.supportEmail}</p>
+          </a>
+        )}
         <a
-          href="mailto:support@edwardianeducationalconsult.com.ng"
-          className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-shadow text-center"
-        >
-          <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-            <Mail className="w-6 h-6 text-blue-600" />
-          </div>
-          <h3 className="font-semibold text-gray-900">Email Us</h3>
-          <p className="text-sm text-gray-500">support@edwardianeducationalconsult.com.ng</p>
-        </a>
-        <a
-          href="https://wa.me/2348000000000"
+          href={whatsappHref}
           target="_blank"
           rel="noopener noreferrer"
           className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-shadow text-center"
@@ -80,16 +108,18 @@ export default function HelpPage() {
           <h3 className="font-semibold text-gray-900">WhatsApp</h3>
           <p className="text-sm text-gray-500">Chat with us on WhatsApp</p>
         </a>
-        <a
-          href="tel:+2348000000000"
-          className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-shadow text-center"
-        >
-          <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-            <Phone className="w-6 h-6 text-purple-600" />
-          </div>
-          <h3 className="font-semibold text-gray-900">Call Us</h3>
-          <p className="text-sm text-gray-500">+234 800 000 0000</p>
-        </a>
+        {phoneHref && (
+          <a
+            href={phoneHref}
+            className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-shadow text-center"
+          >
+            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <Phone className="w-6 h-6 text-purple-600" />
+            </div>
+            <h3 className="font-semibold text-gray-900">Call Us</h3>
+            <p className="text-sm text-gray-500">{support.supportPhone}</p>
+          </a>
+        )}
       </div>
 
       {/* FAQs */}
@@ -116,6 +146,9 @@ export default function HelpPage() {
               )}
             </div>
           ))}
+          {faqs.length === 0 && (
+            <p className="text-center text-gray-500 py-8">No FAQs available at the moment</p>
+          )}
         </div>
       </div>
 
@@ -123,20 +156,14 @@ export default function HelpPage() {
       <div className="bg-white rounded-xl border border-gray-100 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Resources</h2>
         <div className="grid sm:grid-cols-1 gap-4 max-w-sm">
-          {resources.map((resource, index) => {
-            const Icon = resource.icon;
-            return (
-              <button
-                key={index}
-                onClick={() => setShowUserGuide(true)}
-                className="p-4 border border-gray-100 rounded-lg hover:bg-gray-50 text-left"
-              >
-                <Icon className="w-8 h-8 text-primary-600 mb-2" />
-                <h3 className="font-medium text-gray-900">{resource.title}</h3>
-                <p className="text-sm text-gray-500">{resource.description}</p>
-              </button>
-            );
-          })}
+          <button
+            onClick={() => setShowUserGuide(true)}
+            className="p-4 border border-gray-100 rounded-lg hover:bg-gray-50 text-left"
+          >
+            <BookOpen className="w-8 h-8 text-primary-600 mb-2" />
+            <h3 className="font-medium text-gray-900">User Guide</h3>
+            <p className="text-sm text-gray-500">Complete guide to using the platform</p>
+          </button>
         </div>
       </div>
 
@@ -180,7 +207,7 @@ export default function HelpPage() {
               </section>
               <section>
                 <h3 className="font-semibold text-gray-900 mb-2">Need Help?</h3>
-                <p>If you need additional assistance, contact us via email at support@edwardianeducationalconsult.com.ng or chat with us on WhatsApp.</p>
+                <p>If you need additional assistance, contact us via email at {support.supportEmail || 'support@edwardianeducationalconsult.com.ng'} or chat with us on WhatsApp.</p>
               </section>
             </div>
           </div>

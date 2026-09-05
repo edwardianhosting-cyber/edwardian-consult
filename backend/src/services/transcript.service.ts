@@ -66,7 +66,7 @@ export async function generateTranscript(userId: string) {
     data: {
       userId,
       academicSession: transcript.academicSession,
-      data: transcript as any,
+      data: JSON.stringify(transcript),
     },
   });
 
@@ -74,10 +74,14 @@ export async function generateTranscript(userId: string) {
 }
 
 export async function getTranscripts(userId: string) {
-  return prisma.transcript.findMany({
+  const transcripts = await prisma.transcript.findMany({
     where: { userId },
     orderBy: { generatedAt: 'desc' },
   });
+  return transcripts.map((t) => ({
+    ...t,
+    data: typeof t.data === 'string' ? JSON.parse(t.data) : t.data,
+  }));
 }
 
 function getGrade(score: number): string {

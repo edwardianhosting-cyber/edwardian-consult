@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
-import { Plus, Trash2, Edit2, Eye, EyeOff, Newspaper, Bell, Megaphone } from 'lucide-react';
+import { Plus, Trash2, Edit2, Eye, EyeOff, Newspaper, Bell, Megaphone, Upload } from 'lucide-react';
 
 interface NewsArticle {
   id: string;
@@ -24,6 +24,7 @@ export default function AdminNewsPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     category: '',
@@ -104,6 +105,20 @@ export default function AdminNewsPage() {
       fetchArticles();
     } catch (err: any) {
       alert(err.message || 'Failed to save article');
+    }
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingImage(true);
+      const res = await api.uploadImage(file, 'news');
+      setFormData(prev => ({ ...prev, coverImage: (res.data as any).url }));
+    } catch (err: any) {
+      alert(err.message || 'Image upload failed');
+    } finally {
+      setUploadingImage(false);
     }
   }
 
@@ -203,13 +218,24 @@ export default function AdminNewsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image URL</label>
-              <input
-                type="text"
-                value={formData.coverImage}
-                onChange={(e) => setFormData({ ...formData, coverImage: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image</label>
+              <div className="flex items-center gap-3">
+                {formData.coverImage && (
+                  <img src={formData.coverImage} alt="Cover" className="w-20 h-12 object-cover rounded-lg border" />
+                )}
+                <input
+                  type="text"
+                  value={formData.coverImage}
+                  onChange={(e) => setFormData({ ...formData, coverImage: e.target.value })}
+                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="Image URL"
+                />
+                <label className="cursor-pointer px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2">
+                  <Upload className="w-4 h-4" />
+                  {uploadingImage ? 'Uploading...' : 'Upload'}
+                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                </label>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Target Audience</label>

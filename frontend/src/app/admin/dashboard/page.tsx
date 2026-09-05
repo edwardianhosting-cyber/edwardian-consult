@@ -37,7 +37,16 @@ export default function AdminDashboard() {
       setLoading(true);
       setError(null);
       const data = await api.getStats();
-      setStats(data);
+      setStats({
+        totalStudents: 0,
+        activeStudents: 0,
+        totalQuestions: 0,
+        totalExams: 0,
+        totalRevenue: 0,
+        revenueThisMonth: 0,
+        recentResults: 0,
+        ...(data || {}),
+      });
     } catch (err: any) {
       setError(err.message || 'Failed to fetch dashboard stats');
     } finally {

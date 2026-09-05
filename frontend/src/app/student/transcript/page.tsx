@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { API_BASE } from '@/lib/api';
-import { FileCheck, Download, RefreshCw } from 'lucide-react';
+import { FileCheck, Download, RefreshCw, Printer } from 'lucide-react';
 
 interface TranscriptData {
   studentInfo: {
@@ -44,8 +44,15 @@ export default function TranscriptPage() {
     try {
       setLoading(true);
       setError(null);
-      const data = await api.getTranscript();
-      setTranscript(data.data);
+      const response = await api.getTranscript();
+      const transcripts = (response as any)?.data;
+      if (Array.isArray(transcripts) && transcripts.length > 0) {
+        const latest = transcripts[0];
+        const parsed = typeof latest.data === 'string' ? JSON.parse(latest.data) : latest.data;
+        setTranscript(parsed || null);
+      } else {
+        setTranscript(null);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to fetch transcript');
     } finally {
@@ -56,12 +63,19 @@ export default function TranscriptPage() {
   async function generateTranscript() {
     try {
       setGenerating(true);
+      setError(null);
       const data = await api.generateTranscript();
-      if (data.data) {
-        setTranscript(data.data);
+      console.log('Generated transcript response:', data);
+      if ((data as any)?.success && (data as any)?.data) {
+        setTranscript((data as any).data);
+      } else if (data && typeof data === 'object' && (data as any).studentInfo) {
+        setTranscript(data as any);
+      } else {
+        setError('Unexpected response while generating transcript');
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to generate transcript');
+      console.error('Transcript generation error:', err);
+      setError(err.message || 'Failed to generate transcript');
     } finally {
       setGenerating(false);
     }
@@ -77,6 +91,10 @@ export default function TranscriptPage() {
       F: 'bg-red-200 text-red-800',
     };
     return colors[grade] || 'bg-gray-100 text-gray-700';
+  }
+
+  function handleDownloadPdf() {
+    window.print();
   }
 
   if (loading) {
@@ -127,8 +145,11 @@ export default function TranscriptPage() {
             {generating ? 'Generating...' : 'Generate New'}
           </button>
           {transcript && (
-            <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2">
-              <Download className="w-4 h-4" />
+            <button
+              onClick={handleDownloadPdf}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2"
+            >
+              <Printer className="w-4 h-4" />
               Download PDF
             </button>
           )}
@@ -169,34 +190,34 @@ export default function TranscriptPage() {
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <p className="text-xs text-gray-500">Full Name</p>
-                <p className="font-medium text-gray-900">{transcript.studentInfo.name}</p>
+                <p className="font-medium text-gray-900">{transcript?.studentInfo?.name || '—'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Student ID</p>
-                <p className="font-medium text-gray-900">{transcript.studentInfo.studentId}</p>
+                <p className="font-medium text-gray-900">{transcript?.studentInfo?.studentId || '—'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Programme</p>
-                <p className="font-medium text-gray-900">{transcript.studentInfo.programme}</p>
+                <p className="font-medium text-gray-900">{transcript?.studentInfo?.programme || '—'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Class/Level</p>
-                <p className="font-medium text-gray-900">{transcript.studentInfo.classLevel}</p>
+                <p className="font-medium text-gray-900">{transcript?.studentInfo?.classLevel || '—'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Date of Birth</p>
-                <p className="font-medium text-gray-900">{transcript.studentInfo.dateOfBirth}</p>
+                <p className="font-medium text-gray-900">{transcript?.studentInfo?.dateOfBirth ? new Date(transcript.studentInfo.dateOfBirth).toLocaleDateString() : '—'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Current School</p>
-                <p className="font-medium text-gray-900">{transcript.studentInfo.currentSchool}</p>
+                <p className="font-medium text-gray-900">{transcript?.studentInfo?.currentSchool || '—'}</p>
               </div>
             </div>
           </div>
 
           <div className="p-6">
             <h3 className="font-semibold text-gray-900 mb-4">Subject Performance</h3>
-            {transcript.subjects.length === 0 ? (
+            {(!transcript?.subjects || transcript.subjects.length === 0) ? (
               <p className="text-gray-500 text-center py-8">No CBT results recorded yet</p>
             ) : (
               <div className="overflow-x-auto">
@@ -242,25 +263,49 @@ export default function TranscriptPage() {
           <div className="p-6 bg-gray-50 border-t border-gray-100">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900">{transcript.totalCBTs}</p>
+                <p className="text-2xl font-bold text-gray-900">{transcript?.totalCBTs ?? 0}</p>
                 <p className="text-xs text-gray-500">Total CBTs</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900">{transcript.overallAverage}%</p>
+                <p className="text-2xl font-bold text-gray-900">{transcript?.overallAverage ?? 0}%</p>
                 <p className="text-xs text-gray-500">Overall Average</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900">{transcript.subjects.length}</p>
+                <p className="text-2xl font-bold text-gray-900">{Array.isArray(transcript?.subjects) ? transcript.subjects.length : 0}</p>
                 <p className="text-xs text-gray-500">Subjects</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900">{transcript.totalPayments}</p>
+                <p className="text-2xl font-bold text-gray-900">{transcript?.totalPayments ?? 0}</p>
                 <p className="text-xs text-gray-500">Payments</p>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          .max-w-4xl,
+          .max-w-4xl *,
+          .max-w-4xl * * {
+            visibility: visible !important;
+          }
+          .max-w-4xl {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            display: block !important;
+          }
+          @page {
+            size: auto;
+            margin: 15mm;
+          }
+        }
+      `}</style>
     </div>
   );
 }

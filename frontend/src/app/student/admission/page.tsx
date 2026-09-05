@@ -23,6 +23,7 @@ interface AdmissionHubItem {
 export default function AdmissionPage() {
   const [hubItems, setHubItems] = useState<AdmissionHubItem[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,9 +35,10 @@ export default function AdmissionPage() {
     try {
       setLoading(true);
       setError(null);
-      const [hubRes, trackerRes] = await Promise.allSettled([
+      const [hubRes, trackerRes, announcementsRes] = await Promise.allSettled([
         api.getAdmissionHub(),
         api.getAdmissionStatus(),
+        api.getAdmissionAnnouncements(),
       ]);
 
       if (hubRes.status === 'fulfilled') {
@@ -45,6 +47,9 @@ export default function AdmissionPage() {
       if (trackerRes.status === 'fulfilled') {
         const tracker = (trackerRes.value as any).data;
         setApplications(tracker?.applications || []);
+      }
+      if (announcementsRes.status === 'fulfilled') {
+        setAnnouncements((announcementsRes.value as any).data || []);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to fetch admission data');
@@ -159,6 +164,33 @@ export default function AdmissionPage() {
           </div>
         )}
       </div>
+
+      {/* Admission Announcements */}
+      {announcements.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Admission News & Updates</h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            {announcements.map((item) => (
+              <div key={item.id} className="bg-white rounded-xl border border-gray-100 p-6 hover:shadow-md transition-shadow">
+                {item.coverImage && (
+                  <img src={item.coverImage} alt={item.title} className="w-full h-40 object-cover rounded-lg mb-3" />
+                )}
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded">{item.category}</span>
+                  {item.isPinned && (
+                    <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">Pinned</span>
+                  )}
+                </div>
+                <h3 className="font-bold text-gray-900 mb-1">{item.title}</h3>
+                <p className="text-sm text-gray-600 line-clamp-2">{item.excerpt || item.content}</p>
+                <p className="text-xs text-gray-400 mt-2">
+                  {new Date(item.publishedAt).toLocaleDateString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* My Applications */}
       <div>

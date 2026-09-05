@@ -30,6 +30,8 @@ import {
   Medal,
   UserCheck,
   UserPlus,
+  ClipboardList,
+  Phone,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -70,12 +72,16 @@ const sidebarSections = [
       { name: 'Results', href: '/admin/results', icon: Award },
       { name: 'Mock Exams', href: '/admin/mock', icon: Calendar },
       { name: 'Performance', href: '/admin/performance', icon: Target },
+      { name: 'JAMB Deadlines', href: '/admin/jamb/deadlines', icon: Calendar },
+      { name: 'JAMB Subjects', href: '/admin/jamb/subjects', icon: BookOpen },
+      { name: 'JAMB Syllabus', href: '/admin/jamb/syllabus', icon: FileText },
     ],
   },
   {
     title: 'ADMISSION',
     items: [
       { name: 'Institutions', href: '/admin/institutions', icon: School },
+      { name: 'Admission Hub', href: '/admin/admission-hub', icon: GraduationCap },
     ],
   },
   {
@@ -113,6 +119,7 @@ const sidebarSections = [
     title: 'SYSTEM',
     items: [
       { name: 'Contact Page', href: '/admin/contact', icon: MessageSquare },
+      { name: 'Support Settings', href: '/admin/support', icon: Phone },
       { name: 'Audit Logs', href: '/admin/audit', icon: Shield },
       { name: 'Referrals', href: '/admin/referrals', icon: Users },
       { name: 'Settings', href: '/admin/settings', icon: Settings },
@@ -126,6 +133,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [avatarDropdownOpen, setAvatarDropdownOpen] = useState(false);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -267,16 +275,60 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               >
                 View Site
               </Link>
-              <div className="flex items-center gap-2 p-1 hover:bg-gray-100 rounded-lg cursor-pointer">
-                <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-bold text-primary-600">
-                    {user?.fullName?.charAt(0) || 'A'}
+              <div className="relative">
+                <button
+                  onClick={() => setAvatarDropdownOpen(!avatarDropdownOpen)}
+                  className="flex items-center gap-2 p-1 hover:bg-gray-100 rounded-lg"
+                >
+                  {user?.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user?.fullName || 'Admin'}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-bold text-primary-600">
+                        {user?.fullName?.charAt(0) || 'A'}
+                      </span>
+                    </div>
+                  )}
+                  <span className="hidden sm:block text-sm font-medium text-gray-700">
+                    {user?.fullName || 'Admin'}
                   </span>
-                </div>
-                <span className="hidden sm:block text-sm font-medium text-gray-700">
-                  {user?.fullName || 'Admin'}
-                </span>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                </button>
+                {avatarDropdownOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setAvatarDropdownOpen(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                      <Link
+                        href="/admin/dashboard"
+                        onClick={() => setAvatarDropdownOpen(false)}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Dashboard
+                      </Link>
+                      <Link
+                        href="/admin/settings"
+                        onClick={() => setAvatarDropdownOpen(false)}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Settings
+                      </Link>
+                      <Link
+                        href="/admin/profile"
+                        onClick={() => setAvatarDropdownOpen(false)}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Profile
+                      </Link>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

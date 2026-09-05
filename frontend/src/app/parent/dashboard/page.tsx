@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { User, TrendingUp, Calendar, FileText, CreditCard, BookOpen, Award, Clock, CheckCircle, AlertCircle, Bell } from 'lucide-react';
+import { User, TrendingUp, Calendar, FileText, CreditCard, BookOpen, Award, Clock, CheckCircle, AlertCircle, Bell, Phone } from 'lucide-react';
 import Link from 'next/link';
 import api from '@/lib/api';
 
@@ -18,6 +18,8 @@ interface UserProfile {
   currentSchool?: string;
   targetInstitution?: string;
   targetCourse?: string;
+  phone?: string;
+  parentPhone?: string;
 }
 
 interface PerformanceData {
@@ -148,6 +150,12 @@ export default function ParentDashboard() {
               <h2 className="text-xl font-bold">{child.fullName}</h2>
               <p className="text-green-200">ID: {child.portalId}</p>
               <p className="text-green-200">{child.programme || 'Student'} {child.classLevel ? `• ${child.classLevel}` : ''}</p>
+              {child.parentPhone && (
+                <p className="text-green-200 flex items-center gap-1 mt-1">
+                  <Phone className="w-3 h-3" />
+                  Parent Contact: {child.parentPhone}
+                </p>
+              )}
             </div>
           </div>
         </div>

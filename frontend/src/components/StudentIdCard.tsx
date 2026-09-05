@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Download, RefreshCw, Shield } from 'lucide-react';
+import { Download, RefreshCw, Shield, Printer } from 'lucide-react';
 import { API_BASE } from '@/lib/api';
 
 interface IdCardData {
@@ -17,16 +17,32 @@ interface IdCardData {
     dateOfBirth: string;
     validUntil: string;
     qrCode: string;
+    gender: string;
+    state: string;
   };
   back: {
     studentId: string;
+    fullName: string;
     programme: string;
-    department: string;
-    session: string;
-    registrationDate: string;
+    classLevel: string;
+    targetCourse: string;
+    targetInstitution: string;
     phone: string;
+    email: string;
+    address: string;
+    state: string;
+    lga: string;
     emergencyContact: string;
+    registrationDate: string;
+    validUntil: string;
     verificationUrl: string;
+  };
+  verification: {
+    isValid: boolean;
+    studentName: string;
+    studentId: string;
+    status: string;
+    programme: string;
   };
 }
 
@@ -66,6 +82,10 @@ export default function StudentIdCard({ data: propData }: StudentIdCardProps) {
     }
   }
 
+  function handleDownload() {
+    window.print();
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -90,8 +110,8 @@ export default function StudentIdCard({ data: propData }: StudentIdCardProps) {
   }
 
   return (
-    <div className="max-w-xl mx-auto">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="max-w-md mx-auto">
+      <div className="mb-4 flex items-center justify-between no-print">
         <h2 className="text-xl font-bold text-gray-900">Student ID Card</h2>
         <div className="flex gap-2">
           <button
@@ -100,9 +120,12 @@ export default function StudentIdCard({ data: propData }: StudentIdCardProps) {
           >
             {showBack ? 'Show Front' : 'Show Back'}
           </button>
-          <button className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2">
-            <Download className="w-4 h-4" />
-            Download
+          <button
+            onClick={handleDownload}
+            className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
+          >
+            <Printer className="w-4 h-4" />
+            Download / Print
           </button>
         </div>
       </div>
@@ -110,9 +133,7 @@ export default function StudentIdCard({ data: propData }: StudentIdCardProps) {
       {/* ID Card */}
       <div className="perspective-1000">
         <div
-          className={`relative transition-transform duration-700 transform-style-preserve-3d ${
-            showBack ? 'rotate-y-180' : ''
-          }`}
+          className="relative transition-transform duration-700"
           style={{
             transformStyle: 'preserve-3d',
             transform: showBack ? 'rotateY(180deg)' : 'rotateY(0deg)',
@@ -120,33 +141,37 @@ export default function StudentIdCard({ data: propData }: StudentIdCardProps) {
         >
           {/* Front */}
           <div
-            className="bg-gradient-to-br from-primary-800 via-primary-700 to-primary-900 rounded-2xl p-6 text-white shadow-2xl"
-            style={{ backfaceVisibility: 'hidden' }}
+            className="bg-white rounded-xl border-2 border-[#8B5A2B] shadow-lg"
+            style={{
+              backfaceVisibility: 'hidden',
+              width: '100%',
+              minHeight: '340px',
+            }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-10 h-10 bg-accent-500 rounded-lg flex items-center justify-center">
-                    <span className="text-primary-900 font-bold text-lg">E</span>
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm">{idCard.front.schoolName}</h3>
-                    <p className="text-accent-400 text-xs">{idCard.front.schoolShort}</p>
-                  </div>
+            <div className="bg-[#8B5A2B] text-white px-3 py-2 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <img
+                  src="/logo.png"
+                  alt="Logo"
+                  className="w-8 h-8 object-contain bg-white rounded-full p-0.5"
+                />
+                <div>
+                  <h3 className="font-bold text-xs leading-tight">{idCard.front.schoolName}</h3>
+                  <p className="text-[9px] text-white/80 leading-tight">{idCard.front.schoolShort}</p>
                 </div>
               </div>
               <div className="text-right">
-                <span className="bg-accent-500 text-primary-900 text-xs font-bold px-3 py-1 rounded-full">
+                <span className="bg-white text-[#8B5A2B] text-[9px] font-bold px-2 py-0.5 rounded">
                   {idCard.front.cardType}
                 </span>
               </div>
             </div>
 
             {/* Photo and Details */}
-            <div className="flex gap-6">
+            <div className="p-3 flex gap-3">
               <div className="flex-shrink-0">
-                <div className="w-24 h-28 bg-white/20 rounded-lg overflow-hidden border-2 border-accent-400">
+                <div className="w-16 h-20 bg-gray-100 rounded overflow-hidden border border-[#8B5A2B]">
                   {idCard.front.passportUrl ? (
                     <img
                       src={idCard.front.passportUrl}
@@ -154,106 +179,125 @@ export default function StudentIdCard({ data: propData }: StudentIdCardProps) {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <span className="text-3xl">👤</span>
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-xl">
+                      👤
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="flex-1 space-y-2">
-                <div>
-                  <p className="text-accent-400 text-xs">FULL NAME</p>
-                  <p className="font-bold text-lg">{idCard.front.fullName}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <p className="text-accent-400 text-xs">STUDENT ID</p>
-                    <p className="font-semibold">{idCard.front.studentId}</p>
-                  </div>
-                  <div>
-                    <p className="text-accent-400 text-xs">PROGRAMME</p>
-                    <p className="font-semibold">{idCard.front.programme}</p>
-                  </div>
-                  <div>
-                    <p className="text-accent-400 text-xs">CLASS/LEVEL</p>
-                    <p className="font-semibold">{idCard.front.classLevel}</p>
-                  </div>
-                  <div>
-                    <p className="text-accent-400 text-xs">DATE OF BIRTH</p>
-                    <p className="font-semibold">{idCard.front.dateOfBirth}</p>
-                  </div>
+              <div className="flex-1 grid grid-cols-2 gap-x-3 gap-y-1">
+                <div className="col-span-2">
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Full Name</p>
+                  <p className="font-bold text-xs text-gray-900 leading-tight">{idCard.front.fullName}</p>
                 </div>
                 <div>
-                  <p className="text-accent-400 text-xs">VALID UNTIL</p>
-                  <p className="font-semibold">{idCard.front.validUntil}</p>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Student ID</p>
+                  <p className="font-semibold text-[11px] text-gray-900">{idCard.front.studentId}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Programme</p>
+                  <p className="font-semibold text-[11px] text-gray-900">{idCard.front.programme}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Class/Level</p>
+                  <p className="font-semibold text-[11px] text-gray-900">{idCard.front.classLevel}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Gender</p>
+                  <p className="font-semibold text-[11px] text-gray-900">{idCard.front.gender}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">State</p>
+                  <p className="font-semibold text-[11px] text-gray-900">{idCard.front.state}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Date of Birth</p>
+                  <p className="font-semibold text-[11px] text-gray-900">{idCard.front.dateOfBirth}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Valid Until</p>
+                  <p className="font-semibold text-[11px] text-gray-900">{idCard.front.validUntil}</p>
                 </div>
               </div>
             </div>
 
             {/* QR Code */}
-            <div className="mt-6 flex items-center justify-between border-t border-white/20 pt-4">
-              <p className="text-xs text-white/70">Scan to verify identity</p>
-              <div className="bg-white p-2 rounded-lg">
-                <img src={idCard.front.qrCode} alt="QR Code" className="w-16 h-16" />
+            <div className="px-3 pb-2 flex items-center justify-between border-t border-gray-100 pt-2">
+              <p className="text-[9px] text-gray-500">Scan to verify identity</p>
+              <div className="bg-white p-1 rounded border border-gray-200">
+                <img src={idCard.front.qrCode} alt="QR Code" className="w-10 h-10" />
               </div>
             </div>
           </div>
 
           {/* Back */}
           <div
-            className="absolute inset-0 bg-white rounded-2xl p-6 shadow-2xl border-2 border-primary-200"
+            className="absolute inset-0 bg-white rounded-xl border-2 border-[#8B5A2B] shadow-lg"
             style={{
               backfaceVisibility: 'hidden',
               transform: 'rotateY(180deg)',
+              width: '100%',
+              minHeight: '340px',
             }}
           >
             <div className="h-full flex flex-col">
-              <div className="flex items-center gap-2 mb-6 pb-4 border-b border-gray-200">
-                <Shield className="w-6 h-6 text-primary-600" />
-                <h3 className="font-bold text-gray-900">Student Information</h3>
+              <div className="bg-[#8B5A2B] text-white px-3 py-2 flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                <h3 className="font-bold text-xs">Student Information</h3>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="p-3 grid grid-cols-2 gap-x-3 gap-y-1 flex-1">
                 <div>
-                  <p className="text-gray-500 text-xs">Student ID</p>
-                  <p className="font-semibold text-gray-900">{idCard.back.studentId}</p>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Student ID</p>
+                  <p className="font-semibold text-[11px] text-gray-900">{idCard.back.studentId}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs">Programme</p>
-                  <p className="font-semibold text-gray-900">{idCard.back.programme}</p>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Full Name</p>
+                  <p className="font-semibold text-[11px] text-gray-900">{idCard.back.fullName}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs">Department/Category</p>
-                  <p className="font-semibold text-gray-900">{idCard.back.department}</p>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Programme</p>
+                  <p className="font-semibold text-[11px] text-gray-900">{idCard.back.programme}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs">Session</p>
-                  <p className="font-semibold text-gray-900">{idCard.back.session}</p>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Class/Level</p>
+                  <p className="font-semibold text-[11px] text-gray-900">{idCard.back.classLevel}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs">Registration Date</p>
-                  <p className="font-semibold text-gray-900">{idCard.back.registrationDate}</p>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Target Course</p>
+                  <p className="font-semibold text-[11px] text-gray-900">{idCard.back.targetCourse}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs">Phone Number</p>
-                  <p className="font-semibold text-gray-900">{idCard.back.phone}</p>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Target Institution</p>
+                  <p className="font-semibold text-[11px] text-gray-900">{idCard.back.targetInstitution}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Phone</p>
+                  <p className="font-semibold text-[11px] text-gray-900">{idCard.back.phone}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Email</p>
+                  <p className="font-semibold text-[11px] text-gray-900 break-all">{idCard.back.email}</p>
                 </div>
                 <div className="col-span-2">
-                  <p className="text-gray-500 text-xs">Emergency Contact</p>
-                  <p className="font-semibold text-gray-900">{idCard.back.emergencyContact}</p>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Address</p>
+                  <p className="font-semibold text-[11px] text-gray-900">{idCard.back.address}, {idCard.back.state} {idCard.back.lga}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Emergency Contact</p>
+                  <p className="font-semibold text-[11px] text-gray-900">{idCard.back.emergencyContact}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wide">Valid Until</p>
+                  <p className="font-semibold text-[11px] text-gray-900">{idCard.back.validUntil}</p>
                 </div>
               </div>
 
-              <div className="mt-auto">
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
-                  <p className="text-yellow-800 text-sm font-medium">
+              <div className="px-3 pb-2 pt-2 border-t border-gray-100">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2">
+                  <p className="text-yellow-800 text-[9px] font-medium">
                     ⚠️ If found, please return this card to the school administration.
-                  </p>
-                </div>
-                <div className="bg-primary-50 border border-primary-200 rounded-lg p-3">
-                  <p className="text-primary-800 text-sm">
-                    📱 Scan the QR code to verify this student&apos;s identity.
                   </p>
                 </div>
               </div>
@@ -263,18 +307,44 @@ export default function StudentIdCard({ data: propData }: StudentIdCardProps) {
       </div>
 
       {/* Verification Info */}
-      <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-xl">
+      <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-xl no-print">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-            <Shield className="w-5 h-5 text-white" />
+          <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+            <Shield className="w-4 h-4 text-white" />
           </div>
           <div>
-            <p className="font-semibold text-green-800">ID Card Verified</p>
-            <p className="text-green-600 text-sm">This ID card is valid and active</p>
+            <p className="font-semibold text-green-800 text-sm">ID Card Verified</p>
+            <p className="text-green-600 text-xs">This ID card is valid and active</p>
           </div>
         </div>
       </div>
+
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          .perspective-1000,
+          .perspective-1000 *,
+          .perspective-1000 * * {
+            visibility: visible !important;
+          }
+          .perspective-1000 {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            display: block !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+          @page {
+            size: auto;
+            margin: 10mm;
+          }
+        }
+      `}</style>
     </div>
   );
 }
-

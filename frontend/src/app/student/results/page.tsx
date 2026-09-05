@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Award, Calendar, BookOpen, ChevronRight } from 'lucide-react';
 import api from '@/lib/api';
 
@@ -82,12 +83,12 @@ export default function ResultsPage() {
           <Award className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500 text-lg">No results yet</p>
           <p className="text-gray-400 text-sm mt-1">Complete CBTs to see your results here</p>
-          <a
+          <Link
             href="/student/cbt"
             className="mt-4 inline-block px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
           >
             Start CBT Practice
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -102,9 +103,10 @@ export default function ResultsPage() {
 
       <div className="grid gap-4">
         {results.map((result) => (
-          <div
+          <Link
             key={result.id}
-            className="bg-white rounded-xl border border-gray-100 p-6 hover:shadow-md transition-shadow"
+            href={`/student/cbt/results/${result.id}`}
+            className="block bg-white rounded-xl border border-gray-100 p-6 hover:shadow-md transition-shadow"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -131,7 +133,7 @@ export default function ResultsPage() {
                 </p>
               </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>

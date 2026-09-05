@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { CreditCard, Download, CheckCircle, Clock, XCircle } from 'lucide-react';
-import { API_BASE } from '@/lib/api';
+import api from '@/lib/api';
 
 interface Payment {
   id: string;
@@ -23,14 +24,9 @@ export default function PaymentsPage() {
 
   async function fetchPayments() {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE}/payments/my-payments`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setPayments(data.data || []);
-      }
+      const res = await api.getPayments();
+      const data = (res as any).payments || [];
+      setPayments(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch payments:', error);
     } finally {
@@ -83,7 +79,7 @@ export default function PaymentsPage() {
               <CreditCard className="w-5 h-5 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">?{totalPaid.toLocaleString()}</p>
+               <p className="text-2xl font-bold text-gray-900">{totalPaid.toLocaleString()}</p>
               <p className="text-xs text-gray-500">Total Paid</p>
             </div>
           </div>
@@ -136,7 +132,11 @@ export default function PaymentsPage() {
         ) : (
           <div className="divide-y divide-gray-100">
             {payments.map((payment) => (
-              <div key={payment.id} className="p-4 hover:bg-gray-50">
+              <Link
+                key={payment.id}
+                href={`/student/payments/${payment.id}/invoice`}
+                className="block p-4 hover:bg-gray-50 transition-colors"
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     {getStatusIcon(payment.status)}
@@ -153,7 +153,7 @@ export default function PaymentsPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-gray-900">?{payment.amount.toLocaleString()}</p>
+                    <p className="font-semibold text-gray-900">{payment.amount.toLocaleString()}</p>
                     <span
                       className={`text-xs px-2 py-0.5 rounded-full ${getStatusColor(payment.status)}`}
                     >
@@ -161,7 +161,7 @@ export default function PaymentsPage() {
                     </span>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

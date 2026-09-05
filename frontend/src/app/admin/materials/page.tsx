@@ -30,6 +30,7 @@ interface StudySubject {
   description?: string;
   code?: string;
   gradeLevel?: string;
+  examType?: string;
   isActive: boolean;
   topics: StudyTopic[];
 }
@@ -50,7 +51,7 @@ export default function AdminMaterialsPage() {
   const [modalType, setModalType] = useState<ModalType>(null);
   const [editingItem, setEditingItem] = useState<StudySubject | StudyTopic | StudyResource | null>(null);
 
-  const [subjectForm, setSubjectForm] = useState({ name: '', description: '', code: '', gradeLevel: '', isActive: true });
+  const [subjectForm, setSubjectForm] = useState({ name: '', description: '', code: '', gradeLevel: '', examType: '', isActive: true });
   const [topicForm, setTopicForm] = useState({ name: '', description: '', order: 0 });
   const [resourceForm, setResourceForm] = useState({ title: '', type: 'TEXT', description: '', order: 0, fileUrl: '', imageUrl: '', textContent: '' });
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -110,10 +111,10 @@ export default function AdminMaterialsPage() {
   function openSubjectModal(subject?: StudySubject) {
     if (subject) {
       setEditingItem(subject);
-      setSubjectForm({ name: subject.name, description: subject.description || '', code: subject.code || '', gradeLevel: subject.gradeLevel || '', isActive: subject.isActive });
+      setSubjectForm({ name: subject.name, description: subject.description || '', code: subject.code || '', gradeLevel: subject.gradeLevel || '', examType: subject.examType || '', isActive: subject.isActive });
     } else {
       setEditingItem(null);
-      setSubjectForm({ name: '', description: '', code: '', gradeLevel: '', isActive: true });
+      setSubjectForm({ name: '', description: '', code: '', gradeLevel: '', examType: '', isActive: true });
     }
     setModalType('subject');
   }
@@ -406,6 +407,7 @@ export default function AdminMaterialsPage() {
                     <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Name</th>
                     <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Code</th>
                     <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Grade Level</th>
+                    <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Exam Type</th>
                     <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Topics</th>
                     <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Status</th>
                     <th className="text-right px-4 py-3 text-sm font-semibold text-gray-600">Actions</th>
@@ -417,6 +419,7 @@ export default function AdminMaterialsPage() {
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">{subject.name}</td>
                       <td className="px-4 py-3 text-sm text-gray-500">{subject.code || '-'}</td>
                       <td className="px-4 py-3 text-sm text-gray-500">{subject.gradeLevel || '-'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{subject.examType || '-'}</td>
                       <td className="px-4 py-3 text-sm text-gray-500">{subject.topics?.length || 0}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs font-medium px-2 py-1 rounded-full ${subject.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -579,6 +582,17 @@ export default function AdminMaterialsPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Grade Level</label>
                 <input type="text" value={subjectForm.gradeLevel} onChange={(e) => setSubjectForm({ ...subjectForm, gradeLevel: e.target.value })} placeholder="e.g. SSS1-SSS3" className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Exam Type</label>
+                <select value={subjectForm.examType} onChange={(e) => setSubjectForm({ ...subjectForm, examType: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500">
+                  <option value="">None</option>
+                  <option value="JAMB">JAMB</option>
+                  <option value="WAEC">WAEC</option>
+                  <option value="NECO">NECO</option>
+                  <option value="POST-UTME">POST-UTME</option>
+                  <option value="MOCK">MOCK</option>
+                </select>
               </div>
               <div className="flex items-center gap-2">
                 <input type="checkbox" id="subjectActive" checked={subjectForm.isActive} onChange={(e) => setSubjectForm({ ...subjectForm, isActive: e.target.checked })} className="w-4 h-4 text-primary-600 border-gray-300 rounded" />

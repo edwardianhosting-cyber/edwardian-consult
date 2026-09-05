@@ -4,6 +4,7 @@ import prisma from '../lib/prisma';
 import { hashPassword, verifyPassword, generateToken, generatePortalId, generateParentCode, generateStudentPassword } from '../lib/auth';
 import { sendWelcomeEmail } from '../lib/email';
 import { generateStudentEmail, createStudentEmailAccount } from '../lib/whohost';
+import { useReferralCode } from '../services/referral.service';
 
 const router = Router();
 
@@ -46,6 +47,7 @@ const registerSchema = z.object({
   studentType: z.string().optional().nullable(),
   schoolCategory: z.string().optional().nullable(),
   targetSchool: z.string().optional().nullable(),
+  referralCode: z.string().optional().nullable(),
 });
 
 const loginSchema = z.object({
@@ -137,6 +139,13 @@ router.post('/register', async (req: Request, res: Response) => {
       studentEmail,
     ).catch(err => console.error('Welcome email error:', err));
 
+    // Apply referral code if provided
+    let appliedReferralCode: string | undefined;
+    if (validated.referralCode) {
+      const referral = await useReferralCode(validated.referralCode, user.id);
+      appliedReferralCode = referral?.referralCode;
+    }
+
     const token = generateToken({
       userId: user.id,
       email: user.email,
@@ -165,6 +174,7 @@ router.post('/register', async (req: Request, res: Response) => {
           targetCourse: user.targetCourse,
           classLevel: user.classLevel,
           currentSchool: user.currentSchool,
+          referralCode: appliedReferralCode,
         },
         token,
         password: generatedPassword,
@@ -319,6 +329,8 @@ router.post('/parent-login', async (req: Request, res: Response) => {
           id: user.id,
           fullName: user.fullName,
           email: user.email,
+          phone: user.phone,
+          parentPhone: user.parentPhone,
           portalId: user.portalId,
           role: 'PARENT_VIEW',
         },
@@ -350,6 +362,7 @@ router.get('/me', async (req: Request, res: Response) => {
         email: true,
         studentEmail: true,
         phone: true,
+        parentPhone: true,
         role: true,
         portalId: true,
         avatar: true,

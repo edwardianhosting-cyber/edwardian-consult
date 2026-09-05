@@ -12,6 +12,13 @@ import {
   createMockExam,
   publishMockExam,
   unpublishMockExam,
+  getAllMockExamsForTeacher,
+  getAllMockExamsForAdmin,
+  updateMockExam,
+  deleteMockExam,
+  getCBTResultById,
+  getAdminCBTStats,
+  getAllCBTResultsForAdmin,
 } from '../services/cbt.service';
 
 const router = Router();
@@ -88,6 +95,19 @@ router.get('/results', authenticate, async (req: Request, res: Response) => {
   }
 });
 
+// Get single CBT result by ID
+router.get('/results/:id', authenticate, async (req: Request, res: Response) => {
+  try {
+    const result = await getCBTResultById(req.user!.userId, req.params.id);
+    if (!result) {
+      return res.status(404).json({ success: false, message: 'Result not found' });
+    }
+    res.json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch result details' });
+  }
+});
+
 // Get performance analysis
 router.get('/performance', authenticate, async (req: Request, res: Response) => {
   try {
@@ -135,6 +155,68 @@ router.patch('/mock-exams/:id/unpublish', authenticate, authorize('ADMIN', 'TEAC
     res.json({ success: true, data: exam, message: 'Mock exam unpublished' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to unpublish mock exam' });
+  }
+});
+
+// Mock Exams - Teacher/Admin: get all mock exams (including drafts)
+router.get('/mock-exams/admin/all', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+  try {
+    const exams = await getAllMockExamsForTeacher(req.user!.userId);
+    res.json({ success: true, data: exams });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch mock exams' });
+  }
+});
+
+// Mock Exams - Teacher/Admin: update mock exam
+router.put('/mock-exams/:id', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+  try {
+    const exam = await updateMockExam(req.params.id, req.body);
+    res.json({ success: true, data: exam });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update mock exam' });
+  }
+});
+
+// Mock Exams - Teacher/Admin: delete mock exam
+router.delete('/mock-exams/:id', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+  try {
+    await deleteMockExam(req.params.id);
+    res.json({ success: true, message: 'Mock exam deleted' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete mock exam' });
+  }
+});
+
+// Admin: get all mock exams
+router.get('/admin/mock-exams', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const exams = await getAllMockExamsForAdmin();
+    res.json({ success: true, data: exams });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch mock exams' });
+  }
+});
+
+// Admin: get CBT statistics
+router.get('/admin/stats', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const stats = await getAdminCBTStats();
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch stats' });
+  }
+});
+
+// Admin: get all CBT results
+router.get('/admin/results', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const data = await getAllCBTResultsForAdmin(page, limit);
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch results' });
   }
 });
 

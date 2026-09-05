@@ -1,20 +1,72 @@
 import { Router, Request, Response } from 'express';
-import { authenticate } from '../middleware/auth.middleware';
+import { authenticate, authorize } from '../middleware/auth.middleware';
 import {
   getJAMBSubjects,
+  getAllJambSubjects,
   getSubjectCombinations,
   getSubjectCombinationByCourse,
   checkSubjectCombination,
   getJAMBSyllabus,
   getJAMBNews,
   getJAMBDeadlines,
+  getAllJambDeadlines,
+  createJambDeadline,
+  updateJambDeadline,
+  deleteJambDeadline,
+  createJambSubject,
+  updateJambSubject,
+  deleteJambSubject,
+  createJambSyllabus,
+  updateJambSyllabus,
+  deleteJambSyllabus,
   getCAPSGuidance,
   getChangeOfCourseGuidance,
   calculateJAMBScore,
   getJAMBResources,
 } from '../services/jamb.service';
+import prisma from '../lib/prisma';
 
 const router = Router();
+
+// Admin: Get all JAMB syllabus
+router.get('/admin/syllabus', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const syllabus = await getJAMBSyllabus();
+    res.json({ success: true, data: syllabus });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch syllabus' });
+  }
+});
+
+// Admin: Create JAMB syllabus
+router.post('/admin/syllabus', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const syllabus = await createJambSyllabus(req.body);
+    res.status(201).json({ success: true, data: syllabus });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to create syllabus' });
+  }
+});
+
+// Admin: Update JAMB syllabus
+router.put('/admin/syllabus/:id', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const syllabus = await updateJambSyllabus(req.params.id, req.body);
+    res.json({ success: true, data: syllabus });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update syllabus' });
+  }
+});
+
+// Admin: Delete JAMB syllabus
+router.delete('/admin/syllabus/:id', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    await deleteJambSyllabus(req.params.id);
+    res.json({ success: true, message: 'Syllabus deleted' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete syllabus' });
+  }
+});
 
 // Get all JAMB subjects
 router.get('/subjects', authenticate, async (req: Request, res: Response) => {
@@ -88,6 +140,86 @@ router.get('/deadlines', authenticate, async (req: Request, res: Response) => {
     res.json({ success: true, data: deadlines });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch deadlines' });
+  }
+});
+
+// Admin: Get all JAMB deadlines
+router.get('/admin/deadlines', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const deadlines = await getAllJambDeadlines();
+    res.json({ success: true, data: deadlines });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch deadlines' });
+  }
+});
+
+// Admin: Create JAMB deadline
+router.post('/admin/deadlines', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const deadline = await createJambDeadline(req.body);
+    res.status(201).json({ success: true, data: deadline });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to create deadline' });
+  }
+});
+
+// Admin: Update JAMB deadline
+router.put('/admin/deadlines/:id', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const deadline = await updateJambDeadline(req.params.id, req.body);
+    res.json({ success: true, data: deadline });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update deadline' });
+  }
+});
+
+// Admin: Delete JAMB deadline
+router.delete('/admin/deadlines/:id', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    await deleteJambDeadline(req.params.id);
+    res.json({ success: true, message: 'Deadline deleted' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete deadline' });
+  }
+});
+
+// Admin: Get all JAMB subjects
+router.get('/admin/subjects', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const subjects = await getAllJambSubjects();
+    res.json({ success: true, data: subjects });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch subjects' });
+  }
+});
+
+// Admin: Create JAMB subject
+router.post('/admin/subjects', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const subject = await createJambSubject(req.body);
+    res.status(201).json({ success: true, data: subject });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to create subject' });
+  }
+});
+
+// Admin: Update JAMB subject
+router.put('/admin/subjects/:id', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const subject = await updateJambSubject(req.params.id, req.body);
+    res.json({ success: true, data: subject });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update subject' });
+  }
+});
+
+// Admin: Delete JAMB subject
+router.delete('/admin/subjects/:id', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    await deleteJambSubject(req.params.id);
+    res.json({ success: true, message: 'Subject deleted' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete subject' });
   }
 });
 

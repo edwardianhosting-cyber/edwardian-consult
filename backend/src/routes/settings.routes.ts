@@ -1,9 +1,10 @@
 import { Router, Request, Response } from 'express';
+import { authenticate, authorize } from '../middleware/auth.middleware';
 import prisma from '../lib/prisma';
 
 const router = Router();
 
-// Get all settings
+// Get all settings (public)
 router.get('/', async (req: Request, res: Response) => {
   try {
     const settings = await prisma.settings.findMany({
@@ -19,7 +20,7 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-// Get single setting by key
+// Get single setting by key (public)
 router.get('/:key', async (req: Request, res: Response) => {
   try {
     const setting = await prisma.settings.findUnique({
@@ -34,8 +35,8 @@ router.get('/:key', async (req: Request, res: Response) => {
   }
 });
 
-// Update or create setting
-router.put('/:key', async (req: Request, res: Response) => {
+// Update or create setting (admin only)
+router.put('/:key', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     const { value } = req.body;
     const setting = await prisma.settings.upsert({
@@ -49,8 +50,8 @@ router.put('/:key', async (req: Request, res: Response) => {
   }
 });
 
-// Bulk update settings
-router.post('/bulk', async (req: Request, res: Response) => {
+// Bulk update settings (admin only)
+router.post('/bulk', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     const updates = req.body as Record<string, string>;
     const results = await Promise.all(

@@ -126,6 +126,7 @@ export default function RegisterPage() {
     state: '',
     lga: '',
     passport: null as File | null,
+    referralCode: '',
 
     // Academic
     currentSchool: '',
@@ -341,6 +342,17 @@ export default function RegisterPage() {
                   placeholder="Parent's phone number"
                   className="input-field"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Referral Code (optional)</label>
+                <input
+                  type="text"
+                  value={formData.referralCode}
+                  onChange={(e) => updateFormData({ referralCode: e.target.value.toUpperCase() })}
+                  placeholder="Enter referral code"
+                  className="input-field"
+                />
+                <p className="text-xs text-gray-500 mt-1">If you were invited by a friend, enter their referral code here.</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>

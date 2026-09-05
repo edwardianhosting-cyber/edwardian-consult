@@ -6,6 +6,7 @@ export async function createStudySubject(data: {
   description?: string;
   code?: string;
   gradeLevel?: string;
+  examType?: string;
   icon?: string;
   imageUrl?: string;
 }) {
@@ -14,10 +15,11 @@ export async function createStudySubject(data: {
   });
 }
 
-export async function getStudySubjects(filters?: { isActive?: boolean; gradeLevel?: string }) {
+export async function getStudySubjects(filters?: { isActive?: boolean; gradeLevel?: string; examType?: string }) {
   const where: any = {};
   if (filters?.isActive !== undefined) where.isActive = filters.isActive;
   if (filters?.gradeLevel) where.gradeLevel = filters.gradeLevel;
+  if (filters?.examType) where.examType = filters.examType;
 
   return prisma.studySubject.findMany({
     where,

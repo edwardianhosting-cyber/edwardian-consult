@@ -220,6 +220,7 @@ model StudySubject {
   description String?
   code        String?  @unique
   gradeLevel   String?
+  examType    String?
   icon        String?
   imageUrl    String?
   isActive    Boolean  @default(true)
@@ -230,6 +231,7 @@ model StudySubject {
 
   @@index([name])
   @@index([isActive])
+  @@index([examType])
 }
 
 model StudyTopic {
@@ -693,6 +695,9 @@ model Institution {
   location     String?
   state        String?
   website      String?
+  logo         String?
+  coverImage   String?
+  description  String?
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -714,6 +719,8 @@ model InstitutionCourse {
   postUtmeCutoff     Float?
   applicationFee     Float?
   deadline           DateTime?
+  coverImage         String?
+  description        String?
   isActive           Boolean  @default(true)
 
   institution        Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
@@ -744,6 +751,26 @@ model AdmissionApplication {
   @@index([status])
 }
 
+model AdmissionAnnouncement {
+  id            String   @id @default(uuid())
+  title         String
+  content       String
+  excerpt       String?
+  image         String?
+  category      String   @default("GENERAL")
+  isPublished   Boolean  @default(true)
+  isPinned      Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  publishedAt   DateTime @default(now())
+  authorId      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category])
+  @@index([isPublished])
+  @@index([publishedAt])
+}
+
 model Referral {
   id            String   @id @default(uuid())
   referrerId    String
@@ -752,6 +779,7 @@ model Referral {
   status        String   @default("PENDING")
   registeredAt  DateTime?
   rewardGiven   Boolean  @default(false)
+  referredUserId String?
   createdAt     DateTime @default(now())
 
   @@index([referrerId])
@@ -890,4 +918,45 @@ model TimetableEntry {
 
   @@index([day])
   @@index([examType])
+}
+
+model JambDeadline {
+  id          String    @id @default(uuid())
+  event       String
+  date        DateTime
+  description String?
+  isActive    Boolean   @default(true)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([isActive])
+  @@index([date])
+}
+
+model JambSubject {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  code        String    @unique
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([name])
+  @@index([isActive])
+}
+
+model JambSyllabus {
+  id          String    @id @default(uuid())
+  subject     String
+  year        Int
+  topics      Json
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([subject])
+  @@index([year])
+  @@index([isActive])
 }

@@ -35,11 +35,19 @@ export default function TeacherCBT() {
   async function fetchMockExams() {
     try {
       setLoading(true);
-      const data = await api.getMockExams();
+      const data = await api.getAllMockExams();
       if (data?.success && data.data) {
-        setMockExams(data.data);
+        const exams = data.data.map((exam: any) => ({
+          ...exam,
+          status: exam.isPublished ? 'PUBLISHED' : 'DRAFT',
+        }));
+        setMockExams(exams);
       } else if (Array.isArray(data)) {
-        setMockExams(data);
+        const exams = data.map((exam: any) => ({
+          ...exam,
+          status: exam.isPublished ? 'PUBLISHED' : 'DRAFT',
+        }));
+        setMockExams(exams);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to fetch mock exams');

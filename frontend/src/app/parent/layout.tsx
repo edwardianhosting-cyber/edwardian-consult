@@ -72,6 +72,7 @@ export default function ParentLayout({ children }: ParentLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [avatarDropdownOpen, setAvatarDropdownOpen] = useState(false);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -215,14 +216,58 @@ export default function ParentLayout({ children }: ParentLayoutProps) {
                 <Bell className="w-5 h-5 text-gray-600" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
               </Link>
-              <div className="flex items-center gap-2 p-1 hover:bg-gray-100 rounded-lg cursor-pointer">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <User className="w-4 h-4 text-green-600" />
-                </div>
-                <span className="hidden sm:block text-sm font-medium text-gray-700">
-                  {user?.fullName || 'Parent'}
-                </span>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
+              <div className="relative">
+                <button
+                  onClick={() => setAvatarDropdownOpen(!avatarDropdownOpen)}
+                  className="flex items-center gap-2 p-1 hover:bg-gray-100 rounded-lg"
+                >
+                  {user?.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user?.fullName || 'Parent'}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <User className="w-4 h-4 text-green-600" />
+                    </div>
+                  )}
+                  <span className="hidden sm:block text-sm font-medium text-gray-700">
+                    {user?.fullName || 'Parent'}
+                  </span>
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                </button>
+                {avatarDropdownOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setAvatarDropdownOpen(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                      <Link
+                        href="/parent/dashboard"
+                        onClick={() => setAvatarDropdownOpen(false)}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Dashboard
+                      </Link>
+                      <Link
+                        href="/parent/settings"
+                        onClick={() => setAvatarDropdownOpen(false)}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Settings
+                      </Link>
+                      <Link
+                        href="/parent/profile"
+                        onClick={() => setAvatarDropdownOpen(false)}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Profile
+                      </Link>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

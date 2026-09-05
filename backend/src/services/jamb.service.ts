@@ -1,6 +1,7 @@
 import { prisma } from '../lib/prisma';
 
 interface JAMBSubject {
+  id?: string;
   name: string;
   code: string;
 }
@@ -34,30 +35,22 @@ interface JAMBNews {
   createdAt: Date;
 }
 
-const JAMB_SUBJECTS: JAMBSubject[] = [
-  { name: 'English Language', code: 'ENG' },
-  { name: 'Mathematics', code: 'MTH' },
-  { name: 'Physics', code: 'PHY' },
-  { name: 'Chemistry', code: 'CHM' },
-  { name: 'Biology', code: 'BIO' },
-  { name: 'Government', code: 'GOV' },
-  { name: 'Economics', code: 'ECO' },
-  { name: 'Geography', code: 'GEO' },
-  { name: 'Literature in English', code: 'LIT' },
-  { name: 'Christian Religious Studies', code: 'CRS' },
-  { name: 'Islamic Religious Studies', code: 'IRS' },
-  { name: 'Civic Education', code: 'CIV' },
-  { name: 'Commerce', code: 'COM' },
-  { name: 'Accounting', code: 'ACC' },
-  { name: 'Agricultural Science', code: 'AGR' },
-  { name: 'Further Mathematics', code: 'FMT' },
-  { name: 'History', code: 'HIS' },
-  { name: 'Arabic', code: 'ARA' },
-  { name: 'French', code: 'FRE' },
-  { name: 'Hausa', code: 'HAU' },
-  { name: 'Igbo', code: 'IGB' },
-  { name: 'Yoruba', code: 'YOR' },
-];
+interface JAMBDeadline {
+  id: string;
+  event: string;
+  date: Date;
+  description: string;
+  isActive: boolean;
+  order: number;
+}
+
+interface AdminJambSubject {
+  id: string;
+  name: string;
+  code: string;
+  description: string | null;
+  isActive: boolean;
+}
 
 const COURSE_SUBJECT_COMBINATIONS: JAMBSubjectCombination[] = [
   {
@@ -211,214 +204,79 @@ const COURSE_SUBJECT_COMBINATIONS: JAMBSubjectCombination[] = [
   },
 ];
 
-const SYLLABUS_DATA: JAMBSyllabus[] = [
-  {
-    id: '1',
-    subject: 'English Language',
-    topics: [
-      {
-        name: 'Comprehension',
-        subtopics: [
-          'Passage analysis',
-          'Summary writing',
-          'Inference and deduction',
-          'Vocabulary in context',
-        ],
-      },
-      {
-        name: 'Grammar',
-        subtopics: [
-          'Parts of speech',
-          'Tenses',
-          'Subject-verb agreement',
-          'Punctuation',
-          'Sentence structure',
-        ],
-      },
-      {
-        name: 'Oral English',
-        subtopics: [
-          'Vowels and consonants',
-          'Stress and intonation',
-          'Phonetic symbols',
-          'Rhyme and rhythm',
-        ],
-      },
-      {
-        name: 'Literature',
-        subtopics: [
-          'Prose',
-          'Drama',
-          'Poetry',
-          'Literary devices',
-        ],
-      },
-    ],
-    year: 2026,
-  },
-  {
-    id: '2',
-    subject: 'Mathematics',
-    topics: [
-      {
-        name: 'Algebra',
-        subtopics: [
-          'Equations (linear, quadratic, simultaneous)',
-          'Polynomials',
-          'Inequalities',
-          'Sequences and series',
-        ],
-      },
-      {
-        name: 'Geometry and Trigonometry',
-        subtopics: [
-          'Plane geometry',
-          'Coordinate geometry',
-          'Trigonometric ratios',
-          'Circle theorems',
-        ],
-      },
-      {
-        name: 'Calculus',
-        subtopics: [
-          'Differentiation',
-          'Integration',
-          'Applications of calculus',
-        ],
-      },
-      {
-        name: 'Statistics and Probability',
-        subtopics: [
-          'Measures of central tendency',
-          'Measures of dispersion',
-          'Probability distributions',
-        ],
-      },
-    ],
-    year: 2026,
-  },
-  {
-    id: '3',
-    subject: 'Physics',
-    topics: [
-      {
-        name: 'Mechanics',
-        subtopics: [
-          'Motion (kinematics, dynamics)',
-          'Forces',
-          'Energy and work',
-          'Momentum',
-          'Gravitation',
-        ],
-      },
-      {
-        name: 'Electricity and Magnetism',
-        subtopics: [
-          'Electric fields and charges',
-          'Current electricity',
-          'Magnetism',
-          'Electromagnetic induction',
-        ],
-      },
-      {
-        name: 'Waves and Optics',
-        subtopics: [
-          'Wave motion',
-          'Sound waves',
-          'Light waves',
-          'Optical instruments',
-        ],
-      },
-      {
-        name: 'Modern Physics',
-        subtopics: [
-          'Atomic structure',
-          'Radioactivity',
-          'Quantum physics',
-        ],
-      },
-    ],
-    year: 2026,
-  },
-  {
-    id: '4',
-    subject: 'Chemistry',
-    topics: [
-      {
-        name: 'Physical Chemistry',
-        subtopics: [
-          'Atomic structure',
-          'Chemical bonding',
-          'States of matter',
-          'Thermodynamics',
-          'Electrochemistry',
-        ],
-      },
-      {
-        name: 'Organic Chemistry',
-        subtopics: [
-          'Hydrocarbons',
-          'Functional groups',
-          'Reactions and mechanisms',
-          'Polymers',
-        ],
-      },
-      {
-        name: 'Inorganic Chemistry',
-        subtopics: [
-          'Periodic table',
-          'Transition metals',
-          'Acids, bases, and salts',
-        ],
-      },
-    ],
-    year: 2026,
-  },
-  {
-    id: '5',
-    subject: 'Biology',
-    topics: [
-      {
-        name: 'Cell Biology',
-        subtopics: [
-          'Cell structure',
-          'Cell division',
-          'Cell physiology',
-        ],
-      },
-      {
-        name: 'Genetics',
-        subtopics: [
-          'Mendelian genetics',
-          'Molecular genetics',
-          'Evolution',
-        ],
-      },
-      {
-        name: 'Ecology',
-        subtopics: [
-          'Ecosystems',
-          'Energy flow',
-          'Population ecology',
-          'Conservation',
-        ],
-      },
-      {
-        name: 'Human Physiology',
-        subtopics: [
-          'Digestive system',
-          'Circulatory system',
-          'Nervous system',
-          'Reproductive system',
-        ],
-      },
-    ],
-    year: 2026,
-  },
-];
+function mapDbSubject(s: any): AdminJambSubject {
+  return {
+    id: s.id,
+    name: s.name,
+    code: s.code,
+    description: s.description,
+    isActive: s.isActive,
+  };
+}
+
+function mapDbSyllabus(s: any): JAMBSyllabus {
+  return {
+    id: s.id,
+    subject: s.subject,
+    topics: s.topics,
+    year: s.year,
+  };
+}
+
+function mapDbDeadline(d: any): JAMBDeadline {
+  return {
+    id: d.id,
+    event: d.event,
+    date: d.date,
+    description: d.description || '',
+    isActive: d.isActive,
+    order: d.order,
+  };
+}
+
+function getFallbackSubjects(): JAMBSubject[] {
+  return [
+    { name: 'English Language', code: 'ENG' },
+    { name: 'Mathematics', code: 'MTH' },
+    { name: 'Physics', code: 'PHY' },
+    { name: 'Chemistry', code: 'CHM' },
+    { name: 'Biology', code: 'BIO' },
+    { name: 'Government', code: 'GOV' },
+    { name: 'Economics', code: 'ECO' },
+    { name: 'Geography', code: 'GEO' },
+    { name: 'Literature in English', code: 'LIT' },
+    { name: 'Christian Religious Studies', code: 'CRS' },
+    { name: 'Islamic Religious Studies', code: 'IRS' },
+    { name: 'Civic Education', code: 'CIV' },
+    { name: 'Commerce', code: 'COM' },
+    { name: 'Accounting', code: 'ACC' },
+    { name: 'Agricultural Science', code: 'AGR' },
+    { name: 'Further Mathematics', code: 'FMT' },
+    { name: 'History', code: 'HIS' },
+    { name: 'Arabic', code: 'ARA' },
+    { name: 'French', code: 'FRE' },
+    { name: 'Hausa', code: 'HAU' },
+    { name: 'Igbo', code: 'IGB' },
+    { name: 'Yoruba', code: 'YOR' },
+  ];
+}
 
 export async function getJAMBSubjects(): Promise<JAMBSubject[]> {
-  return JAMB_SUBJECTS;
+  const subjects = await prisma.jambSubject.findMany({
+    where: { isActive: true },
+    orderBy: { name: 'asc' },
+  });
+  if (subjects.length === 0) {
+    return getFallbackSubjects();
+  }
+  return subjects.map(s => ({ id: s.id, name: s.name, code: s.code }));
+}
+
+export async function getAllJambSubjects(): Promise<AdminJambSubject[]> {
+  const subjects = await prisma.jambSubject.findMany({
+    orderBy: { name: 'asc' },
+  });
+  return subjects.map(mapDbSubject);
 }
 
 export async function getSubjectCombinations(): Promise<JAMBSubjectCombination[]> {
@@ -475,10 +333,24 @@ export async function checkSubjectCombination(
 }
 
 export async function getJAMBSyllabus(subject?: string): Promise<JAMBSyllabus[]> {
-  if (subject) {
-    return SYLLABUS_DATA.filter(s => s.subject.toLowerCase() === subject.toLowerCase());
-  }
-  return SYLLABUS_DATA;
+  const where = subject ? { subject: { contains: subject, mode: 'insensitive' as const } } : undefined;
+  const items = await prisma.jambSyllabus.findMany({
+    where,
+    orderBy: [{ year: 'desc' }, { subject: 'asc' }],
+  });
+  return items.map(mapDbSyllabus);
+}
+
+export async function createJambSyllabus(data: { subject: string; year: number; topics: any[]; isActive?: boolean }) {
+  return prisma.jambSyllabus.create({ data });
+}
+
+export async function updateJambSyllabus(id: string, data: { subject?: string; year?: number; topics?: any[]; isActive?: boolean }) {
+  return prisma.jambSyllabus.update({ where: { id }, data });
+}
+
+export async function deleteJambSyllabus(id: string) {
+  return prisma.jambSyllabus.delete({ where: { id } });
 }
 
 export async function getJAMBNews(): Promise<JAMBNews[]> {
@@ -492,54 +364,65 @@ export async function getJAMBNews(): Promise<JAMBNews[]> {
   }) as any;
 }
 
-export async function getJAMBDeadlines(): Promise<{
+export async function getJAMBDeadlines(): Promise<JAMBDeadline[]> {
+  const deadlines = await prisma.jambDeadline.findMany({
+    where: { isActive: true },
+    orderBy: [{ order: 'asc' }, { date: 'asc' }],
+  });
+  return deadlines.map(mapDbDeadline);
+}
+
+export async function getAllJambDeadlines() {
+  const deadlines = await prisma.jambDeadline.findMany({
+    orderBy: [{ order: 'asc' }, { date: 'asc' }],
+  });
+  return deadlines.map(mapDbDeadline);
+}
+
+export async function createJambDeadline(data: {
   event: string;
-  date: string;
-  description: string;
-}[]> {
-  const currentYear = new Date().getFullYear();
-  return [
-    {
-      event: 'JAMB Registration',
-      date: `${currentYear}-01-31`,
-      description: 'Deadline for JAMB UTME registration',
-    },
-    {
-      event: 'JAMB Mock Examination',
-      date: `${currentYear}-03-15`,
-      description: 'JAMB Mock UTME examination date',
-    },
-    {
-      event: 'JAMB UTME Examination',
-      date: `${currentYear}-04-18`,
-      description: 'Main JAMB UTME examination begins',
-    },
-    {
-      event: 'JAMB Result Release',
-      date: `${currentYear}-05-20`,
-      description: 'Expected JAMB result release date',
-    },
-    {
-      event: 'Post-UTME Registration',
-      date: `${currentYear}-06-01`,
-      description: 'Post-UTME registration begins for most institutions',
-    },
-    {
-      event: 'Post-UTME Examination',
-      date: `${currentYear}-08-15`,
-      description: 'Post-UTME examinations for most institutions',
-    },
-    {
-      event: 'Admission List',
-      date: `${currentYear}-09-01`,
-      description: 'First batch admission list release',
-    },
-    {
-      event: 'JAMB CAPS',
-      date: `${currentYear}-09-15`,
-      description: 'JAMB CAPS admission status checking',
-    },
-  ];
+  date: Date;
+  description?: string;
+  isActive?: boolean;
+  order?: number;
+}) {
+  return prisma.jambDeadline.create({ data });
+}
+
+export async function updateJambDeadline(id: string, data: {
+  event?: string;
+  date?: Date;
+  description?: string;
+  isActive?: boolean;
+  order?: number;
+}) {
+  return prisma.jambDeadline.update({ where: { id }, data });
+}
+
+export async function deleteJambDeadline(id: string) {
+  return prisma.jambDeadline.delete({ where: { id } });
+}
+
+export async function createJambSubject(data: {
+  name: string;
+  code: string;
+  description?: string;
+  isActive?: boolean;
+}) {
+  return prisma.jambSubject.create({ data });
+}
+
+export async function updateJambSubject(id: string, data: {
+  name?: string;
+  code?: string;
+  description?: string;
+  isActive?: boolean;
+}) {
+  return prisma.jambSubject.update({ where: { id }, data });
+}
+
+export async function deleteJambSubject(id: string) {
+  return prisma.jambSubject.delete({ where: { id } });
 }
 
 export async function getCAPSGuidance(): Promise<{

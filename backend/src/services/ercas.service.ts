@@ -244,6 +244,17 @@ export async function getUserPayments(userId: string, page = 1, limit = 20) {
   };
 }
 
+export async function getPaymentById(id: string) {
+  return prisma.payment.findUnique({
+    where: { id },
+    include: {
+      user: {
+        select: { fullName: true, email: true, phone: true },
+      },
+    },
+  });
+}
+
 export async function getPaymentStats(userId: string) {
   const payments = await prisma.payment.findMany({
     where: { userId, status: 'COMPLETED' },

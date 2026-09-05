@@ -41,6 +41,8 @@ import assignmentRoutes from './routes/assignment.routes';
 import studyScheduleRoutes from './routes/study-schedule.routes';
 import timetableRoutes from './routes/timetable.routes';
 import settingsRoutes from './routes/settings.routes';
+import uploadRoutes from './routes/upload.routes';
+import analyticsRoutes from './routes/analytics.routes';
 import { errorHandler } from './middleware/error.middleware';
 
 const app: Application = express();
@@ -172,9 +174,11 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/gamification', gamificationRoutes);
 app.use('/api/jamb', jambRoutes);
+app.use('/api/upload', uploadRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Database health check endpoint (tests DB connection and reconnects if needed)
 app.get('/api/db-health', async (req: Request, res: Response) => {

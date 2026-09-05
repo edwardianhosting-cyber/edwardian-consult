@@ -47,7 +47,7 @@ export default function InstitutionsPage() {
   }
 
   const filteredMatches = matches.filter(m =>
-    m.institution.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (m.institution?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     m.course.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -115,84 +115,90 @@ export default function InstitutionsPage() {
                 match.meetsRequirement ? 'border-green-200' : 'border-gray-100'
               }`}
             >
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="font-bold text-gray-900">{match.institution.name}</h3>
-                  {match.institution.abbreviation && (
-                    <p className="text-sm text-gray-500">({match.institution.abbreviation})</p>
-                  )}
-                </div>
-                {match.meetsRequirement ? (
-                  <span className="flex items-center gap-1 text-green-600 text-sm font-medium bg-green-50 px-3 py-1 rounded-full">
-                    <CheckCircle className="w-4 h-4" />
-                    Eligible
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1 text-red-600 text-sm font-medium bg-red-50 px-3 py-1 rounded-full">
-                    <XCircle className="w-4 h-4" />
-                    Below Cutoff
-                  </span>
-                )}
-              </div>
-
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Course:</span>
-                  <span className="font-medium text-gray-900">{match.course}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Type:</span>
-                  <span className="text-gray-900">{match.institution.type}</span>
-                </div>
-                {match.institution.location && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Location:</span>
-                    <span className="text-gray-900">{match.institution.location}, {match.institution.state}</span>
-                  </div>
-                )}
-                {match.utmeCutoff && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">UTME Cutoff:</span>
-                    <span className="font-medium text-gray-900">{match.utmeCutoff}</span>
-                  </div>
-                )}
-                {match.postUtmeRequired && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Post-UTME:</span>
-                    <span className="text-gray-900">Required {match.postUtmeCutoff && `(${match.postUtmeCutoff}%)`}</span>
-                  </div>
-                )}
-                {match.applicationFee && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Application Fee:</span>
-                    <span className="text-gray-900">₦{match.applicationFee.toLocaleString()}</span>
-                  </div>
-                )}
-                {match.deadline && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Deadline:</span>
-                    <span className="text-gray-900">{new Date(match.deadline).toLocaleDateString()}</span>
-                  </div>
-                )}
-              </div>
-
-              {match.jambSubjects.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <p className="text-xs text-gray-500 mb-2">Required JAMB Subjects:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {match.jambSubjects.map((subject, i) => (
-                      <span key={i} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                        {subject}
+              {!match.institution ? (
+                <div className="text-sm text-gray-500">Institution data unavailable</div>
+              ) : (
+                <>
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="font-bold text-gray-900">{match.institution.name}</h3>
+                      {match.institution.abbreviation && (
+                        <p className="text-sm text-gray-500">({match.institution.abbreviation})</p>
+                      )}
+                    </div>
+                    {match.meetsRequirement ? (
+                      <span className="flex items-center gap-1 text-green-600 text-sm font-medium bg-green-50 px-3 py-1 rounded-full">
+                        <CheckCircle className="w-4 h-4" />
+                        Eligible
                       </span>
-                    ))}
+                    ) : (
+                      <span className="flex items-center gap-1 text-red-600 text-sm font-medium bg-red-50 px-3 py-1 rounded-full">
+                        <XCircle className="w-4 h-4" />
+                        Below Cutoff
+                      </span>
+                    )}
                   </div>
-                </div>
-              )}
 
-              <button className="mt-4 w-full py-2 bg-primary-50 text-primary-600 rounded-lg text-sm font-medium hover:bg-primary-100 flex items-center justify-center gap-2">
-                <ExternalLink className="w-4 h-4" />
-                View Details
-              </button>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Course:</span>
+                      <span className="font-medium text-gray-900">{match.course}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Type:</span>
+                      <span className="text-gray-900">{match.institution.type}</span>
+                    </div>
+                    {match.institution.location && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Location:</span>
+                        <span className="text-gray-900">{match.institution.location}, {match.institution.state}</span>
+                      </div>
+                    )}
+                    {match.utmeCutoff && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">UTME Cutoff:</span>
+                        <span className="font-medium text-gray-900">{match.utmeCutoff}</span>
+                      </div>
+                    )}
+                    {match.postUtmeRequired && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Post-UTME:</span>
+                        <span className="text-gray-900">Required {match.postUtmeCutoff && `(${match.postUtmeCutoff}%)`}</span>
+                      </div>
+                    )}
+                    {match.applicationFee && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Application Fee:</span>
+                        <span className="text-gray-900">₦{match.applicationFee.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {match.deadline && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Deadline:</span>
+                        <span className="text-gray-900">{new Date(match.deadline).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {match.jambSubjects.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <p className="text-xs text-gray-500 mb-2">Required JAMB Subjects:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {match.jambSubjects.map((subject, i) => (
+                          <span key={i} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                            {subject}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <button className="mt-4 w-full py-2 bg-primary-50 text-primary-600 rounded-lg text-sm font-medium hover:bg-primary-100 flex items-center justify-center gap-2">
+                    <ExternalLink className="w-4 h-4" />
+                    View Details
+                  </button>
+                </>
+              )}
             </div>
           ))}
         </div>

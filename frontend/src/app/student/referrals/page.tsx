@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, Copy, Gift, TrendingUp, CheckCircle } from 'lucide-react';
+import { Users, Copy, Gift, TrendingUp, CheckCircle, Lock } from 'lucide-react';
 import api from '@/lib/api';
 
 interface ReferralStats {
@@ -28,6 +28,20 @@ export default function ReferralsPage() {
   const [email, setEmail] = useState('');
   const [copied, setCopied] = useState(false);
   const [referralCode, setReferralCode] = useState('');
+  const [inviteMessage, setInviteMessage] = useState('');
+  const [applyCode, setApplyCode] = useState('');
+  const [applyStatus, setApplyStatus] = useState<string | null>(null);
+  const [codeLocked, setCodeLocked] = useState(false);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      const code = user.portalId.slice(-8).toUpperCase();
+      setReferralCode(code);
+      setInviteMessage(`Join Edwardian Educational Consult! Use my referral code: ${code}`);
+    }
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -36,17 +50,22 @@ export default function ReferralsPage() {
   async function fetchData() {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
       const userStr = localStorage.getItem('user');
       
       if (userStr) {
         const user = JSON.parse(userStr);
-        setReferralCode(user.portalId.slice(-8).toUpperCase());
+        const code = user.portalId.slice(-8).toUpperCase();
+        setReferralCode(code);
+        setInviteMessage(`Join Edwardian Educational Consult! Use my referral code: ${code}`);
       }
 
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timed out')), 10000)
+      );
+
       const [statsRes, referralsRes] = await Promise.all([
-        api.getReferralStats(),
-        api.getReferrals(),
+        Promise.race([api.getReferralStats(), timeoutPromise]),
+        Promise.race([api.getReferrals(), timeoutPromise]),
       ]);
 
       if (statsRes.data) {
@@ -76,6 +95,25 @@ export default function ReferralsPage() {
     }
   }
 
+  async function applyReferralCode(e: React.FormEvent) {
+    e.preventDefault();
+    if (!applyCode || codeLocked) return;
+
+    try {
+      setApplyStatus('Applying...');
+      const res = await api.applyReferralCode(applyCode);
+      if (res.success) {
+        setApplyStatus('Referral code applied successfully!');
+        setCodeLocked(true);
+        setApplyCode('');
+      } else {
+        setApplyStatus(res.message || 'Failed to apply referral code');
+      }
+    } catch (error: any) {
+      setApplyStatus(error.message || 'Failed to apply referral code');
+    }
+  }
+
   function copyCode() {
     navigator.clipboard.writeText(referralCode);
     setCopied(true);
@@ -102,15 +140,26 @@ export default function ReferralsPage() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-primary-200">Your Referral Code</p>
-            <p className="text-3xl font-bold mt-1">{referralCode}</p>
+            <p className="text-3xl font-bold mt-1 select-none" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>{referralCode}</p>
+            {codeLocked && (
+              <p className="text-xs text-primary-200 mt-1 flex items-center gap-1">
+                <Lock className="w-3 h-3" />
+                Code locked after use
+              </p>
+            )}
           </div>
-          <button
-            onClick={copyCode}
-            className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg flex items-center gap-2 transition-colors"
-          >
-            {copied ? <CheckCircle className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-            {copied ? 'Copied!' : 'Copy Code'}
-          </button>
+          {!codeLocked && (
+            <button
+              onClick={copyCode}
+              className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg flex items-center gap-2 transition-colors"
+            >
+              {copied ? <CheckCircle className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+              {copied ? 'Copied!' : 'Copy Code'}
+            </button>
+          )}
+        </div>
+        <div className="mt-4 p-3 bg-white/10 rounded-lg">
+          <p className="text-sm text-primary-100">{inviteMessage}</p>
         </div>
       </div>
 
@@ -155,6 +204,9 @@ export default function ReferralsPage() {
             Send Invite
           </button>
         </form>
+        <p className="text-xs text-gray-500 mt-2">
+          An invitation email with your referral code will be sent automatically.
+        </p>
       </div>
 
       {/* Referral List */}

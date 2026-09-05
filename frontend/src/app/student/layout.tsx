@@ -121,6 +121,7 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [avatarDropdownOpen, setAvatarDropdownOpen] = useState(false);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -272,18 +273,59 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
             </div>
             <div className="flex items-center gap-3">
               <NotificationBell />
-              <Link
-                href="/student/profile"
-                className="flex items-center gap-2 p-1 hover:bg-gray-100 rounded-lg"
-              >
-                <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                  <User className="w-4 h-4 text-primary-600" />
-                </div>
-                <span className="hidden sm:block text-sm font-medium text-gray-700">
-                  {user?.fullName || 'Student'}
-                </span>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              </Link>
+              <div className="relative">
+                <button
+                  onClick={() => setAvatarDropdownOpen(!avatarDropdownOpen)}
+                  className="flex items-center gap-2 p-1 hover:bg-gray-100 rounded-lg"
+                >
+                  {user?.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user?.fullName || 'Student'}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+                      <User className="w-4 h-4 text-primary-600" />
+                    </div>
+                  )}
+                  <span className="hidden sm:block text-sm font-medium text-gray-700">
+                    {user?.fullName || 'Student'}
+                  </span>
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                </button>
+                {avatarDropdownOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setAvatarDropdownOpen(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                      <Link
+                        href="/student/dashboard"
+                        onClick={() => setAvatarDropdownOpen(false)}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Dashboard
+                      </Link>
+                      <Link
+                        href="/student/settings"
+                        onClick={() => setAvatarDropdownOpen(false)}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Settings
+                      </Link>
+                      <Link
+                        href="/student/profile"
+                        onClick={() => setAvatarDropdownOpen(false)}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Profile
+                      </Link>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </header>

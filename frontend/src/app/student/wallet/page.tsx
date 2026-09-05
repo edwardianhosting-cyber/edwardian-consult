@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Wallet, CreditCard, Download, Eye, FileText, Award, CheckCircle, Clock, Plus, ArrowDownRight, ArrowUpRight, RefreshCw } from 'lucide-react';
+import { Wallet, CreditCard, Plus, ArrowDownRight, RefreshCw } from 'lucide-react';
 import api from '@/lib/api';
 
 interface WalletItem {
@@ -26,7 +26,6 @@ export default function WalletPage() {
   const [depositing, setDepositing] = useState(false);
   const [depositAmount, setDepositAmount] = useState('');
   const [showDepositModal, setShowDepositModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
     fetchWalletData();
@@ -35,13 +34,17 @@ export default function WalletPage() {
   async function fetchWalletData() {
     try {
       setLoading(true);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timed out')), 10000)
+      );
+
       const [itemsRes, balanceRes] = await Promise.all([
-        api.getWalletItems(),
-        api.getWalletBalance(),
+        Promise.race([api.getWalletItems(), timeoutPromise]),
+        Promise.race([api.getWalletBalance(), timeoutPromise]),
       ]);
       const itemsData = itemsRes as any;
       const balanceData = balanceRes as any;
-      setItems(itemsData.data || []);
+      setItems(Array.isArray(itemsData.data) ? itemsData.data : []);
       setBalance(balanceData.data || { balance: 0, currency: 'NGN' });
     } catch (error) {
       console.error('Failed to fetch wallet data:', error);
@@ -70,55 +73,11 @@ export default function WalletPage() {
     }
   }
 
-  const tabs = [
-    { id: 'all', label: 'All', icon: Wallet },
-    { id: 'ID_CARD', label: 'ID Cards', icon: CreditCard },
-    { id: 'CERTIFICATE', label: 'Certificates', icon: Award },
-    { id: 'RECEIPT', label: 'Receipts', icon: FileText },
-    { id: 'RESULT', label: 'Results', icon: CheckCircle },
-  ];
-
-  const filteredItems = activeTab === 'all' ? items : items.filter((item) => item.type === activeTab);
-
-  function getTypeIcon(type: string) {
-    switch (type) {
-      case 'ID_CARD':
-        return <CreditCard className="w-5 h-5 text-blue-600" />;
-      case 'CERTIFICATE':
-        return <Award className="w-5 h-5 text-purple-600" />;
-      case 'RECEIPT':
-        return <FileText className="w-5 h-5 text-green-600" />;
-      case 'RESULT':
-        return <CheckCircle className="w-5 h-5 text-yellow-600" />;
-      case 'PAYMENT_RECORD':
-        return <Wallet className="w-5 h-5 text-primary-600" />;
-      default:
-        return <FileText className="w-5 h-5 text-gray-600" />;
-    }
-  }
-
-  function getTypeLabel(type: string) {
-    switch (type) {
-      case 'ID_CARD':
-        return 'ID Card';
-      case 'CERTIFICATE':
-        return 'Certificate';
-      case 'RECEIPT':
-        return 'Receipt';
-      case 'RESULT':
-        return 'Result';
-      case 'PAYMENT_RECORD':
-        return 'Payment';
-      default:
-        return type;
-    }
-  }
-
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">My Wallet</h1>
-        <p className="text-gray-600 mt-1">Manage your balance and view documents</p>
+        <p className="text-gray-600 mt-1">Manage your balance and view history</p>
       </div>
 
       {/* Balance Card */}
@@ -139,81 +98,40 @@ export default function WalletPage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                activeTab === tab.id
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Items List */}
+      {/* History */}
       <div className="bg-white rounded-xl border border-gray-100">
+        <div className="p-4 border-b border-gray-100">
+          <h2 className="font-semibold text-gray-900">History</h2>
+        </div>
         {loading ? (
           <div className="p-8 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
           </div>
-        ) : filteredItems.length === 0 ? (
+        ) : items.length === 0 ? (
           <div className="p-8 text-center">
             <Wallet className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No items in your wallet</p>
+            <p className="text-gray-500">No history yet</p>
             <p className="text-sm text-gray-400 mt-1">
-              Your documents and certificates will appear here
+              Your transaction history will appear here
             </p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {filteredItems.map((item) => (
-              <div key={item.id} className="p-4 hover:bg-gray-50">
+            {items.map((item) => (
+              <div key={item.id} className="p-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                      {getTypeIcon(item.type)}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{item.title}</p>
-                      {item.description && (
-                        <p className="text-sm text-gray-500">{item.description}</p>
-                      )}
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
-                          {getTypeLabel(item.type)}
-                        </span>
-                        <span className="text-xs text-gray-400">
-                          {new Date(item.createdAt).toLocaleDateString('en-NG', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                          })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {item.fileUrl && (
-                      <a
-                        href={item.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 hover:bg-gray-100 rounded-lg"
-                        title="Download"
-                      >
-                        <Download className="w-4 h-4 text-gray-600" />
-                      </a>
+                  <div>
+                    <p className="font-medium text-gray-900">{item.title}</p>
+                    {item.description && (
+                      <p className="text-sm text-gray-500">{item.description}</p>
                     )}
+                    <p className="text-xs text-gray-400 mt-1">
+                      {new Date(item.createdAt).toLocaleDateString('en-NG', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </p>
                   </div>
                 </div>
               </div>

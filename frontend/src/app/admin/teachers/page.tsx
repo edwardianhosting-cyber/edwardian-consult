@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Search, Edit2, Trash2, Eye, UserCheck, UserX, X } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Eye, UserCheck, UserX, X, Download } from 'lucide-react';
 import { api } from '@/lib/api';
+import { ALL_SUBJECTS } from '@/lib/subjects';
 
 interface Teacher {
   id: string;
@@ -34,7 +35,7 @@ export default function AdminTeachersPage() {
     role: 'TEACHER',
     isActive: true,
     password: '',
-    examTypes: '',
+    examTypes: [] as string[],
   });
 
   useEffect(() => {
@@ -74,7 +75,7 @@ export default function AdminTeachersPage() {
       role: 'TEACHER',
       isActive: true,
       password: '',
-      examTypes: '',
+      examTypes: [],
     });
     setShowModal(true);
   }
@@ -88,7 +89,7 @@ export default function AdminTeachersPage() {
       role: 'TEACHER',
       isActive: teacher.isActive,
       password: '',
-      examTypes: (teacher.examTypes as string[])?.join(', ') || '',
+      examTypes: (teacher.examTypes as string[]) || [],
     });
     setShowModal(true);
   }
@@ -103,11 +104,6 @@ export default function AdminTeachersPage() {
     setSubmitting(true);
     setError(null);
     try {
-      const subjects = formData.examTypes
-        .split(',')
-        .map(s => s.trim())
-        .filter(s => s.length > 0);
-      
       const payload: any = {
         fullName: formData.fullName,
         email: formData.email,
@@ -120,8 +116,8 @@ export default function AdminTeachersPage() {
         payload.password = formData.password;
       }
 
-      if (subjects.length > 0) {
-        payload.examTypes = subjects;
+      if (formData.examTypes.length > 0) {
+        payload.examTypes = formData.examTypes;
       }
 
       if (editingTeacher) {
@@ -139,7 +135,7 @@ export default function AdminTeachersPage() {
         role: 'TEACHER',
         isActive: true,
         password: '',
-        examTypes: '',
+        examTypes: [],
       });
     } catch (err: any) {
       setError(err.message || 'Failed to save teacher');
@@ -182,13 +178,22 @@ export default function AdminTeachersPage() {
           <h1 className="text-2xl font-bold text-gray-900">Teachers</h1>
           <p className="text-gray-600 mt-1">Manage teachers and their assignments</p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Teacher
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => window.print()}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Export PDF
+          </button>
+          <button
+            onClick={openCreateModal}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Teacher
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -223,7 +228,7 @@ export default function AdminTeachersPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="printable-area bg-white rounded-xl border border-gray-100 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
@@ -362,14 +367,23 @@ export default function AdminTeachersPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Assigned Subjects (comma-separated)</label>
-                <input
-                  type="text"
+                <label className="block text-sm font-medium text-gray-700 mb-1">Assigned Subjects</label>
+                <select
+                  multiple
                   value={formData.examTypes}
-                  onChange={(e) => setFormData({ ...formData, examTypes: e.target.value })}
-                  placeholder="e.g. Mathematics, Physics, Chemistry"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
+                  onChange={(e) => {
+                    const selected = Array.from(e.target.selectedOptions, option => option.value);
+                    setFormData({ ...formData, examTypes: selected });
+                  }}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent h-40"
+                >
+                  {ALL_SUBJECTS.map((subject) => (
+                    <option key={subject} value={subject}>
+                      {subject}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple subjects</p>
               </div>
               {!editingTeacher && (
                 <div>
@@ -464,6 +478,33 @@ export default function AdminTeachersPage() {
           </div>
         </div>
       )}
+
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          .printable-area,
+          .printable-area *,
+          .printable-area * * {
+            visibility: visible !important;
+          }
+          .printable-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            display: block !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+          @page {
+            size: auto;
+            margin: 15mm;
+          }
+        }
+      `}</style>
     </div>
   );
 }
