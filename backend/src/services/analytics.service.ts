@@ -113,21 +113,21 @@ export async function getAnalyticsTimeSeries(range: '7d' | '30d' | '90d' = '30d'
   }
 
   for (const row of userDays) {
-    const key = row.date instanceof Date ? row.date.toISOString().slice(0, 10) : String(row.date);
+    const key = String(row.date);
     const current = map.get(key) || { students: 0, exams: 0, revenue: 0 };
     current.students = Number(row.count);
     map.set(key, current);
   }
 
   for (const row of examDays) {
-    const key = row.date instanceof Date ? row.date.toISOString().slice(0, 10) : String(row.date);
+    const key = String(row.date);
     const current = map.get(key) || { students: 0, exams: 0, revenue: 0 };
     current.exams = Number(row.count);
     map.set(key, current);
   }
 
   for (const row of paymentDays) {
-    const key = row.date instanceof Date ? row.date.toISOString().slice(0, 10) : String(row.date);
+    const key = String(row.date);
     const current = map.get(key) || { students: 0, exams: 0, revenue: 0 };
     current.revenue = Number(row.revenue || 0);
     map.set(key, current);

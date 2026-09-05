@@ -11,6 +11,7 @@ interface WalletItem {
   title: string;
   description?: string;
   reference?: string;
+  metadata?: any;
   createdAt: string;
   user?: {
     fullName: string;
