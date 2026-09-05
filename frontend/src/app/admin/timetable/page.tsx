@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import api from '@/lib/api';
+import api, { studyApi } from '@/lib/api';
 import { Calendar, Plus, Trash2, Save } from 'lucide-react';
 
 interface TimetableEntry {
@@ -61,7 +61,7 @@ export default function AdminTimetablePage() {
 
   async function fetchSubjects() {
     try {
-      const data = await api.studyApi.getSubjects();
+      const data = await studyApi.getSubjects();
       setSubjects(data.data || []);
     } catch (err) {
       console.error('Failed to fetch subjects:', err);
