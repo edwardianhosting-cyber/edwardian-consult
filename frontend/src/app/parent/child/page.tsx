@@ -97,7 +97,7 @@ export default function ParentChildPage() {
     return null;
   }
 
-  const InfoRow = ({ label, value, icon: Icon }: { label: string; value: string; icon?: any }) => (
+  const InfoRow = ({ label, value, icon: Icon }: { label: string; value?: string; icon?: any }) => (
     <div className="p-3 bg-gray-50 border border-gray-100 rounded-lg">
       <p className="text-xs text-gray-500 mb-0.5">{label}</p>
       <p className="font-medium text-gray-900 flex items-center gap-2">

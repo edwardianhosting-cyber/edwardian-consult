@@ -113,7 +113,7 @@ export default function ProfilePage() {
     return null;
   }
 
-  const InfoRow = ({ label, value }: { label: string; value: string }) => (
+  const InfoRow = ({ label, value }: { label: string; value?: string }) => (
     <div className="p-3 bg-gray-50 border border-gray-100 rounded-lg">
       <p className="text-xs text-gray-500 mb-0.5">{label}</p>
       <p className="font-medium text-gray-900">{value || '—'}</p>
