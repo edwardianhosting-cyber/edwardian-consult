@@ -113,27 +113,38 @@ export async function getAllWalletItems(filters?: { type?: string; userId?: stri
   if (filters?.type) where.type = filters.type;
   if (filters?.userId) where.userId = filters.userId;
 
-  return prisma.walletItem.findMany({
+  const items = await prisma.walletItem.findMany({
     where,
-    include: {
-      user: {
-        select: { fullName: true, email: true, portalId: true },
-      },
-    },
     orderBy: { createdAt: 'desc' },
   });
+
+  const userIds = [...new Set(items.map((i) => i.userId))];
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, fullName: true, email: true, portalId: true },
+  });
+
+  const userMap = new Map(users.map((u) => [u.id, u]));
+
+  return items.map((item) => ({
+    ...item,
+    user: userMap.get(item.userId),
+  }));
 }
 
 export async function getMonthlyWalletStats() {
   const items = await prisma.walletItem.findMany({
     where: { type: 'PAYMENT_RECORD' },
-    include: {
-      user: {
-        select: { fullName: true, email: true },
-      },
-    },
     orderBy: { createdAt: 'desc' },
   });
+
+  const userIds = [...new Set(items.map((i) => i.userId))];
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, fullName: true, email: true },
+  });
+
+  const userMap = new Map(users.map((u) => [u.id, u]));
 
   const monthlyMap = new Map<string, { month: string; year: number; total: number; count: number; items: any[] }>();
 
@@ -151,7 +162,7 @@ export async function getMonthlyWalletStats() {
     const amount = typeof metadata?.amount === 'number' ? metadata.amount : 0;
     stats.total += amount;
     stats.count += 1;
-    stats.items.push(item);
+    stats.items.push({ ...item, user: userMap.get(item.userId) });
   }
 
   return Array.from(monthlyMap.values()).sort((a, b) => b.year - a.year || a.month.localeCompare(b.month));

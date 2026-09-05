@@ -123,9 +123,12 @@ export const api = {
   getResults: () => fetchAPI('/cbt/results'),
   
   // Leaderboard
-  getLeaderboard: (examType?: string) => {
-    const query = examType ? `?examType=${encodeURIComponent(examType)}` : '';
-    return fetchAPI(`/gamification/leaderboard${query}`);
+  getLeaderboard: (limit?: number, examType?: string) => {
+    const query = new URLSearchParams();
+    if (limit) query.set('limit', String(limit));
+    if (examType) query.set('examType', examType);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return fetchAPI(`/gamification/leaderboard${qs}`);
   },
   getMyRank: () => fetchAPI('/gamification/rank'),
   
