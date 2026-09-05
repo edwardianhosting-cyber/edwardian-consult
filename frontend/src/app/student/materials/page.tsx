@@ -170,6 +170,25 @@ export default function MaterialsPage() {
         </div>
       )}
 
+      {/* Exam Type Filter */}
+      {view === 'subjects' && (
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Exam Type</label>
+          <select
+            value={selectedExamType}
+            onChange={(e) => setSelectedExamType(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          >
+            <option value="">All Exam Types</option>
+            <option value="JAMB">JAMB</option>
+            <option value="WAEC">WAEC</option>
+            <option value="NECO">NECO</option>
+            <option value="GED">GED</option>
+            <option value="IGCSE">IGCSE</option>
+          </select>
+        </div>
+      )}
+
       {/* Subjects View */}
       {view === 'subjects' && (
         <div>
@@ -451,4 +470,9 @@ function ResourceCard({ resource }: { resource: StudyResource }) {
             className="inline-flex items-center gap-2 px-4 py-2 bg-primary-50 text-primary-600 rounded-lg hover:bg-primary-100"
           >
             Open File
-          </
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}

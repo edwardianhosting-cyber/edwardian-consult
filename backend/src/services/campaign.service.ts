@@ -31,32 +31,44 @@ export async function createCampaign(params: CreateCampaignParams) {
 }
 
 export async function getRecipientCount(targetType: string, targetFilter?: any) {
-  const where: any = { isActive: true, role: 'STUDENT' };
+  const where: any = { isActive: true };
 
   switch (targetType) {
     case 'JAMB':
+      where.role = 'STUDENT';
       where.programme = 'JAMB';
       break;
     case 'WAEC':
+      where.role = 'STUDENT';
       where.programme = 'WAEC';
       break;
     case 'NECO':
+      where.role = 'STUDENT';
       where.programme = 'NECO';
       break;
     case 'SS3':
+      where.role = 'STUDENT';
       where.classLevel = 'SS3';
       break;
     case 'COURSE':
+      where.role = 'STUDENT';
       where.targetCourse = targetFilter?.course;
       break;
     case 'INSTITUTION':
+      where.role = 'STUDENT';
       where.targetInstitution = targetFilter?.institution;
       break;
     case 'SELECTED':
+      where.role = 'STUDENT';
       where.id = { in: targetFilter?.userIds || [] };
+      break;
+    case 'PARENTS':
+      where.role = 'STUDENT';
+      where.parentEmail = { not: null };
       break;
     case 'ALL':
     default:
+      where.role = 'STUDENT';
       break;
   }
 
@@ -64,35 +76,50 @@ export async function getRecipientCount(targetType: string, targetFilter?: any) 
 }
 
 export async function getRecipients(targetType: string, targetFilter?: any) {
-  const where: any = { isActive: true, role: 'STUDENT' };
+  const where: any = { isActive: true };
 
   switch (targetType) {
     case 'JAMB':
+      where.role = 'STUDENT';
       where.programme = 'JAMB';
       break;
     case 'WAEC':
+      where.role = 'STUDENT';
       where.programme = 'WAEC';
       break;
     case 'NECO':
+      where.role = 'STUDENT';
       where.programme = 'NECO';
       break;
     case 'SS3':
+      where.role = 'STUDENT';
       where.classLevel = 'SS3';
       break;
     case 'COURSE':
+      where.role = 'STUDENT';
       where.targetCourse = targetFilter?.course;
       break;
     case 'INSTITUTION':
+      where.role = 'STUDENT';
       where.targetInstitution = targetFilter?.institution;
       break;
     case 'SELECTED':
+      where.role = 'STUDENT';
       where.id = { in: targetFilter?.userIds || [] };
+      break;
+    case 'PARENTS':
+      where.role = 'STUDENT';
+      where.parentEmail = { not: null };
+      break;
+    case 'ALL':
+    default:
+      where.role = 'STUDENT';
       break;
   }
 
   return prisma.user.findMany({
     where,
-    select: { id: true, email: true, studentEmail: true, fullName: true },
+    select: { id: true, email: true, studentEmail: true, fullName: true, parentEmail: true },
   });
 }
 
@@ -115,8 +142,13 @@ export async function sendCampaign(campaignId: string) {
 
   for (const recipient of recipients) {
     try {
-      const email = recipient.studentEmail || recipient.email;
-      
+      let email: string;
+      if (campaign.targetType === 'PARENTS') {
+        email = recipient.parentEmail || recipient.studentEmail || recipient.email;
+      } else {
+        email = recipient.studentEmail || recipient.email;
+      }
+
       await sendEmail({
         to: email,
         subject: campaign.subject,
@@ -134,11 +166,15 @@ export async function sendCampaign(campaignId: string) {
 
       sentCount++;
     } catch (error) {
+      const email = campaign.targetType === 'PARENTS'
+        ? recipient.parentEmail || recipient.studentEmail || recipient.email
+        : recipient.studentEmail || recipient.email;
+
       await prisma.campaignLog.create({
         data: {
           campaignId,
           recipientId: recipient.id,
-          recipientEmail: recipient.studentEmail || recipient.email,
+          recipientEmail: email,
           status: 'FAILED',
           errorMsg: error instanceof Error ? error.message : 'Unknown error',
         },
@@ -208,4 +244,16 @@ export async function getCampaignStats(campaignId: string) {
       failed: stats.FAILED || 0,
     },
   };
+}
+
+export async function updateCampaign(id: string, data: Partial<CreateCampaignParams>) {
+  return prisma.emailCampaign.update({
+    where: { id },
+    data,
+  });
+}
+
+export async function deleteCampaign(id: string) {
+  await prisma.campaignLog.deleteMany({ where: { campaignId: id } });
+  return prisma.emailCampaign.delete({ where: { id } });
 }

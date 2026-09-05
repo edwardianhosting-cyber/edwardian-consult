@@ -12,6 +12,7 @@ model User {
   portalId         String           @unique
   parentAccessCode String           @unique @default(uuid())
   parentPhone      String?
+  parentEmail      String?
   fullName         String
   email            String           @unique
   emailVerified    Boolean          @default(false)
@@ -415,7 +416,7 @@ model Program {
   title       String
   slug        String   @unique
   description String
-  features    String?
+  features    Json?
   icon        String?
   imageUrl    String?
   price       Float?

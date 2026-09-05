@@ -169,31 +169,69 @@ export async function getLeaderboard(limit = 50, examType?: string) {
     .sort((a, b) => b.correctAnswers - a.correctAnswers)
     .slice(0, limit);
 
-  const userIds = sorted.map((r) => r.userId);
   const users = await prisma.user.findMany({
-    where: { id: { in: userIds } },
-    select: { id: true, fullName: true, avatar: true, portalId: true, examTypes: true },
+    where: { id: { in: sorted.map(s => s.userId) } },
+    select: { id: true, fullName: true, email: true, portalId: true },
   });
 
-  const userMap = new Map(users.map((u) => [u.id, u]));
+  const userMap = new Map(users.map(u => [u.id, u]));
 
-  return sorted.map((r, index) => {
-    const user = userMap.get(r.userId);
-    const totalQ = r.totalQuestions || 1;
-    const correct = r.correctAnswers || 0;
-    return {
-      rank: index + 1,
-      userId: r.userId,
-      name: user?.fullName || 'Unknown',
-      avatar: user?.avatar,
-      portalId: user?.portalId,
-      examTypes: user?.examTypes || [],
-      cbtCount: r.count,
-      totalQuestions: totalQ,
-      correctAnswers: correct,
-      accuracy: Math.round((correct / totalQ) * 100),
-    };
+  return sorted.map((item, idx) => ({
+    rank: idx + 1,
+    userId: item.userId,
+    user: userMap.get(item.userId),
+    correctAnswers: item.correctAnswers,
+    totalQuestions: item.totalQuestions,
+    examsTaken: item.count,
+  }));
+}
+
+export async function getAllBadges(filters?: { category?: string; isActive?: boolean }) {
+  const where: any = {};
+  if (filters?.category) where.category = filters.category;
+  if (filters?.isActive !== undefined) where.isActive = filters.isActive;
+
+  return prisma.badge.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      _count: { select: { studentBadges: true } },
+    },
   });
+}
+
+export async function createBadge(data: {
+  name: string;
+  description: string;
+  icon: string;
+  category: string;
+  requirement: any;
+  points: number;
+  isActive?: boolean;
+}) {
+  return prisma.badge.create({
+    data,
+  });
+}
+
+export async function updateBadge(id: string, data: {
+  name?: string;
+  description?: string;
+  icon?: string;
+  category?: string;
+  requirement?: any;
+  points?: number;
+  isActive?: boolean;
+}) {
+  return prisma.badge.update({
+    where: { id },
+    data,
+  });
+}
+
+export async function deleteBadge(id: string) {
+  await prisma.studentBadge.deleteMany({ where: { badgeId: id } });
+  return prisma.badge.delete({ where: { id } });
 }
 
 export async function getUserRank(userId: string) {
@@ -202,7 +240,7 @@ export async function getUserRank(userId: string) {
   if (!userEntry || userEntry.rank > 10) return null;
   return {
     rank: userEntry.rank,
-    accuracy: userEntry.accuracy,
-    cbtCount: userEntry.cbtCount,
+    accuracy: (userEntry as any).accuracy,
+    cbtCount: (userEntry as any).examsTaken,
   };
 }

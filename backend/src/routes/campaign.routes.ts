@@ -5,6 +5,8 @@ import {
   sendCampaign,
   getCampaigns,
   getCampaignStats,
+  updateCampaign,
+  deleteCampaign,
 } from '../services/campaign.service';
 
 const router = Router();
@@ -50,6 +52,26 @@ router.post('/:id/send', authenticate, authorize('ADMIN'), async (req: Request, 
     res.json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to send campaign' });
+  }
+});
+
+// Update campaign
+router.put('/:id', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const campaign = await updateCampaign(req.params.id, req.body);
+    res.json({ success: true, data: campaign });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update campaign' });
+  }
+});
+
+// Delete campaign
+router.delete('/:id', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    await deleteCampaign(req.params.id);
+    res.json({ success: true, message: 'Campaign deleted' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete campaign' });
   }
 });
 

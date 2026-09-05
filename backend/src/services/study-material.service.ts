@@ -228,6 +228,14 @@ export async function uploadSyllabus(file: Express.Multer.File, subjectId: strin
     text = file.buffer.toString('utf-8');
   }
 
+  return parseSyllabusText(text, subjectId);
+}
+
+export async function uploadSyllabusText(text: string, subjectId: string) {
+  return parseSyllabusText(text, subjectId);
+}
+
+async function parseSyllabusText(text: string, subjectId: string) {
   const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
   const topicNames: string[] = [];
   const seen = new Set<string>();
@@ -265,4 +273,28 @@ export async function uploadSyllabus(file: Express.Multer.File, subjectId: strin
   }
 
   return { text, topics };
+}
+
+export async function bulkUploadTopics(subjectId: string, csvText: string) {
+  const lines = csvText.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  const topics: { id: string; name: string }[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line) continue;
+
+    const parts = line.split(',').map(p => p.trim()).filter(Boolean);
+    const name = parts[0] || `Topic ${i + 1}`;
+    const description = parts[1] || '';
+
+    const topic = await createStudyTopic({
+      subjectId,
+      name,
+      description,
+      order: i,
+    });
+    topics.push({ id: topic.id, name: topic.name });
+  }
+
+  return topics;
 }

@@ -35,7 +35,7 @@ interface StudySubject {
   topics: StudyTopic[];
 }
 
-type View = 'subjects' | 'topics' | 'resources';
+type View = 'subjects' | 'subject-detail' | 'topics' | 'resources';
 type ModalType = 'subject' | 'topic' | 'resource' | null;
 
 export default function AdminMaterialsPage() {
@@ -56,6 +56,10 @@ export default function AdminMaterialsPage() {
   const [resourceForm, setResourceForm] = useState({ title: '', type: 'TEXT', description: '', order: 0, fileUrl: '', imageUrl: '', textContent: '' });
   const [uploadingFile, setUploadingFile] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [syllabusText, setSyllabusText] = useState('');
+  const [uploadingSyllabus, setUploadingSyllabus] = useState(false);
+  const [uploadingTopicsCsv, setUploadingTopicsCsv] = useState(false);
+  const [selectedCsvFile, setSelectedCsvFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (view === 'subjects') fetchSubjects();
@@ -106,6 +110,11 @@ export default function AdminMaterialsPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function openSubjectDetail(subject: StudySubject) {
+    setSelectedSubject(subject);
+    setView('subject-detail');
   }
 
   function openSubjectModal(subject?: StudySubject) {
@@ -259,26 +268,36 @@ export default function AdminMaterialsPage() {
     }
   }
 
-  async function uploadSyllabus(subjectId: string) {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.pdf,.doc,.docx,.txt';
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      setSaving(true);
-      setError(null);
-      try {
-        await studyApi.uploadSyllabus(subjectId, file);
-        setSuccess('Syllabus uploaded and topics generated');
-        fetchSubjects();
-      } catch (err: any) {
-        setError(err.message || 'Failed to upload syllabus');
-      } finally {
-        setSaving(false);
-      }
-    };
-    input.click();
+  async function handleSyllabusTextUpload() {
+    if (!selectedSubject || !syllabusText.trim()) return;
+    setUploadingSyllabus(true);
+    setError(null);
+    try {
+      const result = await studyApi.uploadSyllabusText(selectedSubject.id, syllabusText);
+      setSuccess(`Syllabus uploaded successfully. ${result.topics.length} topics created.`);
+      setSyllabusText('');
+      fetchSubjects();
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload syllabus text');
+    } finally {
+      setUploadingSyllabus(false);
+    }
+  }
+
+  async function handleTopicsCsvUpload() {
+    if (!selectedSubject || !selectedCsvFile) return;
+    setUploadingTopicsCsv(true);
+    setError(null);
+    try {
+      const result = await studyApi.uploadTopicsCsv(selectedSubject.id, selectedCsvFile);
+      setSuccess(`Topics uploaded successfully. ${result.data?.length || 0} topics created.`);
+      setSelectedCsvFile(null);
+      fetchSubjects();
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload topics from CSV');
+    } finally {
+      setUploadingTopicsCsv(false);
+    }
   }
 
   async function deleteTopic(id: string) {
@@ -316,6 +335,9 @@ export default function AdminMaterialsPage() {
     } else if (view === 'topics') {
       setView('subjects');
       setSelectedSubject(null);
+    } else if (view === 'subject-detail') {
+      setView('subjects');
+      setSelectedSubject(null);
     }
   }
 
@@ -326,6 +348,7 @@ export default function AdminMaterialsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Study Materials</h1>
           <p className="text-gray-600 mt-1">
             {view === 'subjects' && 'Manage subjects'}
+            {view === 'subject-detail' && selectedSubject && `Manage ${selectedSubject.name}`}
             {view === 'topics' && selectedSubject && `Manage topics for ${selectedSubject.name}`}
             {view === 'resources' && selectedTopic && `Manage resources for ${selectedTopic.name}`}
           </p>
@@ -371,7 +394,7 @@ export default function AdminMaterialsPage() {
           <button onClick={() => { setView('subjects'); setSelectedSubject(null); setSelectedTopic(null); }} className="hover:text-primary-600">
             Subjects
           </button>
-          {view === 'topics' && selectedSubject && (
+          {(view === 'subject-detail' || view === 'topics') && selectedSubject && (
             <>
               <ChevronRight className="w-4 h-4" />
               <span className="text-gray-900">{selectedSubject.name}</span>
@@ -428,10 +451,7 @@ export default function AdminMaterialsPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => uploadSyllabus(subject.id)} className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded" title="Upload syllabus">
-                            <Upload className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => { setSelectedSubject(subject); setView('topics'); }} className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded" title="View topics">
+                          <button onClick={() => openSubjectDetail(subject)} className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded" title="Manage subject">
                             <BookOpen className="w-4 h-4" />
                           </button>
                           <button onClick={() => openSubjectModal(subject)} className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded">
@@ -448,6 +468,125 @@ export default function AdminMaterialsPage() {
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Subject Detail View */}
+      {view === 'subject-detail' && selectedSubject && (
+        <div className="space-y-6">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="bg-white rounded-xl border border-gray-100 p-6">
+              <h3 className="font-semibold text-gray-900 mb-4">Upload Syllabus</h3>
+              <p className="text-sm text-gray-500 mb-4">Enter syllabus text below. Topic headings will be automatically extracted and created.</p>
+              <textarea
+                value={syllabusText}
+                onChange={(e) => setSyllabusText(e.target.value)}
+                rows={8}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 mb-4"
+                placeholder="Enter syllabus text here...&#10;&#10;Example:&#10;Topic 1: Introduction to the Subject&#10;Topic 2: Core Concepts&#10;Topic 3: Advanced Topics"
+              />
+              <button
+                onClick={handleSyllabusTextUpload}
+                disabled={uploadingSyllabus || !syllabusText.trim()}
+                className="w-full py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {uploadingSyllabus ? 'Uploading...' : 'Upload Syllabus'}
+              </button>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-100 p-6">
+              <h3 className="font-semibold text-gray-900 mb-4">Upload Topics via CSV</h3>
+              <p className="text-sm text-gray-500 mb-4">Upload a CSV file with topic names. First column should be topic name, second column (optional) should be description.</p>
+              <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center mb-4">
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={(e) => setSelectedCsvFile(e.target.files?.[0] || null)}
+                  className="hidden"
+                  id="csvUpload"
+                />
+                <label htmlFor="csvUpload" className="cursor-pointer">
+                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600">{selectedCsvFile ? selectedCsvFile.name : 'Click to upload CSV file'}</p>
+                  <p className="text-xs text-gray-400 mt-1">CSV format: topic_name, description</p>
+                </label>
+              </div>
+              <button
+                onClick={() => {
+                  const csv = 'topic_name,description\nTopic 1: Introduction,Basic introduction to the topic\nTopic 2: Core Concepts,Understanding the core concepts\nTopic 3: Advanced Topics,Advanced study material';
+                  const blob = new Blob([csv], { type: 'text/csv' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'sample_topics.csv';
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }}
+                className="mb-2 text-sm text-primary-600 hover:text-primary-700 underline"
+              >
+                Download Sample CSV
+              </button>
+              <button
+                onClick={handleTopicsCsvUpload}
+                disabled={uploadingTopicsCsv || !selectedCsvFile}
+                className="w-full py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {uploadingTopicsCsv ? 'Uploading...' : 'Upload Topics'}
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+            <div className="p-4 border-b flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900">Topics ({selectedSubject.topics?.length || 0})</h3>
+              <button
+                onClick={() => { setSelectedSubject(selectedSubject); setView('topics'); }}
+                className="text-sm text-primary-600 hover:text-primary-700"
+              >
+                View All Topics
+              </button>
+            </div>
+            {selectedSubject.topics.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">No topics yet. Upload syllabus or CSV to create topics.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100">
+                      <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Name</th>
+                      <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Description</th>
+                      <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Order</th>
+                      <th className="text-right px-4 py-3 text-sm font-semibold text-gray-600">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedSubject.topics.map((topic) => (
+                      <tr key={topic.id} className="border-b border-gray-50 hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{topic.name}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">{topic.description || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500">{topic.order}</td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button onClick={() => { setSelectedTopic(topic); setView('resources'); }} className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded" title="View resources">
+                              <FileText className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => openTopicModal(topic)} className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded">
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => deleteTopic(topic.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

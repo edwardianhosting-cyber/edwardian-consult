@@ -20,6 +20,8 @@ import {
   uploadStudyMaterialFile,
   getAllStudyMaterials,
   uploadSyllabus,
+  uploadSyllabusText,
+  bulkUploadTopics,
 } from '../services/study-material.service';
 import { getFileCategory, saveBufferToDisk } from '../lib/local-file-storage';
 
@@ -97,6 +99,48 @@ router.post('/subjects/:subjectId/syllabus', authenticate, authorize('ADMIN', 'T
   } catch (error) {
     console.error('Syllabus upload error:', error);
     res.status(500).json({ success: false, message: 'Failed to upload syllabus' });
+  }
+});
+
+router.post('/subjects/:subjectId/syllabus-text', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+  try {
+    const { text } = req.body;
+    if (!text || typeof text !== 'string' || !text.trim()) {
+      return res.status(400).json({ success: false, message: 'Syllabus text is required' });
+    }
+
+    const subjectId = req.params.subjectId;
+    const subject = await getStudySubjectById(subjectId);
+    if (!subject) {
+      return res.status(404).json({ success: false, message: 'Subject not found' });
+    }
+
+    const result = await uploadSyllabusText(text, subjectId);
+    res.status(201).json({ success: true, data: result });
+  } catch (error) {
+    console.error('Syllabus text upload error:', error);
+    res.status(500).json({ success: false, message: 'Failed to upload syllabus text' });
+  }
+});
+
+router.post('/subjects/:subjectId/topics/csv', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), upload.single('file'), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No CSV file provided' });
+    }
+
+    const subjectId = req.params.subjectId;
+    const subject = await getStudySubjectById(subjectId);
+    if (!subject) {
+      return res.status(404).json({ success: false, message: 'Subject not found' });
+    }
+
+    const csvText = req.file.buffer.toString('utf-8');
+    const topics = await bulkUploadTopics(subjectId, csvText);
+    res.status(201).json({ success: true, data: topics });
+  } catch (error) {
+    console.error('Topics CSV upload error:', error);
+    res.status(500).json({ success: false, message: 'Failed to upload topics from CSV' });
   }
 });
 
@@ -298,6 +342,9 @@ router.get('/materials/hierarchy', authenticate, async (req: Request, res: Respo
     const isStudent = user?.role === 'STUDENT';
 
     const where: any = { isActive: true };
+    if (req.query.examType) {
+      where.examType = req.query.examType as string;
+    }
     if (isStudent && userSubjects.length > 0) {
       where.name = { in: userSubjects };
     }
@@ -321,6 +368,7 @@ router.get('/materials/hierarchy', authenticate, async (req: Request, res: Respo
 
     res.json({ success: true, data: subjects });
   } catch (error) {
+    console.error('Failed to fetch materials hierarchy:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch materials hierarchy' });
   }
 });

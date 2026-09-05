@@ -54,8 +54,8 @@ const sidebarSections = [
     title: 'EXAMINATION',
     items: [
       { name: 'Question Bank', href: '/teacher/questions', icon: FileText },
-      { name: 'CBT Management', href: '/teacher/cbt', icon: GraduationCap },
-      { name: 'Results', href: '/teacher/results', icon: Award },
+      { name: 'Mock Exams', href: '/teacher/mock', icon: GraduationCap },
+      { name: 'CBT Management', href: '/teacher/results', icon: Award },
     ],
   },
   {

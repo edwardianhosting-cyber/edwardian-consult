@@ -107,3 +107,64 @@ export async function payFromWallet(userId: string, amount: number, description:
 
   return { balance: updated.balance, currency: updated.currency };
 }
+
+export async function getAllWalletItems(filters?: { type?: string; userId?: string }) {
+  const where: any = {};
+  if (filters?.type) where.type = filters.type;
+  if (filters?.userId) where.userId = filters.userId;
+
+  return prisma.walletItem.findMany({
+    where,
+    include: {
+      user: {
+        select: { fullName: true, email: true, portalId: true },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+export async function getMonthlyWalletStats() {
+  const items = await prisma.walletItem.findMany({
+    where: { type: 'PAYMENT_RECORD' },
+    include: {
+      user: {
+        select: { fullName: true, email: true },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const monthlyMap = new Map<string, { month: string; year: number; total: number; count: number; items: any[] }>();
+
+  for (const item of items) {
+    const date = new Date(item.createdAt);
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const monthName = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+    if (!monthlyMap.has(monthKey)) {
+      monthlyMap.set(monthKey, { month: monthName, year: date.getFullYear(), total: 0, count: 0, items: [] });
+    }
+
+    const stats = monthlyMap.get(monthKey)!;
+    const metadata = item.metadata as any;
+    const amount = typeof metadata?.amount === 'number' ? metadata.amount : 0;
+    stats.total += amount;
+    stats.count += 1;
+    stats.items.push(item);
+  }
+
+  return Array.from(monthlyMap.values()).sort((a, b) => b.year - a.year || a.month.localeCompare(b.month));
+}
+
+export async function getAdminWalletStats() {
+  const [totalItems, paymentItems] = await Promise.all([
+    prisma.walletItem.count(),
+    prisma.walletItem.count({ where: { type: 'PAYMENT_RECORD' } }),
+  ]);
+
+  return {
+    totalItems,
+    paymentItems,
+  };
+}

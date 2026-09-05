@@ -34,11 +34,15 @@ function describeNetworkError(err: unknown): Error {
 async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   
+  const isFormData = options.body instanceof FormData;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers as Record<string, string> || {}),
   };
+
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   let res: Response;
   try {
@@ -128,10 +132,17 @@ export const api = {
   // Badges
   getBadges: () => fetchAPI('/gamification/badges'),
   getMyBadges: () => fetchAPI('/gamification/my-badges'),
+  adminGetAllBadges: () => fetchAPI('/gamification/admin/badges'),
+  adminCreateBadge: (data: any) => fetchAPI('/gamification/admin/badges', { method: 'POST', body: JSON.stringify(data) }),
+  adminUpdateBadge: (id: string, data: any) => fetchAPI(`/gamification/admin/badges/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  adminDeleteBadge: (id: string) => fetchAPI(`/gamification/admin/badges/${id}`, { method: 'DELETE' }),
   
   // Study Materials
   getMaterials: () => fetchAPI('/study-material/materials'),
-  getMaterialsHierarchy: () => fetchAPI('/study-material/materials/hierarchy'),
+  getMaterialsHierarchy: (examType?: string) => {
+    const query = examType ? `?examType=${encodeURIComponent(examType)}` : '';
+    return fetchAPI(`/study-material/materials/hierarchy${query}`);
+  },
   getStudySubject: (id: string) => fetchAPI(`/study-material/subjects/${id}`),
   getStudyTopics: (subjectId: string) => fetchAPI(`/study-material/subjects/${subjectId}/topics`),
   getStudyResources: (topicId: string) => fetchAPI(`/study-material/topics/${topicId}/resources`),
@@ -220,6 +231,13 @@ export const api = {
     return fetchAPI('/upload/image', { method: 'POST', body: formData });
   },
   
+  // Campaigns
+  getCampaigns: () => fetchAPI('/campaigns'),
+  createCampaign: (data: any) => fetchAPI('/campaigns', { method: 'POST', body: JSON.stringify(data) }),
+  updateCampaign: (id: string, data: any) => fetchAPI(`/campaigns/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteCampaign: (id: string) => fetchAPI(`/campaigns/${id}`, { method: 'DELETE' }),
+  sendCampaign: (id: string) => fetchAPI(`/campaigns/${id}/send`, { method: 'POST' }),
+  
   // Scholarships
   getScholarships: () => fetchAPI('/scholarships'),
   createScholarship: (data: any) => fetchAPI('/scholarships', { method: 'POST', body: JSON.stringify(data) }),
@@ -260,15 +278,30 @@ export const api = {
   // Payments
   getPayments: () => fetchAPI('/payments/'),
   getPayment: (id: string) => fetchAPI(`/payments/${id}`),
+  getPaymentsAdmin: (page = 1, limit = 20, status?: string) => {
+    const query = status ? `?page=${page}&limit=${limit}&status=${encodeURIComponent(status)}` : `?page=${page}&limit=${limit}`;
+    return fetchAPI(`/payments/admin/all${query}`);
+  },
   
   // Wallet
   getWalletItems: () => fetchAPI('/wallet'),
   getWalletBalance: () => fetchAPI('/wallet/balance'),
   depositToWallet: (amount: number, reference?: string) => fetchAPI('/wallet/deposit', { method: 'POST', body: JSON.stringify({ amount, reference }) }),
   payFromWallet: (amount: number, description: string, reference?: string) => fetchAPI('/wallet/pay', { method: 'POST', body: JSON.stringify({ amount, description, reference }) }),
+  getAdminWalletItems: (params?: { type?: string }) => {
+    const query = params?.type ? `?type=${encodeURIComponent(params.type)}` : '';
+    return fetchAPI(`/wallet/admin/all${query}`);
+  },
+  getAdminWalletMonthly: () => fetchAPI('/wallet/admin/monthly'),
+  getAdminWalletStats: () => fetchAPI('/wallet/admin/stats'),
   
   // ID Card
   getIDCard: () => fetchAPI('/idcard/id-card'),
+  adminGetStudentsForIDCards: (params?: { year?: string; search?: string }) => {
+    const query = params?.year ? `?year=${encodeURIComponent(params.year)}${params.search ? `&search=${encodeURIComponent(params.search)}` : ''}` : '';
+    return fetchAPI(`/idcard/admin/students${query}`);
+  },
+  adminGetStudentIDCard: (id: string) => fetchAPI(`/idcard/admin/students/${id}/id-card`),
   
   // Transcript
   getTranscript: () => fetchAPI('/transcripts/'),
@@ -461,6 +494,12 @@ export const contactApi = {
       const formData = new FormData();
       formData.append('file', file);
       return fetchFormData(`/study-material/subjects/${subjectId}/syllabus`, formData);
+    },
+    uploadSyllabusText: (subjectId: string, text: string) => fetchAPI(`/study-material/subjects/${subjectId}/syllabus-text`, { method: 'POST', body: JSON.stringify({ text }) }),
+    uploadTopicsCsv: (subjectId: string, file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return fetchFormData(`/study-material/subjects/${subjectId}/topics/csv`, formData);
     },
     getTopics: (subjectId: string) => fetchAPI(`/study-material/subjects/${subjectId}/topics`),
     createTopic: (data: any) => fetchAPI('/study-material/topics', { method: 'POST', body: JSON.stringify(data) }),

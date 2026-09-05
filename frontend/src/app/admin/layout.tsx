@@ -61,7 +61,6 @@ const sidebarSections = [
       { name: 'Courses', href: '/admin/courses', icon: GraduationCap },
       { name: 'Subjects', href: '/admin/subjects', icon: BookOpen },
       { name: 'Question Bank', href: '/admin/questions', icon: FileText },
-      { name: 'CBT Management', href: '/admin/cbt', icon: ClipboardList },
       { name: 'Study Materials', href: '/admin/materials', icon: FileText },
       { name: 'Timetable', href: '/admin/timetable', icon: Calendar },
     ],
@@ -69,7 +68,7 @@ const sidebarSections = [
   {
     title: 'EXAMINATION',
     items: [
-      { name: 'Results', href: '/admin/results', icon: Award },
+      { name: 'CBT Management', href: '/admin/results', icon: Award },
       { name: 'Mock Exams', href: '/admin/mock', icon: Calendar },
       { name: 'Performance', href: '/admin/performance', icon: Target },
       { name: 'JAMB Deadlines', href: '/admin/jamb/deadlines', icon: Calendar },
@@ -98,6 +97,7 @@ const sidebarSections = [
       { name: 'Email Campaigns', href: '/admin/campaigns', icon: MessageSquare },
       { name: 'Announcements', href: '/admin/announcements', icon: Newspaper },
       { name: 'Notices', href: '/admin/notices', icon: FileText },
+      { name: 'News & Articles', href: '/admin/news', icon: Newspaper },
     ],
   },
   {
@@ -105,24 +105,14 @@ const sidebarSections = [
     items: [
       { name: 'Badges', href: '/admin/badges', icon: Medal },
       { name: 'Leaderboard', href: '/admin/leaderboard', icon: Trophy },
-      { name: 'Certificates', href: '/admin/certificates', icon: Award },
       { name: 'ID Cards', href: '/admin/id-cards', icon: CreditCardIcon },
-    ],
-  },
-  {
-    title: 'RESOURCES',
-    items: [
-      { name: 'News & Articles', href: '/admin/news', icon: Newspaper },
     ],
   },
   {
     title: 'SYSTEM',
     items: [
-      { name: 'Contact Page', href: '/admin/contact', icon: MessageSquare },
-      { name: 'Support Settings', href: '/admin/support', icon: Phone },
-      { name: 'Audit Logs', href: '/admin/audit', icon: Shield },
-      { name: 'Referrals', href: '/admin/referrals', icon: Users },
-      { name: 'Settings', href: '/admin/settings', icon: Settings },
+      { name: 'Programs', href: '/admin/programs', icon: GraduationCap },
+      { name: 'Study Materials', href: '/admin/materials', icon: FileText },
     ],
   },
 ];

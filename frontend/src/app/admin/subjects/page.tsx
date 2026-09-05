@@ -45,6 +45,7 @@ export default function AdminSubjectsPage() {
       const data = await studyApi.getSubjects();
       setSubjects(data.data || []);
     } catch (err: any) {
+      console.error('Failed to fetch subjects:', err);
       alert(err.message || 'Failed to fetch subjects');
     } finally {
       setLoading(false);

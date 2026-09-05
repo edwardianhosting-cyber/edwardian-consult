@@ -171,6 +171,16 @@ export default function AdminProgramsPage() {
               </div>
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Price (₦)</label>
+              <input
+                type="number"
+                min="0"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
               <textarea
                 required
@@ -218,6 +228,7 @@ export default function AdminProgramsPage() {
             <tr>
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Title</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Duration</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Price</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
             </tr>
@@ -234,6 +245,7 @@ export default function AdminProgramsPage() {
                 <tr key={program.id} className="hover:bg-gray-50">
                   <td className="py-3 px-4 text-sm text-gray-900 font-medium">{program.title}</td>
                   <td className="py-3 px-4 text-sm text-gray-500">{program.duration}</td>
+                  <td className="py-3 px-4 text-sm text-green-600 font-medium">₦{program.price?.toLocaleString?.() || program.price || 0}</td>
                   <td className="py-3 px-4 text-sm">
                     <span className={`px-2 py-1 rounded text-xs ${program.isActive ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                       {program.isActive ? 'Active' : 'Inactive'}

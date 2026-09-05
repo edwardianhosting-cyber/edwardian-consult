@@ -138,6 +138,7 @@ export default function AdminInstitutionsPage() {
       resetForm();
       fetchInstitutions();
     } catch (err: any) {
+      console.error('Failed to save institution:', err);
       alert(err.message || 'Failed to save institution');
     }
   }
