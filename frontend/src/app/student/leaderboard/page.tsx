@@ -40,7 +40,7 @@ export default function LeaderboardPage() {
     try {
       setLoading(true);
       setError(null);
-      const data = await api.getLeaderboard(selectedExamType || undefined);
+      const data = await api.getLeaderboard(undefined, selectedExamType || undefined);
       setEntries(data.data || []);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch leaderboard');
