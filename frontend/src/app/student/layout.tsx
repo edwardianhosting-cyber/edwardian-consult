@@ -69,13 +69,6 @@ const sidebarSections = [
     ],
   },
   {
-    title: 'ADMISSION',
-    items: [
-      { name: 'Admission Hub', href: '/student/admission', icon: GraduationCap },
-      { name: 'Institution Match', href: '/student/institutions', icon: Search },
-    ],
-  },
-  {
     title: 'RESOURCES',
     items: [
       { name: 'News & Updates', href: '/student/news', icon: Newspaper },

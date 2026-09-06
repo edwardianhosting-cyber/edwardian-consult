@@ -58,7 +58,6 @@ const sidebarSections = [
   {
     title: 'LEARNING',
     items: [
-      { name: 'Courses', href: '/admin/courses', icon: GraduationCap },
       { name: 'Subjects', href: '/admin/subjects', icon: BookOpen },
       { name: 'Question Bank', href: '/admin/questions', icon: FileText },
       { name: 'Study Materials', href: '/admin/materials', icon: FileText },
@@ -80,7 +79,6 @@ const sidebarSections = [
     title: 'ADMISSION',
     items: [
       { name: 'Institutions', href: '/admin/institutions', icon: School },
-      { name: 'Admission Hub', href: '/admin/admission-hub', icon: GraduationCap },
     ],
   },
   {
