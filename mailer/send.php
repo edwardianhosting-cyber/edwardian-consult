@@ -1,8 +1,17 @@
 <?php
 /**
- * Edwardian Educational Consult — PHP Mailer
- * Host this file on Whogohost at: /public_html/mailer/send.php
- * It will be accessible at: https://edwardianeducationalconsult.com.ng/mailer/send.php
+ * Edwardian Educational Consult — PHP Mailer for InfinityFree
+ * Upload this file to: htdocs/mailer/send.php
+ * 
+ * REQUIREMENTS:
+ * 1. Upload this file to InfinityFree htdocs/mailer/send.php
+ * 2. Download PHPMailer from https://github.com/PHPMailer/PHPMailer
+ * 3. Upload the entire "src" folder from PHPMailer as "phpmailer" to htdocs/
+ *    So you should have:
+ *    - htdocs/mailer/send.php
+ *    - htdocs/phpmailer/Exception.php
+ *    - htdocs/phpmailer/PHPMailer.php
+ *    - htdocs/phpmailer/SMTP.php
  */
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -11,7 +20,7 @@ define('API_KEY',    'eiec-mailer-2026');
 define('SMTP_HOST',  'mail.edwardianeducationalconsult.com.ng');
 define('SMTP_PORT',  587);
 define('SMTP_USER',  'registrar@edwardianeducationalconsult.com.ng');
-define('SMTP_PASS',  'YOUR_WHOGOHOST_EMAIL_PASSWORD'); // <-- replace this
+define('SMTP_PASS',  'YOUR_WHOGOHOST_EMAIL_PASSWORD'); // <-- REPLACE THIS
 define('FROM_NAME',  'Edwardian Educational Consult');
 define('FROM_EMAIL', 'registrar@edwardianeducationalconsult.com.ng');
 
@@ -85,15 +94,11 @@ if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
 
 // ─── Send email via PHPMailer ─────────────────────────────────────────────────
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-
-// Include PHPMailer (uploaded alongside this file)
 require_once __DIR__ . '/phpmailer/Exception.php';
 require_once __DIR__ . '/phpmailer/PHPMailer.php';
 require_once __DIR__ . '/phpmailer/SMTP.php';
 
-$mail = new PHPMailer(true);
+$mail = new PHPMailer\PHPMailer\PHPMailer(true);
 
 try {
     // SMTP settings
@@ -102,7 +107,7 @@ try {
     $mail->SMTPAuth   = true;
     $mail->Username   = SMTP_USER;
     $mail->Password   = SMTP_PASS;
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+    $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
     $mail->Port       = SMTP_PORT;
     $mail->SMTPOptions = [
         'ssl' => [
