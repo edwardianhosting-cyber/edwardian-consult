@@ -50,6 +50,7 @@ interface AdminJambSubject {
   code: string;
   description: string | null;
   isActive: boolean;
+  source?: 'jamb-subject' | 'study-subject';
 }
 
 const COURSE_SUBJECT_COMBINATIONS: JAMBSubjectCombination[] = [
@@ -211,6 +212,7 @@ function mapDbSubject(s: any): AdminJambSubject {
     code: s.code,
     description: s.description,
     isActive: s.isActive,
+    source: 'jamb-subject',
   };
 }
 
@@ -273,10 +275,62 @@ export async function getJAMBSubjects(): Promise<JAMBSubject[]> {
 }
 
 export async function getAllJambSubjects(): Promise<AdminJambSubject[]> {
-  const subjects = await prisma.jambSubject.findMany({
-    orderBy: { name: 'asc' },
-  });
-  return subjects.map(mapDbSubject);
+  const [jambSubjects, studySubjects] = await Promise.all([
+    prisma.jambSubject.findMany({
+      orderBy: { name: 'asc' },
+    }),
+    prisma.studySubject.findMany({
+      where: { examType: 'JAMB', isActive: true },
+      select: { id: true, name: true, code: true, description: true, isActive: true },
+      orderBy: { name: 'asc' },
+    }),
+  ]);
+
+  const jambMapped = jambSubjects.map(mapDbSubject);
+  const studyMapped: AdminJambSubject[] = studySubjects.map(s => ({
+    id: s.id,
+    name: s.name,
+    code: s.code || '',
+    description: s.description,
+    isActive: s.isActive,
+    source: 'study-subject' as const,
+  }));
+
+  return [...jambMapped, ...studyMapped];
+}
+
+export async function bulkUploadJambSubjects(csvText: string) {
+  const lines = csvText.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  const subjects: AdminJambSubject[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line) continue;
+
+    const parts = line.split(',').map(p => p.trim()).filter(Boolean);
+    const name = parts[0] || `Subject ${i + 1}`;
+    const code = parts[1] || '';
+    const description = parts[2] || '';
+
+    const existing = await prisma.jambSubject.findFirst({
+      where: { OR: [{ name }, { code: code || undefined }] },
+    });
+
+    if (existing) {
+      await prisma.jambSubject.update({
+        where: { id: existing.id },
+        data: { name, code, description: description || existing.description },
+      });
+      subjects.push({ id: existing.id, name, code, description, isActive: existing.isActive });
+    } else {
+      const created = await prisma.jambSubject.create({
+        data: { name, code, description },
+      });
+      subjects.push({ id: created.id, name: created.name, code: created.code, description: created.description, isActive: created.isActive });
+    }
+  }
+
+  return subjects;
 }
 
 export async function getSubjectCombinations(): Promise<JAMBSubjectCombination[]> {

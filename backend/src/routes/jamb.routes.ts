@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { upload } from '../middleware/upload.middleware';
 import { authenticate, authorize } from '../middleware/auth.middleware';
 import {
   getJAMBSubjects,
@@ -16,6 +17,7 @@ import {
   createJambSubject,
   updateJambSubject,
   deleteJambSubject,
+  bulkUploadJambSubjects,
   createJambSyllabus,
   updateJambSyllabus,
   deleteJambSyllabus,
@@ -220,6 +222,22 @@ router.delete('/admin/subjects/:id', authenticate, authorize('ADMIN'), async (re
     res.json({ success: true, message: 'Subject deleted' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to delete subject' });
+  }
+});
+
+// Admin: Bulk upload JAMB subjects via CSV
+router.post('/admin/subjects/bulk', authenticate, authorize('ADMIN'), upload.single('file'), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No CSV file provided' });
+    }
+
+    const csvText = req.file.buffer.toString('utf-8');
+    const subjects = await bulkUploadJambSubjects(csvText);
+    res.status(201).json({ success: true, data: subjects, message: `Successfully imported ${subjects.length} subjects` });
+  } catch (error) {
+    console.error('Bulk upload error:', error);
+    res.status(500).json({ success: false, message: 'Failed to upload subjects' });
   }
 });
 

@@ -337,6 +337,11 @@ export const api = {
   adminCreateJambSubject: (data: any) => fetchAPI('/jamb/admin/subjects', { method: 'POST', body: JSON.stringify(data) }),
   adminUpdateJambSubject: (id: string, data: any) => fetchAPI(`/jamb/admin/subjects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   adminDeleteJambSubject: (id: string) => fetchAPI(`/jamb/admin/subjects/${id}`, { method: 'DELETE' }),
+  bulkUploadJambSubjects: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return fetchFormData('/jamb/admin/subjects/bulk', formData);
+  },
   adminGetJambSyllabus: () => fetchAPI('/jamb/admin/syllabus'),
   adminCreateJambSyllabus: (data: any) => fetchAPI('/jamb/admin/syllabus', { method: 'POST', body: JSON.stringify(data) }),
   adminUpdateJambSyllabus: (id: string, data: any) => fetchAPI(`/jamb/admin/syllabus/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
