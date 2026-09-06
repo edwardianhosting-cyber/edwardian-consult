@@ -76,13 +76,15 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'https://edwardian-consult.vercel.app',
-].filter(Boolean) as string[];
+].filter(Boolean).map((origin) => origin.replace(/\/$/, '')) as string[];
 
 // Also allow any Vercel preview deployment of this project
 // (https://<project>-<hash>-<team>.vercel.app), since those change on every
 // deploy and can't be listed individually.
-const isAllowedOrigin = (origin: string) =>
-  allowedOrigins.includes(origin) || /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
+const isAllowedOrigin = (origin: string) => {
+  const normalized = origin.replace(/\/$/, '');
+  return allowedOrigins.includes(normalized) || /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(normalized);
+};
 
 app.use(cors({
   origin: (origin, callback) => {
