@@ -81,7 +81,8 @@ const allowedOrigins = [
 // Also allow any Vercel preview deployment of this project
 // (https://<project>-<hash>-<team>.vercel.app), since those change on every
 // deploy and can't be listed individually.
-const isAllowedOrigin = (origin: string) => {
+const isAllowedOrigin = (origin?: string) => {
+  if (!origin) return true;
   const normalized = origin.replace(/\/$/, '');
   return allowedOrigins.includes(normalized) || /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(normalized);
 };
