@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { upload } from '../middleware/upload.middleware';
+import multer from 'multer';
 import { authenticate, authorize } from '../middleware/auth.middleware';
 import {
   getJAMBSubjects,
@@ -29,6 +29,7 @@ import {
 import prisma from '../lib/prisma';
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Admin: Get all JAMB syllabus
 router.get('/admin/syllabus', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
