@@ -76,7 +76,7 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'https://edwardian-consult.vercel.app',
-].filter(Boolean).map((origin) => origin.replace(/\/$/, '')) as string[];
+].filter((o): o is string => !!o).map((origin) => origin.replace(/\/$/, '')) as string[];
 
 // Also allow any Vercel preview deployment of this project
 // (https://<project>-<hash>-<team>.vercel.app), since those change on every
