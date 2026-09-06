@@ -175,8 +175,8 @@ export default function ProgramsPage() {
   const fetchPrograms = async () => {
     try {
       const res = await programApi.getAll();
-      if (res.data.success && res.data.data.length > 0) {
-        setPrograms(res.data.data);
+      if (res.success && res.data && res.data.length > 0) {
+        setPrograms(res.data);
       }
     } catch (error) {
       console.log('Using default programs');

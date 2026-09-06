@@ -369,7 +369,7 @@ export const api = {
   deleteUser: (id: string) => fetchAPI(`/users/${id}`, { method: 'DELETE' }),
   
   // Admin - Stats
-  getStats: () => fetchAPI('/users/stats'),
+  getStats: () => fetchAPI('/analytics/stats'),
   getAnalyticsStats: () => fetchAPI('/analytics/stats'),
   getAnalyticsTimeSeries: (range: '7d' | '30d' | '90d') => fetchAPI(`/analytics/timeseries?range=${range}`),
   
