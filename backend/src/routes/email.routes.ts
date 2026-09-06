@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { authenticate, authorize } from '../lib/auth';
 import prisma from '../lib/prisma';
 import { z } from 'zod';
-import { sendBroadcastEmail, processEmailTemplate } from '../lib/email';
+import { sendWelcomeEmail, sendBroadcastEmail, processEmailTemplate } from '../lib/email';
 
 const router = Router();
 
@@ -171,6 +171,67 @@ router.get('/stats', authenticate, authorize('ADMIN'), async (req: Request, res:
     });
   } catch (error) {
     throw error;
+  }
+});
+
+// Resend welcome email (admin only)
+router.post('/resend-welcome', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const schema = z.object({
+      email: z.string().email('Invalid email address'),
+    });
+
+    const validated = schema.parse(req.body);
+
+    const user = await prisma.user.findFirst({
+      where: { email: validated.email },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        portalId: true,
+        parentAccessCode: true,
+        studentEmail: true,
+        passwordHash: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    const generatedPassword = ' resent-welcome';
+
+    const success = await sendWelcomeEmail(
+      user.email,
+      user.fullName,
+      user.portalId,
+      generatedPassword,
+      user.parentAccessCode,
+      user.studentEmail || undefined
+    );
+
+    if (!success) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send welcome email',
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Welcome email resent successfully',
+      data: { email: user.email },
+    });
+  } catch (error: any) {
+    console.error('Resend welcome email error:', error);
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to resend welcome email',
+    });
   }
 });
 
