@@ -11,25 +11,39 @@ export default function AntiCopy({ enabled = true, children }: AntiCopyProps) {
   useEffect(() => {
     if (!enabled) return;
 
+    const isInputField = (target: EventTarget | null) => {
+      if (!target || !(target instanceof HTMLElement)) return false;
+      const tag = target.tagName.toLowerCase();
+      return tag === 'input' || tag === 'textarea' || target.isContentEditable;
+    };
+
     const preventCopy = (e: Event) => {
+      if (isInputField(e.target)) return;
       e.preventDefault();
       e.stopPropagation();
       return false;
     };
 
     const preventContextMenu = (e: Event) => {
+      if (isInputField(e.target)) return;
       e.preventDefault();
       e.stopPropagation();
       return false;
     };
 
     const preventKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const inInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+
       if (
-        (e.ctrlKey && (e.key === 'c' || e.key === 'C' || e.key === 'x' || e.key === 'X' || e.key === 'a' || e.key === 'A' || e.key === 'u' || e.key === 'U' || e.key === 'p' || e.key === 'P' || e.key === 's' || e.key === 'S')) ||
-        (e.metaKey && (e.key === 'c' || e.key === 'C' || e.key === 'x' || e.key === 'X' || e.key === 'a' || e.key === 'A' || e.key === 'u' || e.key === 'U' || e.key === 'p' || e.key === 'P' || e.key === 's' || e.key === 'S')) ||
+        (e.ctrlKey && (e.key === 'c' || e.key === 'C' || e.key === 'x' || e.key === 'X' || e.key === 'a' || e.key === 'A' || e.key === 'u' || e.key === 'U' || e.key === 's' || e.key === 'S')) ||
+        (e.metaKey && (e.key === 'c' || e.key === 'C' || e.key === 'x' || e.key === 'X' || e.key === 'a' || e.key === 'A' || e.key === 'u' || e.key === 'U' || e.key === 's' || e.key === 'S')) ||
         e.key === 'F12' ||
         (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c'))
       ) {
+        if (inInput && (e.key === 'c' || e.key === 'C' || e.key === 'a' || e.key === 'A')) {
+          return;
+        }
         e.preventDefault();
         e.stopPropagation();
         return false;
