@@ -10,8 +10,8 @@ const router = Router();
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Get users (admin only) - supports role filter
-router.get('/', authenticate, authorize('ADMIN', 'TUTOR'), async (req: Request, res: Response) => {
+// Get users (admin/tutor/teacher)
+router.get('/', authenticate, authorize('ADMIN', 'TUTOR', 'TEACHER'), async (req: Request, res: Response) => {
   try {
     const { page = 1, limit = 20, search, role, isActive } = req.query;
 
@@ -48,6 +48,7 @@ router.get('/', authenticate, authorize('ADMIN', 'TUTOR'), async (req: Request, 
           role: true,
           isActive: true,
           createdAt: true,
+          examTypes: true,
           _count: {
             select: {
               cbtResults: true,
@@ -74,8 +75,8 @@ router.get('/', authenticate, authorize('ADMIN', 'TUTOR'), async (req: Request, 
   }
 });
 
-// Get all students (admin only)
-router.get('/students', authenticate, authorize('ADMIN', 'TUTOR'), async (req: Request, res: Response) => {
+// Get all students (admin/tutor/teacher)
+router.get('/students', authenticate, authorize('ADMIN', 'TUTOR', 'TEACHER'), async (req: Request, res: Response) => {
   try {
     const { page = 1, limit = 20, search, programme, examType, isActive } = req.query;
 
@@ -142,8 +143,8 @@ router.get('/students', authenticate, authorize('ADMIN', 'TUTOR'), async (req: R
   }
 });
 
-// Get single student
-router.get('/students/:id', authenticate, authorize('ADMIN', 'TUTOR'), async (req: Request, res: Response) => {
+// Get single student (admin/tutor/teacher)
+router.get('/students/:id', authenticate, authorize('ADMIN', 'TUTOR', 'TEACHER'), async (req: Request, res: Response) => {
   try {
     const student = await prisma.user.findFirst({
       where: { id: req.params.id, role: 'STUDENT' },
@@ -256,8 +257,8 @@ router.post('/students/:id/reset-parent-code', authenticate, authorize('ADMIN'),
   }
 });
 
-// Get dashboard stats (admin)
-router.get('/stats', authenticate, authorize('ADMIN', 'TUTOR'), async (req: Request, res: Response) => {
+// Get dashboard stats (admin/tutor/teacher)
+router.get('/stats', authenticate, authorize('ADMIN', 'TUTOR', 'TEACHER'), async (req: Request, res: Response) => {
   try {
     const [
       totalStudents,
@@ -311,6 +312,94 @@ router.get('/stats', authenticate, authorize('ADMIN', 'TUTOR'), async (req: Requ
   }
 });
 
+// Get teacher-specific dashboard stats
+router.get('/teacher-stats', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+  try {
+    const teacherId = req.user?.userId as string;
+    const teacher = await prisma.user.findUnique({
+      where: { id: teacherId },
+      select: { examTypes: true, fullName: true, id: true },
+    });
+
+    const teacherSubjects = (teacher?.examTypes as string[]) || [];
+
+    const [
+      totalAssignments,
+      pendingGrading,
+      totalCBTs,
+      averageClassScoreResult,
+      upcomingClasses,
+      recentSubmissions,
+    ] = await Promise.all([
+      prisma.assignment.count({ where: { createdById: teacherId } }),
+      prisma.assignmentAttempt.count({
+        where: {
+          assignment: { createdById: teacherId },
+          submittedAt: { not: null },
+          score: null,
+        },
+      }),
+      prisma.exam.count({ where: { subject: { in: teacherSubjects } } }),
+      prisma.cbtResult.aggregate({
+        where: {
+          subject: { in: teacherSubjects },
+        },
+        _avg: { score: true },
+      }),
+      prisma.timetableEntry.findMany({
+        where: {
+          OR: [
+            { instructor: teacher?.fullName || undefined },
+            { subject: { in: teacherSubjects } },
+          ],
+        },
+        orderBy: { createdAt: 'asc' },
+        take: 10,
+      }),
+      prisma.assignmentAttempt.findMany({
+        where: {
+          assignment: { createdById: teacherId },
+          submittedAt: { not: null },
+        },
+        orderBy: { submittedAt: 'desc' },
+        take: 10,
+        select: {
+          id: true,
+          score: true,
+          totalQuestions: true,
+          correctAnswers: true,
+          submittedAt: true,
+          assignment: { select: { title: true } },
+          user: { select: { fullName: true } },
+        },
+      }),
+    ]);
+
+    const totalStudents = teacherSubjects.length > 0
+      ? (await (prisma.$queryRaw`
+          SELECT COUNT(*)::int as count FROM "User" 
+          WHERE "role" = 'STUDENT' 
+          AND "examTypes"::jsonb ?| ${teacherSubjects}
+        `) as any[])[0]?.count || 0
+      : await prisma.user.count({ where: { role: 'STUDENT' } });
+
+    return res.json({
+      success: true,
+      data: {
+        totalStudents,
+        totalAssignments,
+        pendingGrading,
+        totalCBTs,
+        averageClassScore: Math.round(averageClassScoreResult._avg.score || 0),
+        upcomingClasses,
+        recentSubmissions,
+      },
+    });
+  } catch (error) {
+    throw error;
+  }
+});
+
 // Create user (admin only)
 router.post('/', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
@@ -321,6 +410,7 @@ router.post('/', authenticate, authorize('ADMIN'), async (req: Request, res: Res
       role: z.enum(['STUDENT', 'TEACHER', 'ADMIN', 'TUTOR']).default('STUDENT'),
       isActive: z.boolean().default(true),
       password: z.string().min(6).optional(),
+      examTypes: z.array(z.string()).optional(),
     });
 
     const validated = createSchema.parse(req.body);
@@ -356,6 +446,7 @@ router.post('/', authenticate, authorize('ADMIN'), async (req: Request, res: Res
         parentAccessCode,
         role: validated.role,
         isActive: validated.isActive,
+        examTypes: validated.examTypes || [],
       },
       select: {
         id: true,
@@ -366,6 +457,7 @@ router.post('/', authenticate, authorize('ADMIN'), async (req: Request, res: Res
         role: true,
         isActive: true,
         createdAt: true,
+        examTypes: true,
       },
     });
 
@@ -388,6 +480,8 @@ router.put('/:id', authenticate, authorize('ADMIN'), async (req: Request, res: R
       phone: z.string().optional(),
       role: z.enum(['STUDENT', 'TEACHER', 'ADMIN', 'TUTOR']).optional(),
       isActive: z.boolean().optional(),
+      examTypes: z.array(z.string()).optional(),
+      jambSubjects: z.array(z.string()).optional(),
     });
 
     const validated = updateSchema.parse(req.body);
@@ -404,6 +498,7 @@ router.put('/:id', authenticate, authorize('ADMIN'), async (req: Request, res: R
         role: true,
         isActive: true,
         createdAt: true,
+        examTypes: true,
       },
     });
 
@@ -414,6 +509,35 @@ router.put('/:id', authenticate, authorize('ADMIN'), async (req: Request, res: R
     });
   } catch (error: any) {
     return res.status(400).json({ success: false, message: error.message || 'Failed to update user' });
+  }
+});
+
+// Reset a user's password (admin only) — returns the new plaintext password
+// once, for the admin to hand to the user directly. Nothing is emailed here;
+// pair this with the /auth/forgot-password flow for self-service resets.
+router.post('/:id/reset-password', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const resetSchema = z.object({
+      password: z.string().min(6).optional(),
+    });
+    const validated = resetSchema.parse(req.body);
+
+    const newPassword = validated.password || generateStudentPassword();
+    const passwordHash = await hashPassword(newPassword);
+
+    const user = await prisma.user.update({
+      where: { id: req.params.id },
+      data: { passwordHash },
+      select: { id: true, fullName: true, email: true, role: true },
+    });
+
+    return res.json({
+      success: true,
+      message: 'Password reset successfully',
+      data: { ...user, newPassword },
+    });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message || 'Failed to reset password' });
   }
 });
 

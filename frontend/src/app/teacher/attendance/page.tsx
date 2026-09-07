@@ -31,7 +31,7 @@ export default function TeacherAttendance() {
   useEffect(() => {
     fetchAttendance();
     fetchStudentsList();
-  }, []);
+  }, [selectedDate]);
 
   async function fetchAttendance() {
     try {
@@ -191,7 +191,6 @@ export default function TeacherAttendance() {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              onBlur={fetchAttendance}
               className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
           </div>

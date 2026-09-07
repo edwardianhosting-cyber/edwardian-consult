@@ -22,6 +22,7 @@ import {
   uploadSyllabus,
   uploadSyllabusText,
   bulkUploadTopics,
+  bulkUploadTopicsFromJson,
 } from '../services/study-material.service';
 import { getFileCategory, saveBufferToDisk } from '../lib/local-file-storage';
 
@@ -104,7 +105,7 @@ router.post('/subjects/:subjectId/syllabus', authenticate, authorize('ADMIN', 'T
 
 router.post('/subjects/:subjectId/syllabus-text', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
   try {
-    const { text } = req.body;
+    const { text, examType } = req.body;
     if (!text || typeof text !== 'string' || !text.trim()) {
       return res.status(400).json({ success: false, message: 'Syllabus text is required' });
     }
@@ -115,7 +116,7 @@ router.post('/subjects/:subjectId/syllabus-text', authenticate, authorize('ADMIN
       return res.status(404).json({ success: false, message: 'Subject not found' });
     }
 
-    const result = await uploadSyllabusText(text, subjectId);
+    const result = await uploadSyllabusText(text, subjectId, examType);
     res.status(201).json({ success: true, data: result });
   } catch (error) {
     console.error('Syllabus text upload error:', error);
@@ -136,11 +137,33 @@ router.post('/subjects/:subjectId/topics/csv', authenticate, authorize('ADMIN', 
     }
 
     const csvText = req.file.buffer.toString('utf-8');
-    const topics = await bulkUploadTopics(subjectId, csvText);
+    const examType = req.body.examType;
+    const topics = await bulkUploadTopics(subjectId, csvText, examType);
     res.status(201).json({ success: true, data: topics });
   } catch (error) {
     console.error('Topics CSV upload error:', error);
     res.status(500).json({ success: false, message: 'Failed to upload topics from CSV' });
+  }
+});
+
+router.post('/subjects/:subjectId/topics/json', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+  try {
+    const { topics, examType } = req.body;
+    if (!Array.isArray(topics) || topics.length === 0) {
+      return res.status(400).json({ success: false, message: 'Topics array is required' });
+    }
+
+    const subjectId = req.params.subjectId;
+    const subject = await getStudySubjectById(subjectId);
+    if (!subject) {
+      return res.status(404).json({ success: false, message: 'Subject not found' });
+    }
+
+    const createdTopics = await bulkUploadTopicsFromJson(subjectId, topics, examType);
+    res.status(201).json({ success: true, data: createdTopics });
+  } catch (error) {
+    console.error('Topics JSON upload error:', error);
+    res.status(500).json({ success: false, message: 'Failed to upload topics from JSON' });
   }
 });
 

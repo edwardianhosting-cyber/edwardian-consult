@@ -74,6 +74,7 @@ export async function createStudyTopic(data: {
   subjectId: string;
   name: string;
   description?: string;
+  examType?: string;
   order?: number;
 }) {
   return prisma.studyTopic.create({
@@ -231,11 +232,11 @@ export async function uploadSyllabus(file: Express.Multer.File, subjectId: strin
   return parseSyllabusText(text, subjectId);
 }
 
-export async function uploadSyllabusText(text: string, subjectId: string) {
-  return parseSyllabusText(text, subjectId);
+export async function uploadSyllabusText(text: string, subjectId: string, examType?: string) {
+  return parseSyllabusText(text, subjectId, examType);
 }
 
-async function parseSyllabusText(text: string, subjectId: string) {
+async function parseSyllabusText(text: string, subjectId: string, examType?: string) {
   const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
   const topicNames: string[] = [];
   const seen = new Set<string>();
@@ -267,6 +268,7 @@ async function parseSyllabusText(text: string, subjectId: string) {
       subjectId,
       name: topicNames[i],
       description: `Syllabus topic ${i + 1}`,
+      examType,
       order: i,
     });
     topics.push({ id: topic.id, name: topic.name });
@@ -275,7 +277,7 @@ async function parseSyllabusText(text: string, subjectId: string) {
   return { text, topics };
 }
 
-export async function bulkUploadTopics(subjectId: string, csvText: string) {
+export async function bulkUploadTopics(subjectId: string, csvText: string, examType?: string) {
   const lines = csvText.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
   const topics: { id: string; name: string }[] = [];
 
@@ -291,10 +293,31 @@ export async function bulkUploadTopics(subjectId: string, csvText: string) {
       subjectId,
       name,
       description,
+      examType,
       order: i,
     });
     topics.push({ id: topic.id, name: topic.name });
   }
 
   return topics;
+}
+
+export async function bulkUploadTopicsFromJson(subjectId: string, topics: Array<{ name: string; description?: string; examType?: string }>, examType?: string) {
+  const createdTopics: { id: string; name: string }[] = [];
+
+  for (let i = 0; i < topics.length; i++) {
+    const topicData = topics[i];
+    if (!topicData.name) continue;
+
+    const topic = await createStudyTopic({
+      subjectId,
+      name: topicData.name,
+      description: topicData.description || '',
+      examType: topicData.examType || examType,
+      order: i,
+    });
+    createdTopics.push({ id: topic.id, name: topic.name });
+  }
+
+  return createdTopics;
 }

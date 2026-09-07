@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
-import { Award, Calendar, BookOpen, ChevronRight } from 'lucide-react';
+import { Award, Calendar, BookOpen, ChevronRight, Search } from 'lucide-react';
 import api from '@/lib/api';
 
 interface CBTResult {
@@ -13,23 +13,25 @@ interface CBTResult {
   completedAt: string;
   duration?: number;
   type?: string;
+  examType?: string;
 }
 
 export default function ParentResultsPage() {
   const [results, setResults] = useState<CBTResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedResult, setSelectedResult] = useState<CBTResult | null>(null);
 
   useEffect(() => {
     fetchResults();
-  }, [page]);
+  }, []);
 
   async function fetchResults() {
     try {
       setLoading(true);
       setError(null);
-      const data = await api.getCBTResults(page);
+      const data = await api.getCBTResults(1);
       const resultsData = data.data?.results || data.data || [];
       setResults(Array.isArray(resultsData) ? resultsData : []);
     } catch (err: any) {
@@ -44,6 +46,10 @@ export default function ParentResultsPage() {
     if (score >= 50) return 'text-yellow-600 bg-yellow-50';
     return 'text-red-600 bg-red-50';
   }
+
+  const filteredResults = results.filter((result) =>
+    result.subject.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading) {
     return (
@@ -85,58 +91,104 @@ export default function ParentResultsPage() {
           <p className="text-gray-400 text-sm mt-1">Results will appear here after completing CBTs</p>
         </div>
       ) : (
-        <div className="grid gap-4">
-          {results.map((result) => (
-            <div key={result.id} className="bg-white rounded-xl border border-gray-100 p-6 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+        <>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by subject..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredResults.map((result) => (
+              <div
+                key={result.id}
+                onClick={() => setSelectedResult(result)}
+                className="bg-white rounded-xl border border-gray-100 p-6 hover:shadow-md transition-shadow cursor-pointer"
+              >
+                <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                     <BookOpen className="w-6 h-6 text-green-600" />
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{result.subject}</h3>
-                    <p className="text-sm text-gray-500">
-                      {new Date(result.completedAt).toLocaleDateString('en-NG', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      })}
-                    </p>
-                    {result.duration && (
-                      <p className="text-xs text-gray-400 mt-0.5">Duration: {Math.floor(result.duration / 60)}m {result.duration % 60}s</p>
-                    )}
-                  </div>
-                </div>
-                <div className="text-right">
                   <span className={`text-2xl font-bold px-4 py-2 rounded-lg ${getScoreColor(result.score)}`}>
                     {result.score}%
                   </span>
-                  <p className="text-sm text-gray-500 mt-1">
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-1">{result.subject}</h3>
+                <p className="text-sm text-gray-500">
+                  {new Date(result.completedAt).toLocaleDateString('en-NG', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </p>
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                  <span className="text-xs text-gray-500">
                     {result.correctAnswers}/{result.totalQuestions} correct
-                  </p>
+                  </span>
+                  {result.duration && (
+                    <span className="text-xs text-gray-400">
+                      {Math.floor(result.duration / 60)}m {result.duration % 60}s
+                    </span>
+                  )}
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </>
       )}
 
-      {results.length > 0 && (
-        <div className="flex items-center justify-center gap-2">
-          <button
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50"
-          >
-            Previous
-          </button>
-          <span className="text-sm text-gray-600">Page {page}</span>
-          <button
-            onClick={() => setPage(p => p + 1)}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            Next
-          </button>
+      {selectedResult && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Result Details</h3>
+              <button
+                onClick={() => setSelectedResult(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm text-gray-500">Subject</p>
+                <p className="font-medium text-gray-900">{selectedResult.subject}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Score</p>
+                <p className="text-2xl font-bold text-gray-900">{selectedResult.score}%</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Performance</p>
+                <p className="font-medium text-gray-900">
+                  {selectedResult.correctAnswers} out of {selectedResult.totalQuestions} correct
+                </p>
+              </div>
+              {selectedResult.duration && (
+                <div>
+                  <p className="text-sm text-gray-500">Duration</p>
+                  <p className="font-medium text-gray-900">
+                    {Math.floor(selectedResult.duration / 60)} minutes {selectedResult.duration % 60} seconds
+                  </p>
+                </div>
+              )}
+              <div>
+                <p className="text-sm text-gray-500">Date</p>
+                <p className="font-medium text-gray-900">
+                  {new Date(selectedResult.completedAt).toLocaleDateString('en-NG', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

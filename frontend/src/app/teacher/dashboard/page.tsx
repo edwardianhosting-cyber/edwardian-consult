@@ -152,7 +152,7 @@ export default function TeacherDashboard() {
           <p className="text-sm font-medium text-gray-700">Add Questions</p>
         </Link>
         <Link
-          href="/teacher/cbt"
+          href="/teacher/mock"
           className="bg-white rounded-xl border border-gray-100 p-4 text-center hover:shadow-md transition-shadow"
         >
           <Award className="w-8 h-8 text-purple-600 mx-auto mb-2" />
@@ -248,29 +248,6 @@ export default function TeacherDashboard() {
               ))}
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Student Performance Overview */}
-      <div className="bg-white rounded-xl border border-gray-100 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Class Performance Overview</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="p-4 bg-green-50 rounded-lg text-center">
-            <p className="text-2xl font-bold text-green-600">15</p>
-            <p className="text-sm text-green-700">Excellent (80%+)</p>
-          </div>
-          <div className="p-4 bg-blue-50 rounded-lg text-center">
-            <p className="text-2xl font-bold text-blue-600">20</p>
-            <p className="text-sm text-blue-700">Good (60-79%)</p>
-          </div>
-          <div className="p-4 bg-yellow-50 rounded-lg text-center">
-            <p className="text-2xl font-bold text-yellow-600">10</p>
-            <p className="text-sm text-yellow-700">Average (50-59%)</p>
-          </div>
-          <div className="p-4 bg-red-50 rounded-lg text-center">
-            <p className="text-2xl font-bold text-red-600">3</p>
-            <p className="text-sm text-red-700">Below Average (&lt;50%)</p>
-          </div>
         </div>
       </div>
     </div>

@@ -140,3 +140,84 @@ export async function bulkCreateQuestionsFromExcel(buffer: Buffer, defaults?: {
 
   return { created, errors };
 }
+
+function normalizeQuestionItem(item: Record<string, any>, index: number, defaults?: {
+  subject?: string;
+  examType?: string;
+  institution?: string;
+  year?: number;
+}): { data?: any; error?: string } | null {
+  const subject = String(item.subject || item.Subject || item.SUBJECT || item.text || item.question || item.Text || defaults?.subject || '').trim();
+  const examType = String(item.examType || item.ExamType || item.EXAM_TYPE || item['Exam Type'] || defaults?.examType || '').trim();
+  const institution = String(item.institution || item.Institution || item.INSTITUTION || defaults?.institution || '').trim();
+  const yearStr = String(item.year || item.Year || item.YEAR || defaults?.year || '').trim();
+  const text = String(item.text || item.question || item.Text || item.TEXT || item.question || '').trim();
+  const optionsRaw = item.options || item.Options || item.OPTIONS || '';
+  const options = Array.isArray(optionsRaw) ? optionsRaw : String(optionsRaw).split('|').map((o: string) => o.trim()).filter(Boolean);
+  const correctOptionRaw = item.correctOption ?? item.correct_option ?? item.answer ?? item.Answer ?? item.CORRECT_OPTION ?? item['Correct Option'] ?? item.answer;
+  const explanation = String(item.explanation || item.Explanation || item.EXPLANATION || '').trim();
+  const imageUrl = String(item.imageUrl || item.ImageUrl || item.IMAGE_URL || item['Image URL'] || '').trim();
+
+  const finalSubject = subject || defaults?.subject;
+  const finalExamType = examType || defaults?.examType;
+  const finalInstitution = institution || defaults?.institution || '';
+  const finalYear = yearStr ? parseInt(yearStr, 10) : (defaults?.year || 0);
+
+  if (!finalSubject || !finalExamType || !finalYear || !text || options.length < 2 || correctOptionRaw === undefined || correctOptionRaw === null || correctOptionRaw === '') {
+    return { error: `Question ${index + 1}: missing required fields` };
+  }
+
+  const correctOption = typeof correctOptionRaw === 'number' ? correctOptionRaw : parseInt(String(correctOptionRaw), 10);
+
+  if (isNaN(correctOption)) {
+    return { error: `Question ${index + 1}: invalid correctOption` };
+  }
+
+  if (correctOption < 0 || correctOption >= options.length) {
+    return { error: `Question ${index + 1}: correctOption must be between 0 and ${options.length - 1}` };
+  }
+
+  return {
+    data: {
+      subject: finalSubject,
+      examType: finalExamType,
+      institution: finalInstitution || undefined,
+      year: finalYear,
+      text,
+      imageUrl: imageUrl || undefined,
+      options,
+      correctOption,
+      explanation: explanation || undefined,
+      isActive: true,
+    },
+  };
+}
+
+export async function bulkCreateQuestionsFromJSON(items: Record<string, any>[], defaults?: {
+  subject?: string;
+  examType?: string;
+  institution?: string;
+  year?: number;
+}): Promise<{ created: number; errors: string[] }> {
+  let created = 0;
+  const errors: string[] = [];
+
+  for (let i = 0; i < items.length; i++) {
+    const parsed = normalizeQuestionItem(items[i], i, defaults);
+    if (parsed?.error) {
+      errors.push(parsed.error);
+      continue;
+    }
+
+    if (parsed?.data) {
+      try {
+        await prisma.question.create({ data: parsed.data });
+        created += 1;
+      } catch (error) {
+        errors.push(`Question ${i + 1}: ${(error as Error).message}`);
+      }
+    }
+  }
+
+  return { created, errors };
+}

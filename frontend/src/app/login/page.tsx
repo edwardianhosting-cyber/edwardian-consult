@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, UserCheck } from 'lucide-react';
+import { Mail, Lock, UserCheck, Eye, EyeOff } from 'lucide-react';
 import { authApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 
@@ -14,6 +14,7 @@ export default function LoginPage() {
   const { login } = useAuth();
   const [mode, setMode] = useState<LoginMode>('credentials');
   const [formData, setFormData] = useState({ email: '', password: '', portalId: '', accessCode: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -127,15 +128,22 @@ export default function LoginPage() {
                   </label>
                   <div className="relative">
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       id="password"
                       required
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       placeholder="Enter your password"
-                      className="input-field pl-12"
+                      className="input-field pl-12 pr-12"
                     />
                     <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
                   </div>
                 </div>
               </>
@@ -186,6 +194,12 @@ export default function LoginPage() {
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
+
+            <div className="text-center">
+              <Link href="/forgot-password" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                Forgot password?
+              </Link>
+            </div>
           </form>
 
           <div className="mt-6 text-center">
@@ -214,15 +228,11 @@ export default function LoginPage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="inline-flex items-center justify-center w-5 h-5 bg-amber-500 text-white text-xs rounded-full flex-shrink-0 mt-0.5">2</span>
-                    <span>Look for an email from <strong>registrar@edwardianeducationalconsult.com.ng</strong></span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="inline-flex items-center justify-center w-5 h-5 bg-amber-500 text-white text-xs rounded-full flex-shrink-0 mt-0.5">3</span>
                     <span>Also check the <strong>Promotions</strong> tab if you use Gmail</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="inline-flex items-center justify-center w-5 h-5 bg-amber-500 text-white text-xs rounded-full flex-shrink-0 mt-0.5">4</span>
-                    <span>Still can&apos;t find it? Contact us at <strong>registrar@edwardianeducationalconsult.com.ng</strong></span>
+                    <span className="inline-flex items-center justify-center w-5 h-5 bg-amber-500 text-white text-xs rounded-full flex-shrink-0 mt-0.5">3</span>
+                    <span>Still can&apos;t find it? Contact support at <strong>support@edwardianconsult.com</strong></span>
                   </li>
                 </ol>
               </div>

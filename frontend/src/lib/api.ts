@@ -372,6 +372,7 @@ export const api = {
   createUser: (data: any) => fetchAPI('/users', { method: 'POST', body: JSON.stringify(data) }),
   updateUser: (id: string, data: any) => fetchAPI(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteUser: (id: string) => fetchAPI(`/users/${id}`, { method: 'DELETE' }),
+  resetUserPassword: (id: string, password?: string) => fetchAPI(`/users/${id}/reset-password`, { method: 'POST', body: JSON.stringify({ password }) }),
   
   // Admin - Stats
   getStats: () => fetchAPI('/analytics/stats'),
@@ -407,13 +408,16 @@ export const api = {
     }
     return fetchFormData('/questions/bulk-upload', formData);
   },
+  uploadQuestionsJson: (questions: any[], defaults?: { subject?: string; examType?: string; institution?: string; year?: number }) => {
+    return fetchAPI('/questions/bulk-upload-json', { method: 'POST', body: JSON.stringify({ questions, defaults }) });
+  },
   getAllQuestions: (params?: Record<string, string>) => {
     const query = params ? '?' + new URLSearchParams(params).toString() : '';
     return fetchAPI(`/cbt/questions${query}`);
   },
   
   // Teacher Dashboard
-  getTeacherStats: () => fetchAPI('/users/stats'),
+  getTeacherStats: () => fetchAPI('/users/teacher-stats'),
   
   // Assignments
   createAssignment: (data: any) => fetchAPI('/assignments', { method: 'POST', body: JSON.stringify(data) }),
@@ -464,6 +468,10 @@ export const authApi = {
     fetchAPI('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
   logout: () => fetchAPI('/auth/logout', { method: 'POST' }),
   getProfile: () => fetchAPI('/auth/me'),
+  forgotPassword: (data: { email: string }) =>
+    fetchAPI('/auth/forgot-password', { method: 'POST', body: JSON.stringify(data) }),
+  resetPassword: (data: { token: string; password: string }) =>
+    fetchAPI('/auth/reset-password', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // Contact API
@@ -503,12 +511,16 @@ export const contactApi = {
       formData.append('file', file);
       return fetchFormData(`/study-material/subjects/${subjectId}/syllabus`, formData);
     },
-    uploadSyllabusText: (subjectId: string, text: string) => fetchAPI(`/study-material/subjects/${subjectId}/syllabus-text`, { method: 'POST', body: JSON.stringify({ text }) }),
-    uploadTopicsCsv: (subjectId: string, file: File) => {
+    uploadSyllabusText: (subjectId: string, text: string, examType?: string) => fetchAPI(`/study-material/subjects/${subjectId}/syllabus-text`, { method: 'POST', body: JSON.stringify({ text, examType }) }),
+    uploadTopicsCsv: (subjectId: string, file: File, examType?: string) => {
       const formData = new FormData();
       formData.append('file', file);
+      if (examType) {
+        formData.append('examType', examType);
+      }
       return fetchFormData(`/study-material/subjects/${subjectId}/topics/csv`, formData);
     },
+    uploadTopicsJson: (subjectId: string, jsonText: string, examType?: string) => fetchAPI(`/study-material/subjects/${subjectId}/topics/json`, { method: 'POST', body: JSON.stringify({ topics: JSON.parse(jsonText), examType }) }),
     getTopics: (subjectId: string) => fetchAPI(`/study-material/subjects/${subjectId}/topics`),
     createTopic: (data: any) => fetchAPI('/study-material/topics', { method: 'POST', body: JSON.stringify(data) }),
     updateTopic: (id: string, data: any) => fetchAPI(`/study-material/topics/${id}`, { method: 'PUT', body: JSON.stringify(data) }),

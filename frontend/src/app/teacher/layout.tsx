@@ -55,7 +55,6 @@ const sidebarSections = [
     items: [
       { name: 'Question Bank', href: '/teacher/questions', icon: FileText },
       { name: 'Mock Exams', href: '/teacher/mock', icon: GraduationCap },
-      { name: 'CBT Management', href: '/teacher/results', icon: Award },
     ],
   },
   {
@@ -93,7 +92,9 @@ export default function TeacherLayout({ children }: TeacherLayoutProps) {
     
     try {
       const userData = JSON.parse(userStr);
-      if (userData.role !== 'TUTOR') {
+      const role = String(userData.role || '').trim().toUpperCase();
+      if (role !== 'TEACHER' && role !== 'TUTOR') {
+        console.warn('Teacher portal access denied for role:', userData.role);
         router.push('/login');
         return;
       }

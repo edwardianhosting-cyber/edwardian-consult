@@ -4,11 +4,52 @@ import multer from 'multer';
 import * as XLSX from 'xlsx';
 import { z } from 'zod';
 import prisma from '../lib/prisma';
-import { uploadQuestionImage, bulkCreateQuestionsFromCSV, bulkCreateQuestionsFromExcel } from '../services/question.service';
+import { uploadQuestionImage, bulkCreateQuestionsFromCSV, bulkCreateQuestionsFromExcel, bulkCreateQuestionsFromJSON } from '../services/question.service';
 
 const router = Router();
 
 const upload = multer({ storage: multer.memoryStorage() });
+
+// Create single question
+router.post('/', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+  try {
+    const schema = z.object({
+      subject: z.string().min(1),
+      examType: z.string().min(1),
+      institution: z.string().optional().nullable(),
+      year: z.number().int().optional(),
+      topic: z.string().optional().nullable(),
+      difficulty: z.string().optional(),
+      text: z.string().min(1),
+      imageUrl: z.string().optional().nullable(),
+      options: z.array(z.string()).min(2),
+      correctOption: z.number().int(),
+      explanation: z.string().optional().nullable(),
+      isActive: z.boolean().optional(),
+    });
+
+    const validated = schema.parse(req.body);
+    const question = await prisma.question.create({
+      data: {
+        subject: validated.subject,
+        examType: validated.examType,
+        institution: validated.institution || null,
+        year: validated.year || 0,
+        topic: validated.topic || null,
+        difficulty: validated.difficulty || 'MEDIUM',
+        text: validated.text,
+        imageUrl: validated.imageUrl || null,
+        options: validated.options,
+        correctOption: validated.correctOption,
+        explanation: validated.explanation || null,
+        isActive: validated.isActive ?? true,
+      },
+    });
+    return res.status(201).json({ success: true, data: question });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message || 'Failed to create question' });
+  }
+});
 
 // Update question
 router.put('/:id', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
@@ -124,6 +165,20 @@ router.post('/bulk-upload', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR')
     res.status(201).json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to process file' });
+  }
+});
+
+router.post('/bulk-upload-json', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+  try {
+    const { questions, defaults } = req.body;
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return res.status(400).json({ success: false, message: 'Questions array is required' });
+    }
+
+    const result = await bulkCreateQuestionsFromJSON(questions, defaults);
+    res.status(201).json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to process JSON questions' });
   }
 });
 

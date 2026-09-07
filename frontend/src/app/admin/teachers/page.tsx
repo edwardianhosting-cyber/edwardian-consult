@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Search, Edit2, Trash2, Eye, UserCheck, UserX, X, Download } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Eye, UserCheck, UserX, X, Download, Key } from 'lucide-react';
 import { api } from '@/lib/api';
 import { ALL_SUBJECTS } from '@/lib/subjects';
 
@@ -23,10 +23,13 @@ export default function AdminTeachersPage() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [viewingTeacher, setViewingTeacher] = useState<Teacher | null>(null);
+  const [resettingPasswordTeacher, setResettingPasswordTeacher] = useState<Teacher | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resetPasswordResult, setResetPasswordResult] = useState<{ newPassword: string } | null>(null);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -171,6 +174,20 @@ export default function AdminTeachersPage() {
     }
   }
 
+  async function handleResetPassword(teacher: Teacher) {
+    setSubmitting(true);
+    setError(null);
+    setResetPasswordResult(null);
+    try {
+      const response = await api.resetUserPassword(teacher.id);
+      setResetPasswordResult(response.data);
+    } catch (err: any) {
+      setError(err.message || 'Failed to reset password');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -304,6 +321,13 @@ export default function AdminTeachersPage() {
                           {teacher.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
                         </button>
                         <button
+                          onClick={() => { setResettingPasswordTeacher(teacher); setResetPasswordResult(null); setShowResetPasswordModal(true); }}
+                          className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded"
+                          title="Reset Password"
+                        >
+                          <Key className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => handleDelete(teacher)}
                           className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
                           title="Delete"
@@ -368,22 +392,30 @@ export default function AdminTeachersPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Assigned Subjects</label>
-                <select
-                  multiple
-                  value={formData.examTypes}
-                  onChange={(e) => {
-                    const selected = Array.from(e.target.selectedOptions, option => option.value);
-                    setFormData({ ...formData, examTypes: selected });
-                  }}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent h-40"
-                >
-                  {ALL_SUBJECTS.map((subject) => (
-                    <option key={subject} value={subject}>
-                      {subject}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple subjects</p>
+                <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {ALL_SUBJECTS.map((subject) => {
+                      const checked = formData.examTypes.includes(subject);
+                      return (
+                        <label key={subject} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => {
+                              const next = checked
+                                ? formData.examTypes.filter((s: string) => s !== subject)
+                                : [...formData.examTypes, subject];
+                              setFormData({ ...formData, examTypes: next });
+                            }}
+                            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                          />
+                          <span className="truncate">{subject}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">{formData.examTypes.length} selected</p>
               </div>
               {!editingTeacher && (
                 <div>
@@ -474,6 +506,68 @@ export default function AdminTeachersPage() {
                   <p className="text-sm font-medium text-gray-900">{new Date(viewingTeacher.createdAt).toLocaleDateString()}</p>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {showResetPasswordModal && resettingPasswordTeacher && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-lg font-semibold">Reset Password</h2>
+              <button onClick={() => { setShowResetPasswordModal(false); setResetPasswordResult(null); }} className="p-1 hover:bg-gray-100 rounded">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">
+                  {error}
+                </div>
+              )}
+
+              {resetPasswordResult ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <p className="text-sm font-medium text-green-800 mb-2">Password reset successful!</p>
+                  <p className="text-xs text-green-700 mb-2">Share this new password with the teacher:</p>
+                  <div className="bg-white border border-green-200 rounded px-3 py-2 font-mono text-sm text-green-900 break-all">
+                    {resetPasswordResult.newPassword}
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(resetPasswordResult.newPassword);
+                    }}
+                    className="mt-3 w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                  >
+                    Copy Password
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-600">
+                    Are you sure you want to reset the password for <strong>{resettingPasswordTeacher.fullName}</strong>?
+                  </p>
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => { setShowResetPasswordModal(false); setResetPasswordResult(null); }}
+                      className="flex-1 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleResetPassword(resettingPasswordTeacher)}
+                      disabled={submitting}
+                      className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+                    >
+                      {submitting ? 'Resetting...' : 'Reset Password'}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -22,6 +22,8 @@ model User {
   avatar           String?
   isActive         Boolean          @default(true)
   lastLogin        DateTime?
+  resetToken       String?
+  resetTokenExpiry DateTime?
   studentEmail     String?          @unique
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
@@ -240,6 +242,7 @@ model StudyTopic {
   subjectId   String
   name        String
   description String?
+  examType    String?
   order       Int      @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -250,6 +253,7 @@ model StudyTopic {
 
   @@index([subjectId])
   @@index([isActive])
+  @@index([examType])
 }
 
 model StudyResource {
@@ -960,4 +964,21 @@ model JambSyllabus {
   @@index([subject])
   @@index([year])
   @@index([isActive])
+}
+
+model OnlineClass {
+  id           String    @id @default(cuid())
+  title        String
+  description  String?
+  subject      String?
+  thumbnailUrl String
+  classLink    String
+  scheduledAt  DateTime?
+  isActive     Boolean   @default(true)
+  createdBy    String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([isActive])
+  @@index([scheduledAt])
 }

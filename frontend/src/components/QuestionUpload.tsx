@@ -36,6 +36,8 @@ export default function QuestionUpload() {
     institution: '',
     year: new Date().getFullYear(),
   });
+  const [questionsJsonText, setQuestionsJsonText] = useState('');
+  const [uploadingQuestionsJson, setUploadingQuestionsJson] = useState(false);
 
   useEffect(() => {
     fetchQuestions();
@@ -135,6 +137,28 @@ export default function QuestionUpload() {
       alert(error.message || 'Failed to upload file');
     } finally {
       setBulkLoading(false);
+    }
+  }
+
+  async function handleQuestionsJsonUpload() {
+    if (!questionsJsonText.trim()) return;
+    setUploadingQuestionsJson(true);
+    setBulkResult(null);
+    try {
+      const questions = JSON.parse(questionsJsonText);
+      const response = await api.uploadQuestionsJson(Array.isArray(questions) ? questions : [questions], {
+        subject: defaults.subject || undefined,
+        examType: defaults.examType || undefined,
+        institution: defaults.institution || undefined,
+        year: defaults.year || undefined,
+      });
+      setBulkResult(response.data);
+      setQuestionsJsonText('');
+      await fetchQuestions();
+    } catch (error: any) {
+      alert(error.message || 'Failed to upload JSON questions');
+    } finally {
+      setUploadingQuestionsJson(false);
     }
   }
 
@@ -376,6 +400,104 @@ export default function QuestionUpload() {
               </div>
             </div>
           )}
+        </div>
+
+        <div className="bg-white rounded-xl border p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary-600" />
+            Upload Questions via JSON
+          </h3>
+          <p className="text-xs text-gray-500 mb-2">Paste a JSON array of questions directly. You can include optional fields like subject, examType, year, etc.</p>
+          <textarea
+            value={questionsJsonText}
+            onChange={(e) => setQuestionsJsonText(e.target.value)}
+            rows={10}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 mb-3 font-mono text-xs"
+            placeholder={`Paste JSON here, for example:\n[\n  {\n    "text": "What is the capital of Nigeria?",\n    "options": ["Lagos", "Abuja", "Port Harcourt", "Kano"],\n    "correctOption": 1,\n    "explanation": "Abuja is the capital.",\n    "subject": "General Studies",\n    "examType": "JAMB",\n    "year": 2024\n  }\n]`}
+          />
+          <div className="flex items-center gap-2 mb-3">
+            <button
+              type="button"
+              onClick={() => {
+                const sample = [
+                  {
+                    text: 'What is the value of x in 2x + 5 = 15?',
+                    options: ['7', '8', '9', '10'],
+                    correctOption: 1,
+                    explanation: 'Subtract 5 from both sides then divide by 2.',
+                    subject: 'General Mathematics',
+                    examType: 'JAMB',
+                    year: 2024,
+                  },
+                  {
+                    text: 'Choose the correct option: She ___ to school every day.',
+                    options: ['go', 'goes', 'going', 'gone'],
+                    correctOption: 1,
+                    explanation: 'Third person singular present tense adds -es.',
+                    subject: 'English Language',
+                    examType: 'JAMB',
+                    year: 2024,
+                  },
+                ];
+                setQuestionsJsonText(JSON.stringify(sample, null, 2));
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-white border border-gray-200 rounded-lg hover:bg-primary-50"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Load Sample JSON
+            </button>
+            <span className="text-xs text-gray-500">Click to load a sample into the textarea.</span>
+          </div>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
+            <p className="text-xs font-medium text-gray-700 mb-1">Question Images</p>
+            <p className="text-xs text-gray-500 mb-2">Upload images first, then paste their URLs into the <code className="bg-gray-100 px-1 rounded">imageUrl</code> field in your JSON.</p>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImageChange}
+              className="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 mb-2"
+            />
+            <button
+              type="button"
+              onClick={handleImageUpload}
+              disabled={!imageFiles.length || imageLoading}
+              className="w-full py-1.5 text-xs font-medium text-primary-700 border border-gray-200 rounded-lg hover:bg-primary-50 disabled:opacity-50"
+            >
+              {imageLoading ? 'Uploading...' : 'Upload Image(s)'}
+            </button>
+            {imageUrls.length > 0 && (
+              <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                {imageUrls.map((url, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <img src={url} alt="" className="h-6 w-6 object-cover rounded border" />
+                    <p className="text-xs text-gray-600 break-all">{url}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleQuestionsJsonUpload}
+            disabled={uploadingQuestionsJson || !questionsJsonText.trim()}
+            className="w-full btn-primary disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {uploadingQuestionsJson ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Uploading JSON...
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4" />
+                Upload Questions JSON
+              </>
+            )}
+          </button>
+          <p className="text-xs text-gray-500 mt-2">
+            Supported JSON object fields: text/question, options, correctOption/answer, explanation, imageUrl, subject, examType, institution, year, topic, difficulty.
+          </p>
         </div>
       </div>
 

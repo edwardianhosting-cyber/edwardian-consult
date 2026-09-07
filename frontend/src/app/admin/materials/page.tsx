@@ -60,6 +60,9 @@ export default function AdminMaterialsPage() {
   const [uploadingSyllabus, setUploadingSyllabus] = useState(false);
   const [uploadingTopicsCsv, setUploadingTopicsCsv] = useState(false);
   const [selectedCsvFile, setSelectedCsvFile] = useState<File | null>(null);
+  const [syllabusExamType, setSyllabusExamType] = useState('');
+  const [topicsJsonText, setTopicsJsonText] = useState('');
+  const [uploadingTopicsJson, setUploadingTopicsJson] = useState(false);
 
   useEffect(() => {
     if (view === 'subjects') fetchSubjects();
@@ -229,10 +232,11 @@ export default function AdminMaterialsPage() {
     setSaving(true);
     setError(null);
     try {
-      const data = {
+      let data = {
         ...resourceForm,
         topicId: selectedTopic.id,
       };
+
       if (editingItem && 'title' in editingItem) {
         await studyApi.updateResource(editingItem.id, data);
         setSuccess('Resource updated');
@@ -242,6 +246,24 @@ export default function AdminMaterialsPage() {
           setSaving(false);
           return;
         }
+
+        if (selectedFile) {
+          const uploadResult = await api.uploadMaterialFile(selectedFile, {
+            type: resourceForm.type.toLowerCase(),
+            topicId: selectedTopic.id,
+            title: resourceForm.title,
+            description: resourceForm.description,
+            order: resourceForm.order,
+          });
+          const uploaded = uploadResult.data || {};
+          data = {
+            ...data,
+            fileUrl: uploaded.url || data.fileUrl,
+            imageUrl: uploaded.imageUrl || data.imageUrl,
+            textContent: uploaded.textContent || data.textContent,
+          };
+        }
+
         await studyApi.createResource(data);
         setSuccess('Resource created');
       }
@@ -273,9 +295,10 @@ export default function AdminMaterialsPage() {
     setUploadingSyllabus(true);
     setError(null);
     try {
-      const result = await studyApi.uploadSyllabusText(selectedSubject.id, syllabusText);
+      const result = await studyApi.uploadSyllabusText(selectedSubject.id, syllabusText, syllabusExamType || undefined);
       setSuccess(`Syllabus uploaded successfully. ${result.topics.length} topics created.`);
       setSyllabusText('');
+      setSyllabusExamType('');
       fetchSubjects();
     } catch (err: any) {
       setError(err.message || 'Failed to upload syllabus text');
@@ -297,6 +320,22 @@ export default function AdminMaterialsPage() {
       setError(err.message || 'Failed to upload topics from CSV');
     } finally {
       setUploadingTopicsCsv(false);
+    }
+  }
+
+  async function handleTopicsJsonUpload() {
+    if (!selectedSubject || !topicsJsonText.trim()) return;
+    setUploadingTopicsJson(true);
+    setError(null);
+    try {
+      const result = await studyApi.uploadTopicsJson(selectedSubject.id, topicsJsonText);
+      setSuccess(`Topics uploaded successfully. ${result.data?.length || 0} topics created.`);
+      setTopicsJsonText('');
+      fetchSubjects();
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload topics from JSON');
+    } finally {
+      setUploadingTopicsJson(false);
     }
   }
 
@@ -478,6 +517,17 @@ export default function AdminMaterialsPage() {
             <div className="bg-white rounded-xl border border-gray-100 p-6">
               <h3 className="font-semibold text-gray-900 mb-4">Upload Syllabus</h3>
               <p className="text-sm text-gray-500 mb-4">Enter syllabus text below. Topic headings will be automatically extracted and created.</p>
+              <div className="mb-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Exam Type</label>
+                <select value={syllabusExamType} onChange={(e) => setSyllabusExamType(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500">
+                  <option value="">None</option>
+                  <option value="JAMB">JAMB</option>
+                  <option value="WAEC">WAEC</option>
+                  <option value="NECO">NECO</option>
+                  <option value="POST-UTME">POST-UTME</option>
+                  <option value="MOCK">MOCK</option>
+                </select>
+              </div>
               <textarea
                 value={syllabusText}
                 onChange={(e) => setSyllabusText(e.target.value)}
@@ -496,7 +546,7 @@ export default function AdminMaterialsPage() {
 
             <div className="bg-white rounded-xl border border-gray-100 p-6">
               <h3 className="font-semibold text-gray-900 mb-4">Upload Topics via CSV</h3>
-              <p className="text-sm text-gray-500 mb-4">Upload a CSV file with topic names. First column should be topic name, second column (optional) should be description.</p>
+              <p className="text-sm text-gray-500 mb-4">Upload a CSV file with topic names. First column should be topic name, second column (optional) should be description. Topics will be available for all exam types.</p>
               <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center mb-4">
                 <input
                   type="file"
@@ -534,6 +584,25 @@ export default function AdminMaterialsPage() {
                 className="w-full py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {uploadingTopicsCsv ? 'Uploading...' : 'Upload Topics'}
+              </button>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-100 p-6">
+              <h3 className="font-semibold text-gray-900 mb-4">Upload Topics via JSON</h3>
+              <p className="text-sm text-gray-500 mb-4">Paste a JSON array of topics. Each item should have name and optional description. Topics will be available for all exam types.</p>
+              <textarea
+                value={topicsJsonText}
+                onChange={(e) => setTopicsJsonText(e.target.value)}
+                rows={8}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 mb-4 font-mono text-xs"
+                placeholder={`Paste JSON here, for example:\n[\n  {"name": "Topic 1: Introduction", "description": "Basic intro"},\n  {"name": "Topic 2: Core Concepts", "description": "Core concepts overview"}\n]`}
+              />
+              <button
+                onClick={handleTopicsJsonUpload}
+                disabled={uploadingTopicsJson || !topicsJsonText.trim()}
+                className="w-full py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {uploadingTopicsJson ? 'Uploading...' : 'Upload Topics JSON'}
               </button>
             </div>
           </div>
@@ -827,6 +896,40 @@ export default function AdminMaterialsPage() {
                   </ul>
                 </div>
               )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Upload Image</label>
+                <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center">
+                  <input type="file" accept="image/*" onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setUploadingFile(true);
+                    setError(null);
+                    try {
+                      const result = await api.uploadMaterialFile(file, {
+                        type: 'image',
+                        topicId: selectedTopic?.id || '',
+                        title: resourceForm.title || 'Resource image',
+                        description: resourceForm.description || '',
+                        order: resourceForm.order,
+                      });
+                      setResourceForm({ ...resourceForm, imageUrl: result.data.url });
+                    } catch (err: any) {
+                      setError(err.message || 'Failed to upload image');
+                    } finally {
+                      setUploadingFile(false);
+                    }
+                  }} className="hidden" id="resourceImage" />
+                  <label htmlFor="resourceImage" className="cursor-pointer">
+                    <Upload className="w-6 h-6 text-gray-400 mx-auto mb-1" />
+                    <p className="text-xs text-gray-600">Click to upload image</p>
+                  </label>
+                  {resourceForm.imageUrl && (
+                    <div className="mt-2">
+                      <img src={resourceForm.imageUrl} alt="Preview" className="h-20 w-auto mx-auto rounded border" />
+                    </div>
+                  )}
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Or provide File URL</label>
                 <input type="text" value={resourceForm.fileUrl} onChange={(e) => setResourceForm({ ...resourceForm, fileUrl: e.target.value })} placeholder="https://..." className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500" />

@@ -39,8 +39,6 @@ const sidebarSections = [
       { name: 'Profile', href: '/parent/child', icon: User },
       { name: 'Academic Progress', href: '/parent/progress', icon: TrendingUp },
       { name: 'CBT Results', href: '/parent/results', icon: FileText },
-      { name: 'Attendance', href: '/parent/attendance', icon: Calendar },
-      { name: 'Assignments', href: '/parent/assignments', icon: BookOpen },
     ],
   },
   {
@@ -54,14 +52,6 @@ const sidebarSections = [
     title: 'COMMUNICATION',
     items: [
       { name: 'Announcements', href: '/parent/announcements', icon: Bell },
-      { name: 'Messages', href: '/parent/messages', icon: Bell },
-    ],
-  },
-  {
-    title: 'ACCOUNT',
-    items: [
-      { name: 'My Profile', href: '/parent/profile', icon: Shield },
-      { name: 'Settings', href: '/parent/settings', icon: Settings },
     ],
   },
 ];
@@ -243,29 +233,22 @@ export default function ParentLayout({ children }: ParentLayoutProps) {
                       className="fixed inset-0 z-10"
                       onClick={() => setAvatarDropdownOpen(false)}
                     />
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
-                      <Link
-                        href="/parent/dashboard"
-                        onClick={() => setAvatarDropdownOpen(false)}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Dashboard
-                      </Link>
-                      <Link
-                        href="/parent/settings"
-                        onClick={() => setAvatarDropdownOpen(false)}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Settings
-                      </Link>
-                      <Link
-                        href="/parent/profile"
-                        onClick={() => setAvatarDropdownOpen(false)}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Profile
-                      </Link>
-                    </div>
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                  <Link
+                    href="/parent/dashboard"
+                    onClick={() => setAvatarDropdownOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    href="/parent/child"
+                    onClick={() => setAvatarDropdownOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Child Profile
+                  </Link>
+                </div>
                   </>
                 )}
               </div>

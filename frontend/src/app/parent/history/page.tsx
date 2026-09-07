@@ -1,16 +1,123 @@
 ﻿'use client';
 
-import PlaceholderPage from '@/components/PlaceholderPage';
-import { CreditCard } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { CreditCard, CheckCircle, Clock, XCircle } from 'lucide-react';
+import api from '@/lib/api';
 
-export default function ParentPage() {
-  return (
-    <PlaceholderPage
-      title='Payment History'
-      description='View Payment History'
-      icon={CreditCard}
-      features={['Feature 1', 'Feature 2', 'Feature 3']}
-    />
-  );
+interface Payment {
+  id: string;
+  description: string;
+  amount: number;
+  date: string;
+  status: 'completed' | 'pending' | 'failed';
+  reference: string;
 }
 
+export default function ParentPaymentHistoryPage() {
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPayments();
+  }, []);
+
+  async function fetchPayments() {
+    try {
+      const res = await api.getPayments();
+      const data = (res as any).payments || [];
+      setPayments(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to fetch payments:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function getStatusColor(status: string) {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-100 text-green-700';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-700';
+      case 'failed':
+        return 'bg-red-100 text-red-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
+    }
+  }
+
+  function getStatusIcon(status: string) {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle className="w-5 h-5 text-green-600" />;
+      case 'pending':
+        return <Clock className="w-5 h-5 text-yellow-600" />;
+      case 'failed':
+        return <XCircle className="w-5 h-5 text-red-600" />;
+      default:
+        return <Clock className="w-5 h-5 text-gray-600" />;
+    }
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Payment History</h1>
+        <p className="text-gray-600 mt-1">View all payment transactions</p>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-100">
+        <div className="p-4 border-b border-gray-100">
+          <h2 className="font-semibold text-gray-900">All Payments</h2>
+        </div>
+        {loading ? (
+          <div className="p-8 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+          </div>
+        ) : payments.length === 0 ? (
+          <div className="p-8 text-center">
+            <CreditCard className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500">No payments yet</p>
+            <p className="text-sm text-gray-400 mt-1">
+              Payment history will appear here
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {payments.map((payment) => (
+              <div
+                key={payment.id}
+                className="p-4 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {getStatusIcon(payment.status)}
+                    <div>
+                      <p className="font-medium text-gray-900">{payment.description}</p>
+                      <p className="text-sm text-gray-500">{payment.reference}</p>
+                      <p className="text-xs text-gray-400">
+                        {new Date(payment.date).toLocaleDateString('en-NG', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-gray-900">{payment.amount.toLocaleString()}</p>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full ${getStatusColor(payment.status)}`}
+                    >
+                      {payment.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

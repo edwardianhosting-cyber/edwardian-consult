@@ -3,7 +3,6 @@ import { Inter, Poppins } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth';
-import AntiCopy from '@/components/AntiCopy';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -65,9 +64,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body className="font-sans antialiased">
-        <AntiCopy>
-          <AuthProvider>{children}</AuthProvider>
-        </AntiCopy>
+        <AuthProvider>{children}</AuthProvider>
         <Script src="/app.js" defer />
       </body>
     </html>

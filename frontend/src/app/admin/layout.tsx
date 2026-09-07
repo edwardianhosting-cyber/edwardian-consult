@@ -71,8 +71,6 @@ const sidebarSections = [
       { name: 'Mock Exams', href: '/admin/mock', icon: Calendar },
       { name: 'Performance', href: '/admin/performance', icon: Target },
       { name: 'JAMB Deadlines', href: '/admin/jamb/deadlines', icon: Calendar },
-      { name: 'JAMB Subjects', href: '/admin/jamb/subjects', icon: BookOpen },
-      { name: 'JAMB Syllabus', href: '/admin/jamb/syllabus', icon: FileText },
     ],
   },
   {

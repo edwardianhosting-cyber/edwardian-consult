@@ -1,10 +1,18 @@
+import crypto from 'crypto';
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import prisma from '../lib/prisma';
 import { hashPassword, verifyPassword, generateToken, generatePortalId, generateParentCode, generateStudentPassword } from '../lib/auth';
-import { sendWelcomeEmail } from '../lib/email';
+import { sendWelcomeEmail, sendPasswordResetEmail } from '../lib/email';
 import { generateStudentEmail, createStudentEmailAccount } from '../lib/whohost';
 import { useReferralCode } from '../services/referral.service';
+
+// Reset tokens are emailed in plaintext but only ever stored as a SHA-256 hash,
+// the same principle as password storage: a leaked DB row shouldn't hand out
+// a working reset link.
+function hashResetToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
 
 const router = Router();
 
@@ -58,6 +66,15 @@ const loginSchema = z.object({
 const parentLoginSchema = z.object({
   portalId: z.string().min(1, 'Portal ID is required'),
   accessCode: z.string().min(1, 'Access code is required'),
+});
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Reset token is required'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
 // Register new student
@@ -339,6 +356,103 @@ router.post('/parent-login', async (req: Request, res: Response) => {
     });
   } catch (error) {
     throw error;
+  }
+});
+
+// Request a password reset link
+router.post('/forgot-password', async (req: Request, res: Response) => {
+  try {
+    const validated = forgotPasswordSchema.parse(req.body);
+
+    const user = await prisma.user.findUnique({
+      where: { email: validated.email },
+    });
+
+    // Always return the same success response whether or not the email
+    // matches an account — this stops the endpoint being used to figure
+    // out who has an account (user enumeration).
+    const genericResponse = {
+      success: true,
+      message: 'If an account exists for that email, a reset link has been sent.',
+    };
+
+    if (!user || !user.isActive) {
+      return res.json(genericResponse);
+    }
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = hashResetToken(rawToken);
+    const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour, matches the email copy
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetToken: tokenHash,
+        resetTokenExpiry: expiry,
+      },
+    });
+
+    sendPasswordResetEmail(user.email, user.fullName, rawToken).catch(err =>
+      console.error('Password reset email error:', err)
+    );
+
+    return res.json(genericResponse);
+  } catch (error: any) {
+    console.error('Forgot-password error:', error);
+    if (error.errors && Array.isArray(error.errors)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed: ' + error.errors.map((e: any) => e.message).join(', '),
+      });
+    }
+    return res.status(500).json({ success: false, message: 'Something went wrong' });
+  }
+});
+
+// Complete a password reset using the emailed token
+router.post('/reset-password', async (req: Request, res: Response) => {
+  try {
+    const validated = resetPasswordSchema.parse(req.body);
+    const tokenHash = hashResetToken(validated.token);
+
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: tokenHash,
+        resetTokenExpiry: { gt: new Date() },
+      },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'This reset link is invalid or has expired. Please request a new one.',
+      });
+    }
+
+    const passwordHash = await hashPassword(validated.password);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        resetToken: null,
+        resetTokenExpiry: null,
+      },
+    });
+
+    return res.json({
+      success: true,
+      message: 'Password has been reset. You can now log in.',
+    });
+  } catch (error: any) {
+    console.error('Reset-password error:', error);
+    if (error.errors && Array.isArray(error.errors)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed: ' + error.errors.map((e: any) => e.message).join(', '),
+      });
+    }
+    return res.status(500).json({ success: false, message: 'Something went wrong' });
   }
 });
 

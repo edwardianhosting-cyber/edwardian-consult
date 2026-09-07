@@ -57,10 +57,9 @@ interface Notice {
 
 export default function ParentDashboard() {
   const [child, setChild] = useState<UserProfile | null>(null);
-  const [stats, setStats] = useState({ totalCBTs: 0, averageScore: 0, attendanceRate: 0, assignmentsCompleted: 0, totalAssignments: 0, pendingPayments: 0 });
+  const [stats, setStats] = useState({ totalCBTs: 0, averageScore: 0, assignmentsCompleted: 0, totalAssignments: 0, pendingPayments: 0 });
   const [recentResults, setRecentResults] = useState<CBTResult[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -73,12 +72,11 @@ export default function ParentDashboard() {
     try {
       setLoading(true);
       setError(null);
-      const [profileRes, performanceRes, resultsRes, notificationsRes, assignmentsRes, noticesRes] = await Promise.allSettled([
+      const [profileRes, performanceRes, resultsRes, notificationsRes, noticesRes] = await Promise.allSettled([
         api.getProfile(),
         api.getPerformance(),
         api.getCBTResults(1),
         api.getRecentNotifications(5),
-        api.getAssignments(),
         api.getNotices(),
       ]);
 
@@ -99,9 +97,6 @@ export default function ParentDashboard() {
       }
       if (notificationsRes.status === 'fulfilled') {
         setNotifications(notificationsRes.value.data || []);
-      }
-      if (assignmentsRes.status === 'fulfilled') {
-        setAssignments((assignmentsRes.value.data || []).slice(0, 5));
       }
       if (noticesRes.status === 'fulfilled') {
         setNotices((noticesRes.value.data || []).slice(0, 5));
@@ -161,7 +156,7 @@ export default function ParentDashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl p-4 border border-gray-100">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -187,22 +182,11 @@ export default function ParentDashboard() {
         <div className="bg-white rounded-xl p-4 border border-gray-100">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-              <BookOpen className="w-5 h-5 text-purple-600" />
+              <CreditCard className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.assignmentsCompleted}/{stats.totalAssignments}</p>
-              <p className="text-xs text-gray-500">Assignments</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-              <Clock className="w-5 h-5 text-yellow-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.attendanceRate}%</p>
-              <p className="text-xs text-gray-500">Attendance</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.pendingPayments}</p>
+              <p className="text-xs text-gray-500">Pending Payments</p>
             </div>
           </div>
         </div>
@@ -240,56 +224,6 @@ export default function ParentDashboard() {
 
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Notifications</h2>
-            <Link href="/parent/notifications" className="text-sm text-green-600 hover:text-green-700">View All</Link>
-          </div>
-          {notifications.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No notifications yet</p>
-          ) : (
-            <div className="space-y-3">
-              {notifications.slice(0, 5).map((notif) => (
-                <div key={notif.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className={`w-2 h-2 rounded-full mt-1.5 ${notif.isRead ? 'bg-gray-300' : 'bg-green-600'}`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 text-sm line-clamp-1">{notif.title}</p>
-                    {notif.message && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.message}</p>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="grid lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Upcoming Assignments</h2>
-            <Link href="/parent/assignments" className="text-sm text-green-600 hover:text-green-700">View All</Link>
-          </div>
-          {assignments.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No assignments yet</p>
-          ) : (
-            <div className="space-y-3">
-              {assignments.map((assignment) => (
-                <div key={assignment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="font-medium text-gray-900 text-sm">{assignment.title}</p>
-                    <p className="text-xs text-gray-500">{assignment.subject} {assignment.dueDate && `• Due ${new Date(assignment.dueDate).toLocaleDateString()}`}</p>
-                  </div>
-                  {assignment.status && (
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${assignment.status === 'SUBMITTED' ? 'bg-green-100 text-green-700' : assignment.status === 'LATE' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                      {assignment.status}
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Announcements</h2>
             <Link href="/parent/announcements" className="text-sm text-green-600 hover:text-green-700">View All</Link>
           </div>
@@ -312,7 +246,7 @@ export default function ParentDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <Link href="/parent/child" className="bg-white rounded-xl border border-gray-100 p-4 text-center hover:shadow-md transition-shadow">
           <User className="w-8 h-8 text-green-600 mx-auto mb-2" />
           <p className="text-sm font-medium text-gray-700">Child Profile</p>
@@ -321,13 +255,9 @@ export default function ParentDashboard() {
           <FileText className="w-8 h-8 text-green-600 mx-auto mb-2" />
           <p className="text-sm font-medium text-gray-700">CBT Results</p>
         </Link>
-        <Link href="/parent/attendance" className="bg-white rounded-xl border border-gray-100 p-4 text-center hover:shadow-md transition-shadow">
-          <Calendar className="w-8 h-8 text-green-600 mx-auto mb-2" />
-          <p className="text-sm font-medium text-gray-700">Attendance</p>
-        </Link>
-        <Link href="/parent/assignments" className="bg-white rounded-xl border border-gray-100 p-4 text-center hover:shadow-md transition-shadow">
-          <BookOpen className="w-8 h-8 text-green-600 mx-auto mb-2" />
-          <p className="text-sm font-medium text-gray-700">Assignments</p>
+        <Link href="/parent/payments" className="bg-white rounded-xl border border-gray-100 p-4 text-center hover:shadow-md transition-shadow">
+          <CreditCard className="w-8 h-8 text-green-600 mx-auto mb-2" />
+          <p className="text-sm font-medium text-gray-700">Payments</p>
         </Link>
       </div>
     </div>
