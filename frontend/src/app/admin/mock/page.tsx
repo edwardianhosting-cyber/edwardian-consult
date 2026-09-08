@@ -11,6 +11,7 @@ interface MockExam {
   duration: number;
   totalQuestions: number;
   totalMarks: number;
+  questionsPerSubject: number;
   isPublished: boolean;
   isActive: boolean;
   createdAt: string;
@@ -28,7 +29,7 @@ export default function AdminMockExamPage() {
     title: '',
     subject: '',
     duration: 60,
-    totalMarks: 100,
+    questionsPerSubject: 10,
   });
 
   useEffect(() => {
@@ -50,7 +51,7 @@ export default function AdminMockExamPage() {
 
   function openCreateModal() {
     setEditingExam(null);
-    setFormData({ title: '', subject: '', duration: 60, totalMarks: 100 });
+    setFormData({ title: '', subject: '', duration: 60, questionsPerSubject: 10 });
     setShowModal(true);
   }
 
@@ -60,7 +61,7 @@ export default function AdminMockExamPage() {
       title: exam.title,
       subject: exam.subject,
       duration: exam.duration,
-      totalMarks: exam.totalMarks,
+      questionsPerSubject: exam.questionsPerSubject || 10,
     });
     setShowModal(true);
   }
@@ -167,13 +168,14 @@ export default function AdminMockExamPage() {
               </div>
               <h3 className="font-semibold text-gray-900 mb-1">{exam.title}</h3>
               <p className="text-sm text-gray-500 mb-4">{exam.subject}</p>
-              <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
-                <span className="flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
-                  {exam.duration} mins
-                </span>
-                <span>{exam.totalQuestions} questions</span>
-              </div>
+               <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                 <span className="flex items-center gap-1">
+                   <Clock className="w-4 h-4" />
+                   {exam.duration} mins
+                 </span>
+                 <span>{exam.totalQuestions || 0} questions</span>
+                 <span>100 marks</span>
+               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setViewingExam(exam)}
@@ -250,15 +252,16 @@ export default function AdminMockExamPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Total Marks</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Questions Per Subject</label>
                 <input
                   type="number"
                   required
                   min="1"
-                  value={formData.totalMarks}
-                  onChange={(e) => setFormData({ ...formData, totalMarks: parseInt(e.target.value) || 0 })}
+                  value={formData.questionsPerSubject}
+                  onChange={(e) => setFormData({ ...formData, questionsPerSubject: parseInt(e.target.value) || 0 })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
+                <p className="text-xs text-gray-500 mt-1">Total marks will always be 100</p>
               </div>
               <div className="flex gap-3 pt-2">
                 <button
@@ -287,13 +290,14 @@ export default function AdminMockExamPage() {
                 ✕
               </button>
             </div>
-            <div className="space-y-2">
-              <p className="text-sm text-gray-600">Subject: {viewingExam.subject}</p>
-              <p className="text-sm text-gray-600">Duration: {viewingExam.duration} minutes</p>
-              <p className="text-sm text-gray-600">Total Marks: {viewingExam.totalMarks}</p>
-              <p className="text-sm text-gray-600">Questions: {viewingExam.totalQuestions}</p>
-              <p className="text-sm text-gray-600">Status: {viewingExam.isPublished ? 'Published' : 'Draft'}</p>
-            </div>
+             <div className="space-y-2">
+               <p className="text-sm text-gray-600">Subject: {viewingExam.subject}</p>
+               <p className="text-sm text-gray-600">Duration: {viewingExam.duration} minutes</p>
+               <p className="text-sm text-gray-600">Questions Per Subject: {viewingExam.questionsPerSubject || 0}</p>
+               <p className="text-sm text-gray-600">Total Marks: {viewingExam.totalMarks}</p>
+               <p className="text-sm text-gray-600">Questions: {viewingExam.totalQuestions || 0}</p>
+               <p className="text-sm text-gray-600">Status: {viewingExam.isPublished ? 'Published' : 'Draft'}</p>
+             </div>
             <div className="mt-6">
               <h3 className="font-semibold text-gray-900 mb-3">Questions</h3>
               {viewingExam.questions && viewingExam.questions.length > 0 ? (

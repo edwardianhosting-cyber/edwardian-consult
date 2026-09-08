@@ -10,6 +10,7 @@ interface MockExam {
   subject: string;
   duration: number;
   totalQuestions: number;
+  questionsPerSubject: number;
   status: 'available' | 'in_progress' | 'completed';
   score?: number;
   completedAt?: string;
@@ -39,9 +40,14 @@ export default function MockPage() {
 
   async function startExam(examId: string) {
     try {
-      window.location.href = `/student/cbt?examId=${examId}&mode=mock`;
+      setLoading(true);
+      const res = await api.startMockExam(examId);
+      const newExamId = (res as any).data?.examId || (res as any).examId;
+      window.location.href = `/student/cbt?examId=${newExamId}&mode=mock`;
     } catch (err: any) {
       alert(err.message || 'Failed to start exam');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -124,6 +130,7 @@ export default function MockPage() {
                   {exam.duration} mins
                 </span>
                 <span>{exam.totalQuestions} questions</span>
+                <span>100 marks</span>
               </div>
               {exam.status === 'completed' && exam.score !== undefined && (
                 <div className="mb-4">

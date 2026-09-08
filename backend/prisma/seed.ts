@@ -9,7 +9,6 @@ async function main() {
 
   const adminPassword = await bcrypt.hash('Admin@123', 12);
   const studentPassword = await bcrypt.hash('Student@123', 12);
-  const tutorPassword = await bcrypt.hash('Tutor@123', 12);
 
   // Create admin user
   const admin = await prisma.user.upsert({
@@ -23,21 +22,6 @@ async function main() {
       role: 'ADMIN',
       portalId: 'EIEC/ADMIN/001',
       parentAccessCode: 'PAR-ADMIN-001',
-    },
-  });
-
-  // Create tutor user
-  const tutor = await prisma.user.upsert({
-    where: { email: 'tutor@edwardianconsult.com' },
-    update: {},
-    create: {
-      fullName: 'Demo Tutor',
-      email: 'tutor@edwardianconsult.com',
-      phone: '08000000003',
-      passwordHash: tutorPassword,
-      role: 'TUTOR',
-      portalId: 'EIEC/TUTOR/001',
-      parentAccessCode: 'PAR-TUTOR-001',
     },
   });
 
@@ -83,7 +67,6 @@ async function main() {
           ]),
           correctOption: i % 4,
           explanation: `This is the explanation for ${subject} question ${i + 1}.`,
-          difficulty: ['EASY', 'MEDIUM', 'HARD'][i % 3],
         },
       });
     }

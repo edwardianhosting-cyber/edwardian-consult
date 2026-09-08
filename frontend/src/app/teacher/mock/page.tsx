@@ -24,7 +24,6 @@ interface Question {
   correctOption: number;
   explanation?: string;
   topic?: string;
-  difficulty: string;
 }
 
 export default function TeacherMockExamPage() {
@@ -42,7 +41,6 @@ export default function TeacherMockExamPage() {
     correctOption: 0,
     explanation: '',
     topic: '',
-    difficulty: 'MEDIUM' as 'EASY' | 'MEDIUM' | 'HARD',
   });
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadType, setUploadType] = useState<'json' | 'csv'>('json');
@@ -103,7 +101,6 @@ export default function TeacherMockExamPage() {
       correctOption: question.correctOption,
       explanation: question.explanation || '',
       topic: question.topic || '',
-      difficulty: question.difficulty,
     });
     setShowQuestionModal(true);
   }
@@ -178,7 +175,6 @@ export default function TeacherMockExamPage() {
           options: ["Lagos", "Abuja", "Kano", "Port Harcourt"],
           correctOption: 1,
           topic: "Geography",
-          difficulty: "EASY",
           explanation: "Abuja is the capital city of Nigeria."
         },
         {
@@ -186,7 +182,6 @@ export default function TeacherMockExamPage() {
           options: ["x = 3", "x = 4", "x = 5", "x = 6"],
           correctOption: 1,
           topic: "Mathematics",
-          difficulty: "MEDIUM",
           explanation: "2x = 8, so x = 4"
         }
       ]
@@ -204,9 +199,9 @@ export default function TeacherMockExamPage() {
   }
 
   function downloadSampleCSV() {
-    const sample = `text,options,correctOption,topic,difficulty,explanation
-"What is the capital of Nigeria?","Lagos|Abuja|Kano|Port Harcourt",1,Geography,EASY,"Abuja is the capital city of Nigeria."
-"Solve for x: 2x + 5 = 13","x = 3|x = 4|x = 5|x = 6",1,Mathematics,MEDIUM,"2x = 8, so x = 4"`;
+    const sample = `text,options,correctOption,topic,explanation
+"What is the capital of Nigeria?","Lagos|Abuja|Kano|Port Harcourt",1,Geography,"Abuja is the capital city of Nigeria."
+"Solve for x: 2x + 5 = 13","x = 3|x = 4|x = 5|x = 6",1,Mathematics,"2x = 8, so x = 4"`;
 
     const blob = new Blob([sample], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -249,7 +244,6 @@ export default function TeacherMockExamPage() {
           options: Array.isArray(q.options) ? q.options : (q.options ? String(q.options).split('|') : ['', '', '', '']),
           correctOption: parseInt(q.correctOption ?? q.answer ?? 0),
           topic: q.topic || '',
-          difficulty: q.difficulty || 'MEDIUM',
           explanation: q.explanation || '',
           subject: viewingExam!.subject,
           examType: 'MOCK',
@@ -450,9 +444,9 @@ export default function TeacherMockExamPage() {
                         {q.explanation && (
                           <p className="text-sm text-gray-500 ml-4 mt-2">Explanation: {q.explanation}</p>
                         )}
-                        {q.topic && (
-                          <p className="text-xs text-gray-400 ml-4 mt-1">Topic: {q.topic} • {q.difficulty}</p>
-                        )}
+                         {q.topic && (
+                           <p className="text-xs text-gray-400 ml-4 mt-1">Topic: {q.topic}</p>
+                         )}
                       </div>
                       <div className="flex gap-2 ml-4">
                         <button
@@ -530,18 +524,6 @@ export default function TeacherMockExamPage() {
                   onChange={(e) => setQuestionForm({ ...questionForm, topic: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
-                <select
-                  value={questionForm.difficulty}
-                  onChange={(e) => setQuestionForm({ ...questionForm, difficulty: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                >
-                  <option value="EASY">Easy</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="HARD">Hard</option>
-                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Explanation (optional)</label>

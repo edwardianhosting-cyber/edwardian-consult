@@ -23,6 +23,7 @@ import {
   addQuestionsToMockExam,
   uploadQuestionsToMockExam,
   removeQuestionFromMockExam,
+  startMockExamAttempt,
 } from '../services/cbt.service';
 
 const router = Router();
@@ -44,7 +45,6 @@ router.get('/questions', authenticate, async (req: Request, res: Response) => {
       subject: req.query.subject as string,
       examType: req.query.examType as string,
       topic: req.query.topic as string,
-      difficulty: req.query.difficulty as string,
       year: req.query.year ? parseInt(req.query.year as string) : undefined,
       limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
     });
@@ -129,6 +129,16 @@ router.get('/mock-exams', authenticate, async (req: Request, res: Response) => {
     res.json({ success: true, data: exams });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch mock exams' });
+  }
+});
+
+// Mock Exams - Student: start mock exam attempt (generates shuffled questions from bank)
+router.post('/mock-exams/:examId/start', authenticate, async (req: Request, res: Response) => {
+  try {
+    const exam = await startMockExamAttempt(req.user!.userId, req.params.examId);
+    res.json({ success: true, data: exam });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message });
   }
 });
 

@@ -174,6 +174,7 @@ export const api = {
   
   // Mock Exams
   getMockExams: () => fetchAPI('/cbt/mock-exams'),
+  startMockExam: (examId: string) => fetchAPI(`/cbt/mock-exams/${examId}/start`, { method: 'POST' }),
   getAllMockExams: () => fetchAPI('/cbt/mock-exams/admin/all'),
   
   // Admin - CBT

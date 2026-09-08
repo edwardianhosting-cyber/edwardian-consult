@@ -195,6 +195,9 @@ export default function CBTPracticePage() {
         const data = await res.json();
         setCbtData(data.data);
         setTimeLeft(data.data.duration * 60 || 3600);
+        if (data.data.subject) {
+          setSelectedSubject(data.data.subject);
+        }
         setPhase('instructions');
       }
     } catch (error) {

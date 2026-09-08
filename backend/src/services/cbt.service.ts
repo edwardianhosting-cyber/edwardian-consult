@@ -8,7 +8,6 @@ interface CreateQuestionParams {
   institution?: string;
   year: number;
   topic?: string;
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   text: string;
   imageUrl?: string;
   options: string[];
@@ -24,7 +23,6 @@ export async function createQuestion(params: CreateQuestionParams) {
       institution: params.institution,
       year: params.year,
       topic: params.topic,
-      difficulty: params.difficulty,
       text: params.text,
       imageUrl: params.imageUrl,
       options: params.options,
@@ -38,7 +36,6 @@ export async function getQuestions(filters: {
   subject?: string;
   examType?: string;
   topic?: string;
-  difficulty?: string;
   year?: number;
   limit?: number;
 }) {
@@ -47,7 +44,6 @@ export async function getQuestions(filters: {
   if (filters.subject) where.subject = filters.subject;
   if (filters.examType) where.examType = filters.examType;
   if (filters.topic) where.topic = filters.topic;
-  if (filters.difficulty) where.difficulty = filters.difficulty;
   if (filters.year) where.year = filters.year;
 
   return prisma.question.findMany({
@@ -126,7 +122,6 @@ export async function generateCBT(userId: string, params: {
       options: shuffledOptions,
       correctOption: newCorrectIndex,
       topic: eq.question.topic,
-      difficulty: eq.question.difficulty,
       explanation: eq.question.explanation,
     };
   });
@@ -144,7 +139,6 @@ export async function generateCBT(userId: string, params: {
       imageUrl: q.imageUrl,
       options: q.options,
       topic: q.topic,
-      difficulty: q.difficulty,
     })),
   };
 }
@@ -287,7 +281,6 @@ export async function getExamById(examId: string) {
       options: shuffledOptions,
       correctOption: newCorrectIndex,
       topic: eq.question.topic,
-      difficulty: eq.question.difficulty,
       explanation: eq.question.explanation,
     };
   });
@@ -305,7 +298,6 @@ export async function getExamById(examId: string) {
       imageUrl: q.imageUrl,
       options: q.options,
       topic: q.topic,
-      difficulty: q.difficulty,
     })),
   };
 }
@@ -318,18 +310,12 @@ export async function getMockExamsForUser(userId: string) {
 
   const userSubjects = (user?.jambSubjects as string[]) || [];
 
-  const where: any = {
-    examType: 'MOCK',
-    isActive: true,
-    isPublished: true,
-  };
-
-  if (userSubjects.length > 0) {
-    where.subject = { in: userSubjects };
-  }
-
-  return prisma.exam.findMany({
-    where,
+  const exams = await prisma.exam.findMany({
+    where: {
+      examType: 'MOCK',
+      isActive: true,
+      isPublished: true,
+    },
     include: {
       questions: {
         include: { question: true },
@@ -338,6 +324,13 @@ export async function getMockExamsForUser(userId: string) {
     },
     orderBy: { createdAt: 'desc' },
   });
+
+  return exams.map(exam => ({
+    ...exam,
+    totalQuestions: (exam as any).questionsPerSubject
+      ? (exam as any).questionsPerSubject * Math.max(userSubjects.length, 1)
+      : exam.questions.length,
+  }));
 }
 
 export async function getAllMockExamsForTeacher(userId: string) {
@@ -467,24 +460,82 @@ export async function createMockExam(teacherId: string, data: {
   title: string;
   subject: string;
   duration: number;
-  totalMarks?: number;
-  questionIds?: string[];
-  questions?: any[];
+  questionsPerSubject: number;
 }) {
-  const questionIds = data.questionIds || (data.questions || []).map((q: any) => q.id).filter(Boolean);
-  const totalMarks = data.totalMarks || questionIds.length * 5;
-
   const exam = await prisma.exam.create({
     data: {
       title: data.title,
       examType: 'MOCK',
       subject: data.subject,
       duration: data.duration,
-      totalMarks,
+      totalMarks: 100,
+      questionsPerSubject: data.questionsPerSubject,
       isPublished: false,
+    },
+    include: {
       questions: {
-        create: questionIds.map((questionId, index) => ({
-          questionId,
+        include: { question: true },
+        orderBy: { order: 'asc' },
+      },
+    },
+  });
+
+  return exam;
+}
+
+export async function startMockExamAttempt(userId: string, examId: string) {
+  const exam = await prisma.exam.findUnique({
+    where: { id: examId },
+  });
+
+  if (!exam) throw new Error('Mock exam not found');
+  if (exam.examType !== 'MOCK') throw new Error('Invalid exam type');
+  if (!exam.isPublished) throw new Error('Mock exam is not published');
+
+  const questionsPerSubject = exam.questionsPerSubject || 10;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { jambSubjects: true },
+  });
+
+  const userSubjects = (user?.jambSubjects as string[]) || [];
+  if (userSubjects.length === 0) {
+    throw new Error('No subjects registered. Please register subjects first.');
+  }
+
+  const allSelectedQuestions: any[] = [];
+
+  for (const subject of userSubjects) {
+    const where: any = {
+      isActive: true,
+      subject,
+      examType: 'JAMB',
+    };
+
+    const subjectQuestions = await prisma.question.findMany({ where });
+    const shuffled = shuffleArray([...subjectQuestions]);
+    const selected = shuffled.slice(0, questionsPerSubject);
+
+    allSelectedQuestions.push(...selected.map(q => ({ ...q, subject })));
+  }
+
+  const finalShuffled = shuffleArray([...allSelectedQuestions]);
+
+  if (finalShuffled.length === 0) {
+    throw new Error('No questions available for your registered subjects');
+  }
+
+  const attemptExam = await prisma.exam.create({
+    data: {
+      title: `${exam.title} - ${new Date().toLocaleDateString()}`,
+      examType: 'MOCK',
+      subject: userSubjects[0],
+      duration: exam.duration,
+      totalMarks: 100,
+      questions: {
+        create: finalShuffled.map((q, index) => ({
+          questionId: q.id,
           order: index + 1,
         })),
       },
@@ -497,7 +548,41 @@ export async function createMockExam(teacherId: string, data: {
     },
   });
 
-  return exam;
+  const questionsWithRandomizedOptions = attemptExam.questions.map(eq => {
+    const originalOptions = eq.question.options as string[];
+    const correctAnswer = originalOptions[eq.question.correctOption];
+
+    const shuffledOptions = shuffleArray([...originalOptions]);
+    const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
+
+    return {
+      id: eq.question.id,
+      text: eq.question.text,
+      imageUrl: eq.question.imageUrl,
+      options: shuffledOptions,
+      correctOption: newCorrectIndex,
+      topic: eq.question.topic,
+      explanation: eq.question.explanation,
+      subject: eq.question.subject,
+    };
+  });
+
+  return {
+    examId: attemptExam.id,
+    title: attemptExam.title,
+    subject: attemptExam.subject,
+    duration: attemptExam.duration,
+    totalMarks: attemptExam.totalMarks,
+    questionCount: questionsWithRandomizedOptions.length,
+    questions: questionsWithRandomizedOptions.map(q => ({
+      id: q.id,
+      text: q.text,
+      imageUrl: q.imageUrl,
+      options: q.options,
+      topic: q.topic,
+      subject: q.subject,
+    })),
+  };
 }
 
 export async function publishMockExam(id: string) {
@@ -518,33 +603,21 @@ export async function updateMockExam(id: string, data: {
   title: string;
   subject: string;
   duration: number;
-  totalMarks?: number;
-  questionIds?: string[];
-  questions?: any[];
+  questionsPerSubject: number;
 }) {
-  const questionIds = data.questionIds || (data.questions || []).map((q: any) => q.id).filter(Boolean);
-  const totalMarks = data.totalMarks || questionIds.length * 5;
-
   const exam = await prisma.exam.update({
     where: { id },
     data: {
       title: data.title,
       subject: data.subject,
       duration: data.duration,
-      totalMarks,
+      totalMarks: 100,
+      questionsPerSubject: data.questionsPerSubject,
     },
   });
 
   await prisma.examQuestion.deleteMany({
     where: { examId: id },
-  });
-
-  await prisma.examQuestion.createMany({
-    data: questionIds.map((questionId, index) => ({
-      examId: id,
-      questionId,
-      order: index + 1,
-    })),
   });
 
   return prisma.exam.findUnique({
@@ -584,7 +657,6 @@ export async function getMockExamQuestions(examId: string) {
     options: eq.question.options as string[],
     correctOption: eq.question.correctOption,
     topic: eq.question.topic,
-    difficulty: eq.question.difficulty,
     explanation: eq.question.explanation,
     order: eq.order,
   }));
@@ -611,7 +683,6 @@ export async function addQuestionsToMockExam(examId: string, questionIds: string
       options: eq.question.options as string[],
       correctOption: eq.question.correctOption,
       topic: eq.question.topic,
-      difficulty: eq.question.difficulty,
       explanation: eq.question.explanation,
       order: eq.order,
     }));
@@ -644,7 +715,6 @@ export async function addQuestionsToMockExam(examId: string, questionIds: string
     options: eq.question.options as string[],
     correctOption: eq.question.correctOption,
     topic: eq.question.topic,
-    difficulty: eq.question.difficulty,
     explanation: eq.question.explanation,
     order: eq.order,
   }));
@@ -655,7 +725,6 @@ export async function uploadQuestionsToMockExam(examId: string, questions: Array
   options: string[];
   correctOption: number;
   topic?: string;
-  difficulty?: string;
   explanation?: string;
   subject: string;
   examType: string;
@@ -679,9 +748,8 @@ export async function uploadQuestionsToMockExam(examId: string, questions: Array
         text: q.text,
         options: q.options,
         correctOption: q.correctOption,
-        topic: q.topic,
-        difficulty: q.difficulty || 'MEDIUM',
-        explanation: q.explanation,
+      topic: q.topic,
+      explanation: q.explanation,
         year: new Date().getFullYear(),
       },
     });
@@ -716,7 +784,6 @@ export async function uploadQuestionsToMockExam(examId: string, questions: Array
     options: eq.question.options as string[],
     correctOption: eq.question.correctOption,
     topic: eq.question.topic,
-    difficulty: eq.question.difficulty,
     explanation: eq.question.explanation,
     order: eq.order,
   }));
@@ -749,7 +816,6 @@ export async function removeQuestionFromMockExam(examId: string, questionId: str
     options: eq.question.options as string[],
     correctOption: eq.question.correctOption,
     topic: eq.question.topic,
-    difficulty: eq.question.difficulty,
     explanation: eq.question.explanation,
     order: eq.order,
   }));
@@ -880,7 +946,6 @@ export async function getCBTResultById(userId: string, resultId: string) {
       isCorrect: answer?.correct ?? false,
       explanation: eq.question.explanation,
       topic: eq.question.topic,
-      difficulty: eq.question.difficulty,
     };
   });
 

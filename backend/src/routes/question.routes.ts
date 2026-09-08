@@ -19,7 +19,6 @@ router.post('/', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (re
       institution: z.string().optional().nullable(),
       year: z.number().int().optional(),
       topic: z.string().optional().nullable(),
-      difficulty: z.string().optional(),
       text: z.string().min(1),
       imageUrl: z.string().optional().nullable(),
       options: z.array(z.string()).min(2),
@@ -36,7 +35,6 @@ router.post('/', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (re
         institution: validated.institution || null,
         year: validated.year || 0,
         topic: validated.topic || null,
-        difficulty: validated.difficulty || 'MEDIUM',
         text: validated.text,
         imageUrl: validated.imageUrl || null,
         options: validated.options,
@@ -60,7 +58,6 @@ router.put('/:id', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (
       institution: z.string().optional().nullable(),
       year: z.number().int().optional(),
       topic: z.string().optional().nullable(),
-      difficulty: z.string().optional(),
       text: z.string().optional(),
       imageUrl: z.string().optional().nullable(),
       options: z.array(z.string()).optional(),
@@ -147,7 +144,6 @@ router.post('/bulk-upload', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR')
       institution: req.body.institution,
       year: req.body.year ? parseInt(req.body.year, 10) : undefined,
       topic: req.body.topic,
-      difficulty: req.body.difficulty,
     };
 
     const fileName = req.file.originalname.toLowerCase();
