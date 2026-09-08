@@ -438,6 +438,10 @@ export const api = {
   deleteMockExam: (id: string) => fetchAPI(`/cbt/mock-exams/${id}`, { method: 'DELETE' }),
   publishMockExam: (id: string) => fetchAPI(`/cbt/mock-exams/${id}/publish`, { method: 'PATCH' }),
   unpublishMockExam: (id: string) => fetchAPI(`/cbt/mock-exams/${id}/unpublish`, { method: 'PATCH' }),
+  getMockExamQuestions: (examId: string) => fetchAPI(`/cbt/mock-exams/${examId}/questions`),
+  addQuestionsToMockExam: (examId: string, questionIds: string[]) => fetchAPI(`/cbt/mock-exams/${examId}/questions`, { method: 'POST', body: JSON.stringify({ questionIds }) }),
+  uploadQuestionsToMockExam: (examId: string, questions: any[]) => fetchAPI(`/cbt/mock-exams/${examId}/upload`, { method: 'POST', body: JSON.stringify({ questions }) }),
+  removeQuestionFromMockExam: (examId: string, questionId: string) => fetchAPI(`/cbt/mock-exams/${examId}/questions/${questionId}`, { method: 'DELETE' }),
   
   // Students
   getStudents: (params?: Record<string, string>) => {

@@ -19,6 +19,10 @@ import {
   getCBTResultById,
   getAdminCBTStats,
   getAllCBTResultsForAdmin,
+  getMockExamQuestions,
+  addQuestionsToMockExam,
+  uploadQuestionsToMockExam,
+  removeQuestionFromMockExam,
 } from '../services/cbt.service';
 
 const router = Router();
@@ -165,6 +169,57 @@ router.get('/mock-exams/admin/all', authenticate, authorize('ADMIN', 'TEACHER', 
     res.json({ success: true, data: exams });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch mock exams' });
+  }
+});
+
+// Mock Exams - Teacher/Admin: get questions for a specific mock exam
+router.get('/mock-exams/:examId/questions', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+  try {
+    const questions = await getMockExamQuestions(req.params.examId);
+    if (!questions) {
+      return res.status(404).json({ success: false, message: 'Mock exam not found' });
+    }
+    res.json({ success: true, data: questions });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch questions' });
+  }
+});
+
+// Mock Exams - Teacher/Admin: add existing questions to a mock exam
+router.post('/mock-exams/:examId/questions', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+  try {
+    const { questionIds } = req.body;
+    if (!Array.isArray(questionIds) || questionIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'questionIds array is required' });
+    }
+    const questions = await addQuestionsToMockExam(req.params.examId, questionIds);
+    res.json({ success: true, data: questions });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Failed to add questions' });
+  }
+});
+
+// Mock Exams - Teacher/Admin: upload questions to a mock exam
+router.post('/mock-exams/:examId/upload', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+  try {
+    const { questions } = req.body;
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return res.status(400).json({ success: false, message: 'questions array is required' });
+    }
+    const uploadedQuestions = await uploadQuestionsToMockExam(req.params.examId, questions);
+    res.json({ success: true, data: uploadedQuestions });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Failed to upload questions' });
+  }
+});
+
+// Mock Exams - Teacher/Admin: remove question from mock exam
+router.delete('/mock-exams/:examId/questions/:questionId', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+  try {
+    const questions = await removeQuestionFromMockExam(req.params.examId, req.params.questionId);
+    res.json({ success: true, data: questions });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to remove question' });
   }
 });
 
