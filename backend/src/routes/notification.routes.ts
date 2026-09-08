@@ -9,8 +9,57 @@ import {
   getRecentNotifications,
   createBulkNotifications,
 } from '../services/notification.service';
+import {
+  getVapidPublicKey,
+  saveSubscription,
+  removeSubscription,
+  sendPushToUser,
+} from '../services/push.service';
 
 const router = Router();
+
+// Public: the VAPID public key the frontend needs to create a push subscription
+router.get('/push/vapid-public-key', (req: Request, res: Response) => {
+  res.json({ success: true, data: { publicKey: getVapidPublicKey() } });
+});
+
+// Save (or refresh) this device's push subscription for the logged-in user
+router.post('/push/subscribe', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { subscription } = req.body;
+    await saveSubscription(req.user!.userId, subscription, req.headers['user-agent'] as string | undefined);
+    res.json({ success: true, message: 'Subscribed to push notifications' });
+  } catch (error: any) {
+    console.error('Failed to save push subscription:', error);
+    res.status(400).json({ success: false, message: error.message || 'Failed to subscribe' });
+  }
+});
+
+// Remove this device's push subscription
+router.post('/push/unsubscribe', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { endpoint } = req.body;
+    await removeSubscription(req.user!.userId, endpoint);
+    res.json({ success: true, message: 'Unsubscribed from push notifications' });
+  } catch (error) {
+    console.error('Failed to remove push subscription:', error);
+    res.status(500).json({ success: false, message: 'Failed to unsubscribe' });
+  }
+});
+
+// Send a test push to the logged-in user's own devices (for verifying setup)
+router.post('/push/test', authenticate, async (req: Request, res: Response) => {
+  try {
+    await sendPushToUser(req.user!.userId, {
+      title: 'Test notification',
+      message: 'Push notifications are set up correctly on this device.',
+    });
+    res.json({ success: true, message: 'Test push sent' });
+  } catch (error) {
+    console.error('Failed to send test push:', error);
+    res.status(500).json({ success: false, message: 'Failed to send test push' });
+  }
+});
 
 // Get user notifications with filtering
 router.get('/', authenticate, async (req: Request, res: Response) => {
@@ -78,6 +127,18 @@ router.patch('/read-all', authenticate, async (req: Request, res: Response) => {
 });
 
 // Update notification preferences
+router.get('/preferences', authenticate, async (req: Request, res: Response) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: { notificationPreferences: true },
+    });
+    res.json({ success: true, data: user?.notificationPreferences || {} });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch preferences' });
+  }
+});
+
 router.patch('/preferences', authenticate, async (req: Request, res: Response) => {
   try {
     await prisma.user.update({

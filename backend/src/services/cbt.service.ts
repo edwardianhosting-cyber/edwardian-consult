@@ -564,6 +564,197 @@ export async function deleteMockExam(id: string) {
   });
 }
 
+export async function getMockExamQuestions(examId: string) {
+  const exam = await prisma.exam.findUnique({
+    where: { id: examId },
+    include: {
+      questions: {
+        include: { question: true },
+        orderBy: { order: 'asc' },
+      },
+    },
+  });
+
+  if (!exam) return null;
+
+  return exam.questions.map((eq) => ({
+    id: eq.question.id,
+    text: eq.question.text,
+    imageUrl: eq.question.imageUrl,
+    options: eq.question.options as string[],
+    correctOption: eq.question.correctOption,
+    topic: eq.question.topic,
+    difficulty: eq.question.difficulty,
+    explanation: eq.question.explanation,
+    order: eq.order,
+  }));
+}
+
+export async function addQuestionsToMockExam(examId: string, questionIds: string[]) {
+  const exam = await prisma.exam.findUnique({
+    where: { id: examId },
+    include: {
+      questions: { include: { question: true }, orderBy: { order: 'asc' } },
+    },
+  });
+
+  if (!exam) throw new Error('Mock exam not found');
+
+  const existingQuestionIds = new Set(exam.questions.map((eq) => eq.questionId));
+  const newQuestionIds = questionIds.filter((id) => !existingQuestionIds.has(id));
+
+  if (newQuestionIds.length === 0) {
+    return exam.questions.map((eq) => ({
+      id: eq.question.id,
+      text: eq.question.text,
+      imageUrl: eq.question.imageUrl,
+      options: eq.question.options as string[],
+      correctOption: eq.question.correctOption,
+      topic: eq.question.topic,
+      difficulty: eq.question.difficulty,
+      explanation: eq.question.explanation,
+      order: eq.order,
+    }));
+  }
+
+  const maxOrder = exam.questions.length > 0 ? Math.max(...exam.questions.map((eq) => eq.order)) : 0;
+
+  await prisma.examQuestion.createMany({
+    data: newQuestionIds.map((questionId, index) => ({
+      examId,
+      questionId,
+      order: maxOrder + index + 1,
+    })),
+  });
+
+  const updatedExam = await prisma.exam.findUnique({
+    where: { id: examId },
+    include: {
+      questions: {
+        include: { question: true },
+        orderBy: { order: 'asc' },
+      },
+    },
+  });
+
+  return updatedExam!.questions.map((eq) => ({
+    id: eq.question.id,
+    text: eq.question.text,
+    imageUrl: eq.question.imageUrl,
+    options: eq.question.options as string[],
+    correctOption: eq.question.correctOption,
+    topic: eq.question.topic,
+    difficulty: eq.question.difficulty,
+    explanation: eq.question.explanation,
+    order: eq.order,
+  }));
+}
+
+export async function uploadQuestionsToMockExam(examId: string, questions: Array<{
+  text: string;
+  options: string[];
+  correctOption: number;
+  topic?: string;
+  difficulty?: string;
+  explanation?: string;
+  subject: string;
+  examType: string;
+}>) {
+  const exam = await prisma.exam.findUnique({
+    where: { id: examId },
+    include: {
+      questions: { include: { question: true }, orderBy: { order: 'asc' } },
+    },
+  });
+
+  if (!exam) throw new Error('Mock exam not found');
+
+  const createdQuestions: any[] = [];
+
+  for (const q of questions) {
+    const created = await prisma.question.create({
+      data: {
+        subject: q.subject || exam.subject,
+        examType: q.examType || 'MOCK',
+        text: q.text,
+        options: q.options,
+        correctOption: q.correctOption,
+        topic: q.topic,
+        difficulty: q.difficulty || 'MEDIUM',
+        explanation: q.explanation,
+        year: new Date().getFullYear(),
+      },
+    });
+
+    createdQuestions.push(created);
+  }
+
+  const maxOrder = exam.questions.length > 0 ? Math.max(...exam.questions.map((eq) => eq.order)) : 0;
+
+  await prisma.examQuestion.createMany({
+    data: createdQuestions.map((question, index) => ({
+      examId,
+      questionId: question.id,
+      order: maxOrder + index + 1,
+    })),
+  });
+
+  const updatedExam = await prisma.exam.findUnique({
+    where: { id: examId },
+    include: {
+      questions: {
+        include: { question: true },
+        orderBy: { order: 'asc' },
+      },
+    },
+  });
+
+  return updatedExam!.questions.map((eq) => ({
+    id: eq.question.id,
+    text: eq.question.text,
+    imageUrl: eq.question.imageUrl,
+    options: eq.question.options as string[],
+    correctOption: eq.question.correctOption,
+    topic: eq.question.topic,
+    difficulty: eq.question.difficulty,
+    explanation: eq.question.explanation,
+    order: eq.order,
+  }));
+}
+
+export async function removeQuestionFromMockExam(examId: string, questionId: string) {
+  await prisma.examQuestion.delete({
+    where: {
+      examId_questionId: {
+        examId,
+        questionId,
+      },
+    },
+  });
+
+  const exam = await prisma.exam.findUnique({
+    where: { id: examId },
+    include: {
+      questions: {
+        include: { question: true },
+        orderBy: { order: 'asc' },
+      },
+    },
+  });
+
+  return exam!.questions.map((eq) => ({
+    id: eq.question.id,
+    text: eq.question.text,
+    imageUrl: eq.question.imageUrl,
+    options: eq.question.options as string[],
+    correctOption: eq.question.correctOption,
+    topic: eq.question.topic,
+    difficulty: eq.question.difficulty,
+    explanation: eq.question.explanation,
+    order: eq.order,
+  }));
+}
+
 export async function getPerformanceAnalysis(userId: string) {
   const results = await prisma.cbtResult.findMany({
     where: { userId },

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Send, Users, Mail, MessageSquare, Bell, AlertTriangle, AlertCircle, Info, Calendar, Clock, CheckCircle } from 'lucide-react';
+import { Send, Users, Mail, MessageSquare, Bell, AlertTriangle, AlertCircle, Info, Calendar, Clock, CheckCircle, Smartphone } from 'lucide-react';
 import api from '@/lib/api';
 
 interface NotificationForm {
@@ -270,7 +270,7 @@ export default function AdminNotificationCenter() {
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Delivery Channels</h2>
 
-          <div className="grid sm:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-4 gap-4">
             <button
               type="button"
               onClick={() => toggleChannel('DASHBOARD')}
@@ -334,6 +334,28 @@ export default function AdminNotificationCenter() {
                   SMS
                 </p>
                 <p className="text-xs text-gray-500">Text message</p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => toggleChannel('PUSH')}
+              className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-colors ${
+                form.channels.includes('PUSH')
+                  ? 'border-purple-500 bg-purple-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                form.channels.includes('PUSH') ? 'bg-purple-100' : 'bg-gray-100'
+              }`}>
+                <Smartphone className={`w-5 h-5 ${form.channels.includes('PUSH') ? 'text-purple-600' : 'text-gray-400'}`} />
+              </div>
+              <div className="text-left">
+                <p className={`font-medium ${form.channels.includes('PUSH') ? 'text-purple-700' : 'text-gray-600'}`}>
+                  Push
+                </p>
+                <p className="text-xs text-gray-500">Device push notification</p>
               </div>
             </button>
           </div>
@@ -400,4 +422,3 @@ export default function AdminNotificationCenter() {
     </div>
   );
 }
-

@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { User, Bell, Shield, Eye, EyeOff, Save, Check, Loader2, ChevronRight, Settings, BookOpen, Plus, X, AlertCircle, Info, MapPin, School, Target, GraduationCap } from 'lucide-react';
+import { User, Bell, Shield, Eye, EyeOff, Save, Check, Loader2, ChevronRight, Settings, BookOpen, Plus, X, AlertCircle, Info, MapPin, School, Target, GraduationCap, Smartphone } from 'lucide-react';
 import api from '@/lib/api';
 import { ALL_SUBJECTS } from '@/lib/subjects';
+import { usePushToggle } from '@/lib/push';
 
 interface NotificationPreferences {
   dashboard: {
@@ -105,6 +106,7 @@ export default function SettingsPage() {
   });
 
   const [notifications, setNotifications] = useState<NotificationPreferences>(defaultPreferences);
+  const pushNotifications = usePushToggle();
 
   const [password, setPassword] = useState({
     current: '',
@@ -657,6 +659,57 @@ export default function SettingsPage() {
             </Link>
           </div>
           <div className="space-y-6">
+            <div>
+              <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                <Smartphone className="w-4 h-4" />
+                Push Notifications
+              </h4>
+              {pushNotifications.supported ? (
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <div>
+                      <span className="text-gray-700 font-medium block">
+                        Enable on this device
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        Get instant alerts even when the app isn&apos;t open
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={pushNotifications.enabled}
+                        disabled={pushNotifications.loading}
+                        onChange={(e) => pushNotifications.toggle(e.target.checked)}
+                        className="sr-only"
+                      />
+                      <div
+                        className={`w-12 h-6 rounded-full transition-colors ${
+                          pushNotifications.enabled ? 'bg-primary-600' : 'bg-gray-300'
+                        } ${pushNotifications.loading ? 'opacity-50' : ''}`}
+                      >
+                        <div
+                          className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform ${
+                            pushNotifications.enabled ? 'translate-x-6' : 'translate-x-0.5'
+                          } mt-0.5`}
+                        />
+                      </div>
+                    </div>
+                  </label>
+                  {pushNotifications.error && (
+                    <p className="text-xs text-red-600 mt-2 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      {pushNotifications.error}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-500 p-3 bg-gray-50 rounded-lg">
+                  Push notifications aren&apos;t supported in this browser.
+                </p>
+              )}
+            </div>
+
             <div>
               <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
                 <Bell className="w-4 h-4" />

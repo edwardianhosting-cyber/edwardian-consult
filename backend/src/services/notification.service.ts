@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma';
 import { sendEmail, EmailPurpose } from '../lib/email';
+import { sendPushToUser, sendPushToUsers } from './push.service';
 
 export type NotificationType =
   | 'SYSTEM' | 'CBT' | 'PAYMENT' | 'ADMISSION' | 'ANNOUNCEMENT'
@@ -8,7 +9,7 @@ export type NotificationType =
 
 export type NotificationPriority = 'NORMAL' | 'IMPORTANT' | 'URGENT';
 
-export type NotificationChannel = 'DASHBOARD' | 'EMAIL' | 'SMS';
+export type NotificationChannel = 'DASHBOARD' | 'EMAIL' | 'SMS' | 'PUSH';
 
 interface CreateNotificationParams {
   userId: string;
@@ -35,7 +36,7 @@ export async function createNotification(params: CreateNotificationParams) {
     link,
     entityType,
     entityId,
-    channels = ['DASHBOARD'],
+    channels = ['DASHBOARD', 'PUSH'],
     emailSubject,
     emailContent,
     smsContent,
@@ -99,6 +100,10 @@ export async function createNotification(params: CreateNotificationParams) {
     });
   }
 
+  if (channels.includes('PUSH') && preferences.push !== false && preferences.pushNotifications !== false) {
+    await sendPushToUser(userId, { title, message, link, type });
+  }
+
   return notification;
 }
 
@@ -129,7 +134,9 @@ export async function createBulkNotifications(
 
   await prisma.notification.createMany({ data: notifications });
 
-  if (options?.channels?.includes('EMAIL')) {
+  const channels = options?.channels || ['DASHBOARD', 'PUSH'];
+
+  if (channels.includes('EMAIL')) {
     const users = await prisma.user.findMany({
       where: { id: { in: userIds } },
       select: { email: true, studentEmail: true, fullName: true },
@@ -146,6 +153,21 @@ export async function createBulkNotifications(
         name: user.fullName,
       });
     }
+  }
+
+  if (channels.includes('PUSH')) {
+    const pushRecipients = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, notificationPreferences: true },
+    });
+    const pushUserIds = pushRecipients
+      .filter((u) => {
+        const p = (u.notificationPreferences as any) || {};
+        return p.push !== false && p.pushNotifications !== false;
+      })
+      .map((u) => u.id);
+
+    await sendPushToUsers(pushUserIds, { title, message, link: options?.link, type });
   }
 
   return notifications.length;

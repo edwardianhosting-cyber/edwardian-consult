@@ -1,19 +1,20 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2, Save, Lock, Bell, BellOff, AlertCircle, CheckCircle, Shield } from 'lucide-react';
+import { Loader2, Save, Lock, Bell, BellOff, AlertCircle, CheckCircle, Shield, Smartphone } from 'lucide-react';
 import { api } from '@/lib/api';
+import { usePushToggle } from '@/lib/push';
 
 export default function TeacherSettings() {
   const [savingPassword, setSavingPassword] = useState(false);
   const [savingPrefs, setSavingPrefs] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const pushNotifications = usePushToggle();
 
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [prefs, setPrefs] = useState({
     emailNotifications: true,
-    pushNotifications: true,
     assignmentReminders: true,
     gradeNotifications: true,
   });
@@ -178,9 +179,39 @@ export default function TeacherSettings() {
         </div>
 
         <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div>
+              <p className="font-medium text-gray-900 flex items-center gap-2">
+                <Smartphone className="w-4 h-4 text-gray-500" />
+                Push Notifications
+              </p>
+              <p className="text-sm text-gray-500">
+                {pushNotifications.supported
+                  ? "Get instant alerts on this device, even when the app isn't open"
+                  : "Not supported in this browser"}
+              </p>
+              {pushNotifications.error && (
+                <p className="text-xs text-red-600 mt-1">{pushNotifications.error}</p>
+              )}
+            </div>
+            <button
+              type="button"
+              disabled={!pushNotifications.supported || pushNotifications.loading}
+              onClick={() => pushNotifications.toggle(!pushNotifications.enabled)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
+                pushNotifications.enabled ? 'bg-purple-600' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${
+                  pushNotifications.enabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+
           {[
             { key: 'emailNotifications', label: 'Email Notifications', desc: 'Receive notifications via email' },
-            { key: 'pushNotifications', label: 'Push Notifications', desc: 'Receive browser push notifications' },
             { key: 'assignmentReminders', label: 'Assignment Reminders', desc: 'Get reminded about upcoming assignment deadlines' },
             { key: 'gradeNotifications', label: 'Grade Notifications', desc: 'Get notified when submissions are graded' },
           ].map((pref) => (

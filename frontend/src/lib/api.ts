@@ -118,6 +118,12 @@ export const api = {
   updateNotificationPreferences: (prefs: any) => fetchAPI('/notifications/preferences', { method: 'PATCH', body: JSON.stringify(prefs) }),
   getNotificationPreferences: () => fetchAPI('/notifications/preferences'),
   sendNotification: (data: any) => fetchAPI('/notifications/admin/send', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Push notifications
+  getVapidPublicKey: () => fetchAPI('/notifications/push/vapid-public-key'),
+  subscribePush: (subscription: PushSubscriptionJSON) => fetchAPI('/notifications/push/subscribe', { method: 'POST', body: JSON.stringify({ subscription }) }),
+  unsubscribePush: (endpoint: string) => fetchAPI('/notifications/push/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint }) }),
+  sendTestPush: () => fetchAPI('/notifications/push/test', { method: 'POST' }),
   
   // Results
   getResults: () => fetchAPI('/cbt/results'),
