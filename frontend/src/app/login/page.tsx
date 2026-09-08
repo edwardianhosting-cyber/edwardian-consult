@@ -47,7 +47,7 @@ export default function LoginPage() {
         });
       }
 
-      const { token, user } = response.data;
+      const { token, user } = response.data.data;
       login(token, user);
 
       if (user.role === 'ADMIN') {
