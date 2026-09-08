@@ -29,11 +29,13 @@ export default function LoginPage() {
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('[login] handleSubmit called', { mode, formData: { email: formData.email, password: formData.password ? '***' : '' } });
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
+      console.log('[login] calling authApi.login');
       let response;
       if (mode === 'parent') {
         response = await authApi.parentLogin({
@@ -46,8 +48,11 @@ export default function LoginPage() {
           password: formData.password,
         });
       }
+      console.log('[login] authApi.login response', response);
 
-      const { token, user } = response.data.data;
+      const payload = (response as any).data || response;
+      const { token, user } = payload;
+      console.log('[login] login success', { token: !!token, user });
       login(token, user);
 
       if (user.role === 'ADMIN') {
@@ -60,6 +65,7 @@ export default function LoginPage() {
         router.push('/student/dashboard');
       }
     } catch (err: any) {
+      console.error('[login] submit error', err);
       setError(err.response?.data?.message || 'Login failed. Please check your credentials and try again.');
     } finally {
       setLoading(false);
