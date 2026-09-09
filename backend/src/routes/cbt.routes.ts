@@ -195,8 +195,8 @@ router.get('/mock-exams/:examId/questions', authenticate, authorize('ADMIN', 'TE
   }
 });
 
-// Mock Exams - Teacher/Admin: add existing questions to a mock exam
-router.post('/mock-exams/:examId/questions', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+// Mock Exams - Admin: add existing questions to a mock exam
+router.post('/mock-exams/:examId/questions', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     const { questionIds } = req.body;
     if (!Array.isArray(questionIds) || questionIds.length === 0) {
@@ -209,8 +209,8 @@ router.post('/mock-exams/:examId/questions', authenticate, authorize('ADMIN', 'T
   }
 });
 
-// Mock Exams - Teacher/Admin: upload questions to a mock exam
-router.post('/mock-exams/:examId/upload', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+// Mock Exams - Admin: upload questions to a mock exam
+router.post('/mock-exams/:examId/upload', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     const { questions } = req.body;
     if (!Array.isArray(questions) || questions.length === 0) {
@@ -223,8 +223,8 @@ router.post('/mock-exams/:examId/upload', authenticate, authorize('ADMIN', 'TEAC
   }
 });
 
-// Mock Exams - Teacher/Admin: remove question from mock exam
-router.delete('/mock-exams/:examId/questions/:questionId', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+// Mock Exams - Admin: remove question from mock exam
+router.delete('/mock-exams/:examId/questions/:questionId', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     const questions = await removeQuestionFromMockExam(req.params.examId, req.params.questionId);
     res.json({ success: true, data: questions });

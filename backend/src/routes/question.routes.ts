@@ -11,7 +11,7 @@ const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Create single question
-router.post('/', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+router.post('/', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     const schema = z.object({
       subject: z.string().min(1),
@@ -50,7 +50,7 @@ router.post('/', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (re
 });
 
 // Update question
-router.put('/:id', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+router.put('/:id', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     const schema = z.object({
       subject: z.string().optional(),
@@ -78,7 +78,7 @@ router.put('/:id', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (
 });
 
 // Delete question
-router.delete('/:id', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+router.delete('/:id', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     await prisma.question.delete({ where: { id: req.params.id } });
     return res.json({ success: true, message: 'Question deleted' });
@@ -119,7 +119,7 @@ router.get('/sample', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), asyn
   }
 });
 
-router.post('/upload-image', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), upload.single('image'), async (req: Request, res: Response) => {
+router.post('/upload-image', authenticate, authorize('ADMIN'), upload.single('image'), async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No image file provided' });
@@ -132,7 +132,7 @@ router.post('/upload-image', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'
   }
 });
 
-router.post('/bulk-upload', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), upload.single('file'), async (req: Request, res: Response) => {
+router.post('/bulk-upload', authenticate, authorize('ADMIN'), upload.single('file'), async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file provided' });
@@ -164,7 +164,7 @@ router.post('/bulk-upload', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR')
   }
 });
 
-router.post('/bulk-upload-json', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
+router.post('/bulk-upload-json', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     const { questions, defaults } = req.body;
     if (!Array.isArray(questions) || questions.length === 0) {
