@@ -294,14 +294,14 @@ export default function AdminMockExamPage() {
                 ✕
               </button>
             </div>
-             <div className="space-y-2">
-               <p className="text-sm text-gray-600">Subject: {viewingExam.subject}</p>
-               <p className="text-sm text-gray-600">Duration: {viewingExam.duration} minutes</p>
-               <p className="text-sm text-gray-600">Questions Per Subject: {viewingExam.questionsPerSubject || 0}</p>
-               <p className="text-sm text-gray-600">Total Marks: {viewingExam.totalMarks}</p>
-               <p className="text-sm text-gray-600">Questions: {viewingExam.totalQuestions || 0}</p>
-               <p className="text-sm text-gray-600">Status: {viewingExam.isPublished ? 'Published' : 'Draft'}</p>
-             </div>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">Subject: {viewingExam.subject}</p>
+                <p className="text-sm text-gray-600">Duration: {viewingExam.duration} minutes</p>
+                <p className="text-sm text-gray-600">Questions Per Subject: {viewingExam.questionsPerSubject || 0}</p>
+                <p className="text-sm text-gray-600">Total Marks: {viewingExam.totalMarks || 100}</p>
+                <p className="text-sm text-gray-600">Questions: {viewingExam.totalQuestions || 0}</p>
+                <p className="text-sm text-gray-600">Status: {viewingExam.isPublished ? 'Published' : 'Draft'}</p>
+              </div>
             <div className="mt-6">
               <h3 className="font-semibold text-gray-900 mb-3">Questions</h3>
               {viewingExam.questions && viewingExam.questions.length > 0 ? (
