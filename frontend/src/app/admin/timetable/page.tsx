@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import api, { studyApi } from '@/lib/api';
-import { Calendar, Plus, Trash2, Save } from 'lucide-react';
+import { Calendar, Plus, Trash2, Save, Edit } from 'lucide-react';
 
 interface TimetableEntry {
   id: string;
@@ -31,6 +31,7 @@ export default function AdminTimetablePage() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<TimetableEntry | null>(null);
   const [formData, setFormData] = useState({
     day: 'Monday',
     time: '09:00',
@@ -81,6 +82,34 @@ export default function AdminTimetablePage() {
     }
   }
 
+  function openCreateForm() {
+    setEditingEntry(null);
+    setFormData({
+      day: 'Monday',
+      time: '09:00',
+      subject: '',
+      instructor: '',
+      venue: '',
+      type: 'CLASS',
+      examType: '',
+    });
+    setShowForm(true);
+  }
+
+  function openEditForm(entry: TimetableEntry) {
+    setEditingEntry(entry);
+    setFormData({
+      day: entry.day,
+      time: entry.time,
+      subject: entry.subject,
+      instructor: entry.instructor || '',
+      venue: entry.venue || '',
+      type: entry.type || 'CLASS',
+      examType: entry.examType || '',
+    });
+    setShowForm(true);
+  }
+
   async function createEntry(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -98,6 +127,28 @@ export default function AdminTimetablePage() {
       fetchEntries();
     } catch (err: any) {
       alert(err.message || 'Failed to create entry');
+    }
+  }
+
+  async function updateEntry(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingEntry) return;
+    try {
+      await api.updateTimetableEntry(editingEntry.id, formData);
+      setShowForm(false);
+      setEditingEntry(null);
+      setFormData({
+        day: 'Monday',
+        time: '09:00',
+        subject: '',
+        instructor: '',
+        venue: '',
+        type: 'CLASS',
+        examType: '',
+      });
+      fetchEntries();
+    } catch (err: any) {
+      alert(err.message || 'Failed to update entry');
     }
   }
 
@@ -127,7 +178,7 @@ export default function AdminTimetablePage() {
           <p className="text-gray-600 mt-1">Create and manage class timetable</p>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={openCreateForm}
           className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
@@ -137,8 +188,10 @@ export default function AdminTimetablePage() {
 
       {showForm && (
         <div className="bg-white rounded-xl border border-gray-100 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">New Timetable Entry</h2>
-          <form onSubmit={createEntry} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            {editingEntry ? 'Edit Timetable Entry' : 'New Timetable Entry'}
+          </h2>
+          <form onSubmit={editingEntry ? updateEntry : createEntry} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Day</label>
               <select
@@ -270,12 +323,20 @@ export default function AdminTimetablePage() {
                   <td className="py-3 px-4 text-sm text-gray-500">{entry.type}</td>
                   <td className="py-3 px-4 text-sm text-gray-500">{entry.examType || 'All'}</td>
                   <td className="py-3 px-4 text-sm">
-                    <button
-                      onClick={() => deleteEntry(entry.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => openEditForm(entry)}
+                        className="text-blue-500 hover:text-blue-700"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => deleteEntry(entry.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

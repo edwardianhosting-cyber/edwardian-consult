@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Upload, FileText, Image, CheckCircle, Loader2, Download, Images } from 'lucide-react';
-import { api, API_BASE, studyApi } from '@/lib/api';
+import { Upload, FileText, Image, CheckCircle, Loader2, Download, Copy, Check } from 'lucide-react';
+import { api, API_BASE } from '@/lib/api';
 
 interface Question {
   id: string;
@@ -35,9 +35,11 @@ export default function QuestionUpload() {
     examType: 'JAMB',
     institution: '',
     year: new Date().getFullYear(),
+    topic: '',
   });
   const [questionsJsonText, setQuestionsJsonText] = useState('');
   const [uploadingQuestionsJson, setUploadingQuestionsJson] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetchQuestions();
@@ -60,12 +62,13 @@ export default function QuestionUpload() {
 
   async function fetchSubjects() {
     try {
-      const response = await studyApi.getSubjects();
-      const data = response.data || [];
+      const response = await api.getStudySubjects();
+      const data = response?.data || [];
       const subjectNames = data.map((s: any) => s.name).filter(Boolean);
       setSubjects(subjectNames);
     } catch (error) {
       console.error('Failed to fetch subjects:', error);
+      setSubjects([]);
     }
   }
 
@@ -83,14 +86,10 @@ export default function QuestionUpload() {
       const response = await api.getAllQuestions({ limit: '1000' });
       const data = response.data || [];
       const uniqueYears = Array.from(new Set(data.map((q: any) => q.year).filter(Boolean))) as number[];
-      const currentYear = new Date().getFullYear();
-      const defaultYears = Array.from({ length: 11 }, (_, i) => currentYear - i);
-      const combined = Array.from(new Set([...uniqueYears, ...defaultYears])).sort((a, b) => b - a);
-      setYears(combined);
+      setYears(uniqueYears);
     } catch (error) {
       console.error('Failed to fetch years:', error);
-      const currentYear = new Date().getFullYear();
-      setYears(Array.from({ length: 11 }, (_, i) => currentYear - i));
+      setYears([]);
     }
   }
 
@@ -118,6 +117,12 @@ export default function QuestionUpload() {
     }
   }
 
+  function copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text);
+    setCopiedUrl(text);
+    setTimeout(() => setCopiedUrl(null), 2000);
+  }
+
   async function handleBulkUpload(e: React.FormEvent) {
     e.preventDefault();
     if (!bulkFile) return;
@@ -130,6 +135,7 @@ export default function QuestionUpload() {
         examType: defaults.examType || undefined,
         institution: defaults.institution || undefined,
         year: defaults.year || undefined,
+        topic: defaults.topic || undefined,
       });
       setBulkResult(response.data);
       await fetchQuestions();
@@ -151,6 +157,7 @@ export default function QuestionUpload() {
         examType: defaults.examType || undefined,
         institution: defaults.institution || undefined,
         year: defaults.year || undefined,
+        topic: defaults.topic || undefined,
       });
       setBulkResult(response.data);
       setQuestionsJsonText('');
@@ -168,21 +175,21 @@ export default function QuestionUpload() {
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const res = await fetch(`${API_BASE}/questions/sample`, {
+      const res = await fetch(`${API_BASE}/questions/sample?format=${format}`, {
         headers,
       });
 
       if (!res.ok) throw new Error('Failed to download sample');
 
       const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `questions-sample.${format === 'excel' ? 'xlsx' : 'csv'}`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } catch (error: any) {
       alert(error.message || 'Failed to download sample');
     }
@@ -190,10 +197,24 @@ export default function QuestionUpload() {
 
   return (
     <div className="space-y-6">
+      {/* Question Settings */}
       <div className="bg-white rounded-xl border p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Question Settings</h3>
-        <p className="text-sm text-gray-500 mb-4">These settings will be applied to all uploaded questions. You can leave fields blank if your file already contains them.</p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Question Settings</h3>
+        <p className="text-xs text-gray-500 mb-4">These settings will be applied to all uploaded questions. The file should only contain question, options, answer, explanation, and optional imageUrl.</p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">University / Institution</label>
+             <select
+               value={defaults.institution}
+               onChange={(e) => setDefaults({ ...defaults, institution: e.target.value })}
+               className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+             >
+               <option value="">All Institutions</option>
+               {institutions.map((inst) => (
+                 <option key={inst.id} value={inst.name}>{inst.name}</option>
+               ))}
+             </select>
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
             <select
@@ -235,22 +256,20 @@ export default function QuestionUpload() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Institution</label>
-            <select
-              value={defaults.institution}
-              onChange={(e) => setDefaults({ ...defaults, institution: e.target.value })}
+            <label className="block text-sm font-medium text-gray-700 mb-1">Topic (optional)</label>
+            <input
+              type="text"
+              value={defaults.topic}
+              onChange={(e) => setDefaults({ ...defaults, topic: e.target.value })}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="">Select institution...</option>
-              {institutions.map((inst) => (
-                <option key={inst.id} value={inst.name}>{inst.name}</option>
-              ))}
-            </select>
+              placeholder="e.g. Algebra"
+            />
           </div>
         </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
+        {/* CSV / Excel Upload */}
         <div className="bg-white rounded-xl border p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary-600" />
@@ -258,18 +277,14 @@ export default function QuestionUpload() {
           </h3>
           <form onSubmit={handleBulkUpload} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Question File
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Question File</label>
               <input
                 type="file"
                 accept=".csv,.xlsx,.xls"
                 onChange={(e) => setBulkFile(e.target.files?.[0] || null)}
                 className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Supported formats: CSV (.csv) or Excel (.xlsx, .xls)
-              </p>
+              <p className="text-xs text-gray-500 mt-1">Supported formats: CSV (.csv) or Excel (.xlsx, .xls)</p>
             </div>
             <button
               type="submit"
@@ -310,18 +325,9 @@ export default function QuestionUpload() {
                 Sample Excel
               </button>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              File columns: question, options, answer, explanation.
-            </p>
-            <p className="text-xs text-gray-500">
-              Use the Question Settings above to set subject, exam type, year, and institution for all questions in the file.
-            </p>
-            <p className="text-xs text-gray-500">
-              Options should be pipe-separated (e.g., Option A|Option B|Option C|Option D)
-            </p>
-            <p className="text-xs text-gray-500">
-              For question images, paste the uploaded image URL into the imageUrl column.
-            </p>
+            <p className="text-xs text-gray-500 mt-2">File columns: <strong>question</strong>, <strong>options</strong>, <strong>answer</strong>, <strong>explanation</strong>, <strong>imageUrl</strong> (optional).</p>
+            <p className="text-xs text-gray-500">Options should be pipe-separated (e.g., Option A|Option B|Option C|Option D).</p>
+            <p className="text-xs text-gray-500">Answer is the 0-based index of the correct option (0 = first option).</p>
           </div>
 
           {bulkResult && (
@@ -345,75 +351,19 @@ export default function QuestionUpload() {
           )}
         </div>
 
-        <div className="bg-white rounded-xl border p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Images className="h-5 w-5 text-primary-600" />
-            Upload Question Images
-          </h3>
-          <p className="text-xs text-gray-500 mb-2">Upload one or more images. Copy the generated URLs into the imageUrl column in your CSV/Excel.</p>
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleImageChange}
-            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 mb-3"
-          />
-          {imagePreviews.length > 0 && (
-            <div className="grid grid-cols-4 gap-2 mb-3">
-              {imagePreviews.map((src, idx) => (
-                <img key={idx} src={src} alt="" className="h-20 w-full object-cover rounded border" />
-              ))}
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={handleImageUpload}
-            disabled={!imageFiles.length || imageLoading}
-            className="w-full btn-primary disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {imageLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Uploading...
-              </>
-            ) : (
-              <>
-                <Upload className="h-4 w-4" />
-                Upload Image{imageFiles.length > 1 ? 's' : ''}
-              </>
-            )}
-          </button>
-          {imageUrls.length > 0 && (
-            <div className="mt-4 p-4 rounded-lg border border-green-200 bg-green-50">
-              <div className="flex items-center gap-2 text-green-700 mb-2">
-                <CheckCircle className="h-5 w-5" />
-                <span className="font-medium">Image{imageUrls.length > 1 ? 's' : ''} Uploaded</span>
-              </div>
-              <p className="text-xs text-gray-500 mb-2">Copy these URLs into the imageUrl column in your CSV/Excel.</p>
-              <div className="space-y-1 max-h-40 overflow-y-auto">
-                {imageUrls.map((url, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <img src={url} alt="" className="h-8 w-8 object-cover rounded border" />
-                    <p className="text-xs text-gray-600 break-all">{url}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
+        {/* JSON Upload */}
         <div className="bg-white rounded-xl border p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary-600" />
             Upload Questions via JSON
           </h3>
-          <p className="text-xs text-gray-500 mb-2">Paste a JSON array of questions directly. You can include optional fields like subject, examType, year, etc.</p>
+          <p className="text-xs text-gray-500 mb-2">Paste a JSON array of questions. Only question fields are needed; settings above are applied automatically.</p>
           <textarea
             value={questionsJsonText}
             onChange={(e) => setQuestionsJsonText(e.target.value)}
             rows={10}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 mb-3 font-mono text-xs"
-            placeholder={`Paste JSON here, for example:\n[\n  {\n    "text": "What is the capital of Nigeria?",\n    "options": ["Lagos", "Abuja", "Port Harcourt", "Kano"],\n    "correctOption": 1,\n    "explanation": "Abuja is the capital.",\n    "subject": "General Studies",\n    "examType": "JAMB",\n    "year": 2024\n  }\n]`}
+            placeholder={`Paste JSON here, for example:\n[\n  {\n    "text": "What is the capital of Nigeria?",\n    "options": ["Lagos", "Abuja", "Port Harcourt", "Kano"],\n    "correctOption": 1,\n    "explanation": "Abuja is the capital."\n  }\n]`}
           />
           <div className="flex items-center gap-2 mb-3">
             <button
@@ -425,18 +375,12 @@ export default function QuestionUpload() {
                     options: ['7', '8', '9', '10'],
                     correctOption: 1,
                     explanation: 'Subtract 5 from both sides then divide by 2.',
-                    subject: 'General Mathematics',
-                    examType: 'JAMB',
-                    year: 2024,
                   },
                   {
                     text: 'Choose the correct option: She ___ to school every day.',
                     options: ['go', 'goes', 'going', 'gone'],
                     correctOption: 1,
                     explanation: 'Third person singular present tense adds -es.',
-                    subject: 'English Language',
-                    examType: 'JAMB',
-                    year: 2024,
                   },
                 ];
                 setQuestionsJsonText(JSON.stringify(sample, null, 2));
@@ -447,35 +391,6 @@ export default function QuestionUpload() {
               Load Sample JSON
             </button>
             <span className="text-xs text-gray-500">Click to load a sample into the textarea.</span>
-          </div>
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
-            <p className="text-xs font-medium text-gray-700 mb-1">Question Images</p>
-            <p className="text-xs text-gray-500 mb-2">Upload images first, then paste their URLs into the <code className="bg-gray-100 px-1 rounded">imageUrl</code> field in your JSON.</p>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleImageChange}
-              className="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 mb-2"
-            />
-            <button
-              type="button"
-              onClick={handleImageUpload}
-              disabled={!imageFiles.length || imageLoading}
-              className="w-full py-1.5 text-xs font-medium text-primary-700 border border-gray-200 rounded-lg hover:bg-primary-50 disabled:opacity-50"
-            >
-              {imageLoading ? 'Uploading...' : 'Upload Image(s)'}
-            </button>
-            {imageUrls.length > 0 && (
-              <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
-                {imageUrls.map((url, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <img src={url} alt="" className="h-6 w-6 object-cover rounded border" />
-                    <p className="text-xs text-gray-600 break-all">{url}</p>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
           <button
             type="button"
@@ -495,12 +410,77 @@ export default function QuestionUpload() {
               </>
             )}
           </button>
-          <p className="text-xs text-gray-500 mt-2">
-            Supported JSON object fields: text/question, options, correctOption/answer, explanation, imageUrl, subject, examType, institution, year, topic, difficulty.
-          </p>
+          <p className="text-xs text-gray-500 mt-2">Supported fields: text, options, correctOption, explanation, imageUrl.</p>
         </div>
       </div>
 
+      {/* Image Upload */}
+      <div className="bg-white rounded-xl border p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Image className="h-5 w-5 text-primary-600" />
+          Upload Question Images
+        </h3>
+        <p className="text-xs text-gray-500 mb-3">Upload images and copy the generated URLs into the imageUrl column in your CSV/Excel or JSON.</p>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleImageChange}
+          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 mb-3"
+        />
+        {imagePreviews.length > 0 && (
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            {imagePreviews.map((src, idx) => (
+              <img key={idx} src={src} alt="" className="h-20 w-full object-cover rounded border" />
+            ))}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={handleImageUpload}
+          disabled={!imageFiles.length || imageLoading}
+          className="w-full btn-primary disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {imageLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Uploading...
+            </>
+          ) : (
+            <>
+              <Upload className="h-4 w-4" />
+              Upload Image{imageFiles.length > 1 ? 's' : ''}
+            </>
+          )}
+        </button>
+        {imageUrls.length > 0 && (
+          <div className="mt-4 p-4 rounded-lg border border-green-200 bg-green-50">
+            <div className="flex items-center gap-2 text-green-700 mb-2">
+              <CheckCircle className="h-5 w-5" />
+              <span className="font-medium">Image{imageUrls.length > 1 ? 's' : ''} Uploaded</span>
+            </div>
+            <p className="text-xs text-gray-500 mb-2">Copy these URLs into the imageUrl column in your CSV/Excel or JSON.</p>
+            <div className="space-y-1 max-h-40 overflow-y-auto">
+              {imageUrls.map((url, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <img src={url} alt="" className="h-8 w-8 object-cover rounded border" />
+                  <p className="text-xs text-gray-600 break-all flex-1">{url}</p>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(url)}
+                    className="p-1 text-gray-400 hover:text-primary-600"
+                    title="Copy URL"
+                  >
+                    {copiedUrl === url ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Recent Questions */}
       <div className="bg-white rounded-xl border p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Questions</h3>
         {loadingQuestions ? (

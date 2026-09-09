@@ -52,14 +52,30 @@ export async function getTimetableByExamType(userId: string) {
         { examType: { in: userExamTypes } },
         { examType: null },
         { examType: '' },
+        { examType: 'All' },
       ],
     },
     orderBy: [{ day: 'asc' }, { time: 'asc' }],
   });
 
-  return entries.filter(entry => {
+  return entries.filter((entry) => {
     if (!entry.subject) return true;
-    return userSubjects.length === 0 || userSubjects.includes(entry.subject);
+    if (userSubjects.length === 0) return true;
+
+    const entryParts = entry.subject
+      .split('/')
+      .map((s) => s.toLowerCase().trim())
+      .filter(Boolean);
+
+    return userSubjects.some((userSubject) => {
+      const userLower = userSubject.toLowerCase();
+      return entryParts.some(
+        (part) =>
+          userLower.includes(part) ||
+          part.includes(userLower) ||
+          userLower === part
+      );
+    });
   });
 }
 

@@ -403,7 +403,7 @@ export const api = {
     formData.append('image', file);
     return fetchFormData('/questions/upload-image', formData);
   },
-  uploadQuestionsFile: (file: File, defaults?: { subject?: string; examType?: string; institution?: string; year?: number }) => {
+  uploadQuestionsFile: (file: File, defaults?: { subject?: string; examType?: string; institution?: string; year?: number; topic?: string }) => {
     const formData = new FormData();
     formData.append('file', file);
     if (defaults) {
@@ -415,7 +415,7 @@ export const api = {
     }
     return fetchFormData('/questions/bulk-upload', formData);
   },
-  uploadQuestionsJson: (questions: any[], defaults?: { subject?: string; examType?: string; institution?: string; year?: number }) => {
+  uploadQuestionsJson: (questions: any[], defaults?: { subject?: string; examType?: string; institution?: string; year?: number; topic?: string }) => {
     return fetchAPI('/questions/bulk-upload-json', { method: 'POST', body: JSON.stringify({ questions, defaults }) });
   },
   getAllQuestions: (params?: Record<string, string>) => {

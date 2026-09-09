@@ -1,21 +1,20 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Edit2, Trash2, Loader2, Search, X, FileText, Image, CheckCircle, Download, Upload } from 'lucide-react';
+import { Upload, FileText, Image, CheckCircle, Loader2, Download, Copy, Check, Search } from 'lucide-react';
 import { api, API_BASE } from '@/lib/api';
 
 interface Question {
   id: string;
   subject: string;
-  examType?: string;
-  topic?: string;
-  difficulty?: string;
   text: string;
   imageUrl?: string;
-  options?: string[];
-  correctOption?: number;
-  explanation?: string;
-  createdAt: string;
+}
+
+interface Institution {
+  id: string;
+  name: string;
+  abbreviation?: string;
 }
 
 export default function TeacherQuestions() {
@@ -23,23 +22,33 @@ export default function TeacherQuestions() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [subjectFilter, setSubjectFilter] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bulkResult, setBulkResult] = useState<{ created: number; errors: string[] } | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkFile, setBulkFile] = useState<File | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [imageLoading, setImageLoading] = useState(false);
-
-  const emptyQuestion = { subject: '', examType: '', topic: '', difficulty: 'MEDIUM', text: '', options: ['', '', '', ''], correctOption: 0, explanation: '', imageUrl: undefined as string | undefined };
-  const [form, setForm] = useState({ ...emptyQuestion, options: ['', '', '', ''] as string[] });
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [years, setYears] = useState<number[]>([]);
+  const [defaults, setDefaults] = useState({
+    subject: '',
+    examType: 'JAMB',
+    institution: '',
+    year: new Date().getFullYear(),
+    topic: '',
+  });
+  const [questionsJsonText, setQuestionsJsonText] = useState('');
+  const [uploadingQuestionsJson, setUploadingQuestionsJson] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetchQuestions();
+    fetchSubjects();
+    fetchInstitutions();
+    fetchYears();
   }, []);
 
   async function fetchQuestions() {
@@ -62,108 +71,143 @@ export default function TeacherQuestions() {
     }
   }
 
-  function openCreateModal() {
-    setEditingQuestion(null);
-    setForm({ ...emptyQuestion, options: ['', '', '', ''] });
-    setShowModal(true);
-  }
-
-  function openEditModal(question: Question) {
-    setEditingQuestion(question);
-    setForm({
-      subject: question.subject || '',
-      examType: question.examType || '',
-      topic: question.topic || '',
-      difficulty: question.difficulty || 'MEDIUM',
-      text: question.text || '',
-      options: question.options || ['', '', '', ''],
-      correctOption: question.correctOption ?? 0,
-      explanation: question.explanation || '',
-      imageUrl: question.imageUrl,
-    });
-    setShowModal(true);
-  }
-
-  async function handleSave() {
-    if (!form.text.trim()) return;
-    setSubmitting(true);
-    setError(null);
+  async function fetchSubjects() {
     try {
-      if (editingQuestion) {
-        await api.updateQuestion(editingQuestion.id, form);
-      } else {
-        await api.createQuestion(form);
-      }
-      setShowModal(false);
-      fetchQuestions();
-    } catch (err: any) {
-      setError(err.message || 'Failed to save question');
-    } finally {
-      setSubmitting(false);
+      const response = await api.getAllPrograms?.();
+      const data = response?.data || [];
+      const subjectNames = data.map((s: any) => s.name).filter(Boolean);
+      setSubjects(subjectNames.length > 0 ? subjectNames : ['Mathematics', 'English Language', 'Physics', 'Chemistry', 'Biology', 'Economics', 'Government', 'Literature in English', 'Geography', 'History']);
+    } catch (error) {
+      console.error('Failed to fetch subjects:', error);
+      setSubjects(['Mathematics', 'English Language', 'Physics', 'Chemistry', 'Biology', 'Economics', 'Government', 'Literature in English', 'Geography', 'History']);
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this question?')) return;
+  async function fetchInstitutions() {
     try {
-      await api.deleteQuestion(id);
-      fetchQuestions();
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete question');
+      const response = await api.getInstitutions();
+      setInstitutions(response.data || []);
+    } catch (error) {
+      console.error('Failed to fetch institutions:', error);
     }
   }
 
-  async function handleBulkUpload(e: React.FormEvent) {
-    e.preventDefault();
-    if (!bulkFile) return;
-    setBulkLoading(true);
-    setBulkResult(null);
+  async function fetchYears() {
     try {
-      const response = await api.uploadQuestionsFile(bulkFile);
-      setBulkResult(response.data);
-      await fetchQuestions();
-    } catch (err: any) {
-      setError(err.message || 'Failed to upload file');
-    } finally {
-      setBulkLoading(false);
-      setBulkFile(null);
+      const response = await api.getAllQuestions({ limit: '1000' });
+      const data = response.data || [];
+      const uniqueYears = Array.from(new Set(data.map((q: any) => q.year).filter(Boolean))) as number[];
+      const currentYear = new Date().getFullYear();
+      const defaultYears = Array.from({ length: 11 }, (_, i) => currentYear - i);
+      const combined = Array.from(new Set([...uniqueYears, ...defaultYears])).sort((a, b) => b - a);
+      setYears(combined);
+    } catch (error) {
+      console.error('Failed to fetch years:', error);
+      const currentYear = new Date().getFullYear();
+      setYears(Array.from({ length: 11 }, (_, i) => currentYear - i));
     }
   }
 
-  async function downloadSample(format: 'csv' | 'excel') {
-    try {
-      const blob = await api.downloadQuestionSample(format);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `questions-sample.${format === 'excel' ? 'xlsx' : 'csv'}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (err: any) {
-      setError(err.message || 'Failed to download sample');
-    }
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []);
+    setImageFiles(files);
+    setImageUrls([]);
+    setImagePreviews(files.map(file => URL.createObjectURL(file)));
   }
 
-  async function handleImageUpload(e: React.FormEvent) {
-    e.preventDefault();
-    if (!imageFile) return;
+  async function handleImageUpload() {
+    if (!imageFiles.length) return;
+
     setImageLoading(true);
     try {
-      const response = await api.uploadQuestionImage(imageFile);
-      setUploadedImageUrl(response.data.url);
-    } catch (err: any) {
-      setError(err.message || 'Failed to upload image');
+      const uploaded = await Promise.all(
+        imageFiles.map(file => api.uploadQuestionImage(file))
+      );
+      const urls = uploaded.map(r => r.data.url);
+      setImageUrls(urls);
+    } catch (error: any) {
+      alert(error.message || 'Failed to upload some images');
     } finally {
       setImageLoading(false);
     }
   }
 
-  function updateOption(index: number, value: string) {
-    const newOpts = [...form.options];
-    newOpts[index] = value;
-    setForm({ ...form, options: newOpts });
+  function copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text);
+    setCopiedUrl(text);
+    setTimeout(() => setCopiedUrl(null), 2000);
+  }
+
+  async function handleBulkUpload(e: React.FormEvent) {
+    e.preventDefault();
+    if (!bulkFile) return;
+
+    setBulkLoading(true);
+    setBulkResult(null);
+    try {
+      const response = await api.uploadQuestionsFile(bulkFile, {
+        subject: defaults.subject || undefined,
+        examType: defaults.examType || undefined,
+        institution: defaults.institution || undefined,
+        year: defaults.year || undefined,
+        topic: defaults.topic || undefined,
+      });
+      setBulkResult(response.data);
+      await fetchQuestions();
+    } catch (error: any) {
+      alert(error.message || 'Failed to upload file');
+    } finally {
+      setBulkLoading(false);
+    }
+  }
+
+  async function handleQuestionsJsonUpload() {
+    if (!questionsJsonText.trim()) return;
+    setUploadingQuestionsJson(true);
+    setBulkResult(null);
+    try {
+      const questions = JSON.parse(questionsJsonText);
+      const response = await api.uploadQuestionsJson(Array.isArray(questions) ? questions : [questions], {
+        subject: defaults.subject || undefined,
+        examType: defaults.examType || undefined,
+        institution: defaults.institution || undefined,
+        year: defaults.year || undefined,
+        topic: defaults.topic || undefined,
+      });
+      setBulkResult(response.data);
+      setQuestionsJsonText('');
+      await fetchQuestions();
+    } catch (error: any) {
+      alert(error.message || 'Failed to upload JSON questions');
+    } finally {
+      setUploadingQuestionsJson(false);
+    }
+  }
+
+  async function downloadSample(format: 'csv' | 'excel') {
+    try {
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`${API_BASE}/questions/sample?format=${format}`, {
+        headers,
+      });
+
+      if (!res.ok) throw new Error('Failed to download sample');
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `questions-sample.${format === 'excel' ? 'xlsx' : 'csv'}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message || 'Failed to download sample');
+    }
   }
 
   const uniqueSubjects = Array.from(new Set(questions.map((q) => q.subject).filter(Boolean))) as string[];
@@ -176,18 +220,9 @@ export default function TeacherQuestions() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Question Bank</h1>
-          <p className="text-gray-600 mt-1">Bulk upload questions via Excel, view and manage your question bank</p>
-        </div>
-        <button
-          onClick={openCreateModal}
-          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Question
-        </button>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Question Bank</h1>
+        <p className="text-gray-600 mt-1">View questions and upload via CSV, Excel, or JSON</p>
       </div>
 
       {error && (
@@ -196,102 +231,307 @@ export default function TeacherQuestions() {
         </div>
       )}
 
-      {/* Bulk Upload */}
-      <div className="bg-white rounded-xl border border-gray-100 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Upload className="h-5 w-5 text-primary-600" />
-          Bulk Upload Questions (CSV or Excel)
-        </h3>
-        <form onSubmit={handleBulkUpload} className="space-y-4">
+      {/* Question Settings */}
+      <div className="bg-white rounded-xl border p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Question Settings</h3>
+        <p className="text-xs text-gray-500 mb-4">These settings will be applied to all uploaded questions. The file should only contain question, options, answer, explanation, and optional imageUrl.</p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Question File</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">University / Institution</label>
+            <select
+              value={defaults.institution}
+              onChange={(e) => setDefaults({ ...defaults, institution: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">All Universities</option>
+              {institutions.map((inst) => (
+                <option key={inst.id} value={inst.name}>{inst.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+            <select
+              value={defaults.subject}
+              onChange={(e) => setDefaults({ ...defaults, subject: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">Select subject...</option>
+              {subjects.map((subject) => (
+                <option key={subject} value={subject}>{subject}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Exam Type</label>
+            <select
+              value={defaults.examType}
+              onChange={(e) => setDefaults({ ...defaults, examType: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="JAMB">JAMB</option>
+              <option value="WAEC">WAEC</option>
+              <option value="NECO">NECO</option>
+              <option value="POST-UTME">POST-UTME</option>
+              <option value="MOCK">MOCK</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+            <select
+              value={defaults.year}
+              onChange={(e) => setDefaults({ ...defaults, year: parseInt(e.target.value) || 0 })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">Select year...</option>
+              {years.map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Topic (optional)</label>
             <input
-              type="file"
-              accept=".csv,.xlsx,.xls"
-              onChange={(e) => setBulkFile(e.target.files?.[0] || null)}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+              type="text"
+              value={defaults.topic}
+              onChange={(e) => setDefaults({ ...defaults, topic: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+              placeholder="e.g. Algebra"
             />
-            <p className="text-xs text-gray-500 mt-1">Supported formats: CSV (.csv) or Excel (.xlsx, .xls)</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* CSV / Excel Upload */}
+        <div className="bg-white rounded-xl border p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary-600" />
+            Upload Questions (CSV or Excel)
+          </h3>
+          <form onSubmit={handleBulkUpload} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Question File</label>
+              <input
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={(e) => setBulkFile(e.target.files?.[0] || null)}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+              />
+              <p className="text-xs text-gray-500 mt-1">Supported formats: CSV (.csv) or Excel (.xlsx, .xls)</p>
+            </div>
+            <button
+              type="submit"
+              disabled={!bulkFile || bulkLoading}
+              className="w-full btn-primary disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {bulkLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4" />
+                  Upload File
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-4 p-4 rounded-lg border border-gray-200 bg-gray-50">
+            <p className="text-sm font-medium text-gray-700 mb-2">Need a template?</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => downloadSample('csv')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-white border border-gray-200 rounded-lg hover:bg-primary-50"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Sample CSV
+              </button>
+              <button
+                type="button"
+                onClick={() => downloadSample('excel')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-white border border-gray-200 rounded-lg hover:bg-primary-50"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Sample Excel
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">File columns: <strong>question</strong>, <strong>options</strong>, <strong>answer</strong>, <strong>explanation</strong>, <strong>imageUrl</strong> (optional).</p>
+            <p className="text-xs text-gray-500">Options should be pipe-separated (e.g., Option A|Option B|Option C|Option D).</p>
+            <p className="text-xs text-gray-500">Answer is the 0-based index of the correct option (0 = first option).</p>
+          </div>
+
+          {bulkResult && (
+            <div className="mt-4 p-4 rounded-lg border">
+              <div className="flex items-center gap-2 text-green-700 mb-2">
+                <CheckCircle className="h-5 w-5" />
+                <span className="font-medium">File Processed</span>
+              </div>
+              <p className="text-sm text-gray-600">Created: {bulkResult.created} questions</p>
+              {bulkResult.errors.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-sm font-medium text-red-700">Errors:</p>
+                  <ul className="text-xs text-red-600 list-disc list-inside max-h-40 overflow-y-auto">
+                    {bulkResult.errors.map((err, idx) => (
+                      <li key={idx}>{err}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* JSON Upload */}
+        <div className="bg-white rounded-xl border p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary-600" />
+            Upload Questions via JSON
+          </h3>
+          <p className="text-xs text-gray-500 mb-2">Paste a JSON array of questions. Only question fields are needed; settings above are applied automatically.</p>
+          <textarea
+            value={questionsJsonText}
+            onChange={(e) => setQuestionsJsonText(e.target.value)}
+            rows={10}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 mb-3 font-mono text-xs"
+            placeholder={`Paste JSON here, for example:\n[\n  {\n    "text": "What is the capital of Nigeria?",\n    "options": ["Lagos", "Abuja", "Port Harcourt", "Kano"],\n    "correctOption": 1,\n    "explanation": "Abuja is the capital."\n  }\n]`}
+          />
+          <div className="flex items-center gap-2 mb-3">
+            <button
+              type="button"
+              onClick={() => {
+                const sample = [
+                  {
+                    text: 'What is the value of x in 2x + 5 = 15?',
+                    options: ['7', '8', '9', '10'],
+                    correctOption: 1,
+                    explanation: 'Subtract 5 from both sides then divide by 2.',
+                  },
+                  {
+                    text: 'Choose the correct option: She ___ to school every day.',
+                    options: ['go', 'goes', 'going', 'gone'],
+                    correctOption: 1,
+                    explanation: 'Third person singular present tense adds -es.',
+                  },
+                ];
+                setQuestionsJsonText(JSON.stringify(sample, null, 2));
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-white border border-gray-200 rounded-lg hover:bg-primary-50"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Load Sample JSON
+            </button>
+            <span className="text-xs text-gray-500">Click to load a sample into the textarea.</span>
           </div>
           <button
-            type="submit"
-            disabled={!bulkFile || bulkLoading}
-            className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center gap-2"
+            type="button"
+            onClick={handleQuestionsJsonUpload}
+            disabled={uploadingQuestionsJson || !questionsJsonText.trim()}
+            className="w-full btn-primary disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {bulkLoading ? (
+            {uploadingQuestionsJson ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Uploading...
+                Uploading JSON...
               </>
             ) : (
               <>
                 <Upload className="h-4 w-4" />
-                Upload File
+                Upload Questions JSON
               </>
             )}
           </button>
-        </form>
-
-        <div className="mt-4 p-4 rounded-lg border border-gray-200 bg-gray-50">
-          <p className="text-sm font-medium text-gray-700 mb-2">Need a template?</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => downloadSample('csv')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-white border border-gray-200 rounded-lg hover:bg-primary-50"
-            >
-              <Download className="h-3.5 w-3.5" />
-              Sample CSV
-            </button>
-            <button
-              type="button"
-              onClick={() => downloadSample('excel')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-white border border-gray-200 rounded-lg hover:bg-primary-50"
-            >
-              <Download className="h-3.5 w-3.5" />
-              Sample Excel
-            </button>
-          </div>
+          <p className="text-xs text-gray-500 mt-2">Supported fields: text, options, correctOption, explanation, imageUrl.</p>
         </div>
+      </div>
 
-        {bulkResult && (
+      {/* Image Upload */}
+      <div className="bg-white rounded-xl border p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Image className="h-5 w-5 text-primary-600" />
+          Upload Question Images
+        </h3>
+        <p className="text-xs text-gray-500 mb-3">Upload images and copy the generated URLs into the imageUrl column in your CSV/Excel or JSON.</p>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleImageChange}
+          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 mb-3"
+        />
+        {imagePreviews.length > 0 && (
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            {imagePreviews.map((src, idx) => (
+              <img key={idx} src={src} alt="" className="h-20 w-full object-cover rounded border" />
+            ))}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={handleImageUpload}
+          disabled={!imageFiles.length || imageLoading}
+          className="w-full btn-primary disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {imageLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Uploading...
+            </>
+          ) : (
+            <>
+              <Upload className="h-4 w-4" />
+              Upload Image{imageFiles.length > 1 ? 's' : ''}
+            </>
+          )}
+        </button>
+        {imageUrls.length > 0 && (
           <div className="mt-4 p-4 rounded-lg border border-green-200 bg-green-50">
             <div className="flex items-center gap-2 text-green-700 mb-2">
               <CheckCircle className="h-5 w-5" />
-              <span className="font-medium">File Processed</span>
+              <span className="font-medium">Image{imageUrls.length > 1 ? 's' : ''} Uploaded</span>
             </div>
-            <p className="text-sm text-gray-600">Created: {bulkResult.created} questions</p>
-            {bulkResult.errors.length > 0 && (
-              <div className="mt-2">
-                <p className="text-sm font-medium text-red-700">Errors:</p>
-                <ul className="text-xs text-red-600 list-disc list-inside max-h-40 overflow-y-auto">
-                  {bulkResult.errors.map((err, idx) => (
-                    <li key={idx}>{err}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <p className="text-xs text-gray-500 mb-2">Copy these URLs into the imageUrl column in your CSV/Excel or JSON.</p>
+            <div className="space-y-1 max-h-40 overflow-y-auto">
+              {imageUrls.map((url, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <img src={url} alt="" className="h-8 w-8 object-cover rounded border" />
+                  <p className="text-xs text-gray-600 break-all flex-1">{url}</p>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(url)}
+                    className="p-1 text-gray-400 hover:text-primary-600"
+                    title="Copy URL"
+                  >
+                    {copiedUrl === url ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
+      {/* Recent Questions */}
+      <div className="bg-white rounded-xl border p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Questions</h3>
+        <div className="mb-4">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
               placeholder="Search questions..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
           <select
             value={subjectFilter}
             onChange={(e) => setSubjectFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500"
+            className="mt-2 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
           >
             <option value="">All Subjects</option>
             {uniqueSubjects.map((subject) => (
@@ -299,62 +539,35 @@ export default function TeacherQuestions() {
             ))}
           </select>
         </div>
-      </div>
-
-      {/* Questions Table */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
         ) : filteredQuestions.length === 0 ? (
-          <div className="text-center py-16">
-            <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">No questions found</p>
-            <p className="text-gray-400 text-sm mt-1">Upload questions or add them manually</p>
-          </div>
+          <p className="text-sm text-gray-500 text-center py-8">No questions found. Upload a file to get started.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="min-w-full text-sm">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Subject</th>
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Topic</th>
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Difficulty</th>
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Question</th>
-                  <th className="text-right px-4 py-3 text-sm font-semibold text-gray-600">Actions</th>
+                <tr className="border-b">
+                  <th className="text-left py-2 px-3 font-medium text-gray-700">ID</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-700">Subject</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-700">Text</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-700">Image</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredQuestions.map((question) => (
-                  <tr key={question.id} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-900">{question.subject}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{question.topic || '-'}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                        question.difficulty === 'EASY' ? 'bg-green-100 text-green-700' :
-                        question.difficulty === 'HARD' ? 'bg-red-100 text-red-700' :
-                        'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        {question.difficulty || 'MEDIUM'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 max-w-md truncate">{question.text}</td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => openEditModal(question)}
-                          className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(question.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                {filteredQuestions.map((q) => (
+                  <tr key={q.id} className="border-b last:border-0">
+                    <td className="py-2 px-3 text-gray-600 font-mono text-xs">{q.id}</td>
+                    <td className="py-2 px-3 text-gray-900">{q.subject}</td>
+                    <td className="py-2 px-3 text-gray-600 max-w-md truncate">{q.text}</td>
+                    <td className="py-2 px-3">
+                      {q.imageUrl ? (
+                        <img src={q.imageUrl} alt="" className="h-10 w-10 object-cover rounded border" />
+                      ) : (
+                        <span className="text-xs text-gray-400">None</span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -363,97 +576,6 @@ export default function TeacherQuestions() {
           </div>
         )}
       </div>
-
-      {/* Create/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">
-                {editingQuestion ? 'Edit Question' : 'Add Question'}
-              </h2>
-              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Subject *</label>
-                  <input
-                    type="text"
-                    value={form.subject}
-                    onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="e.g. Mathematics"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Topic</label>
-                  <input
-                    type="text"
-                    value={form.topic}
-                    onChange={(e) => setForm({ ...form, topic: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="e.g. Algebra"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Question Text *</label>
-                <textarea
-                  value={form.text}
-                  onChange={(e) => setForm({ ...form, text: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  rows={3}
-                  placeholder="Enter the question"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Options</label>
-                {form.options.map((opt, idx) => (
-                  <input
-                    key={idx}
-                    type="text"
-                    value={opt}
-                    onChange={(e) => updateOption(idx, e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent mb-2"
-                    placeholder={`Option ${String.fromCharCode(65 + idx)}`}
-                  />
-                ))}
-                <select
-                  value={form.correctOption}
-                  onChange={(e) => setForm({ ...form, correctOption: Number(e.target.value) })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500"
-                >
-                  {form.options.map((_, idx) => (
-                    <option key={idx} value={idx}>Correct: {String.fromCharCode(65 + idx)}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Explanation</label>
-                <textarea
-                  value={form.explanation}
-                  onChange={(e) => setForm({ ...form, explanation: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  rows={2}
-                  placeholder="Explanation for the correct answer"
-                />
-              </div>
-            </div>
-            <div className="p-6 border-t flex justify-end gap-3">
-              <button onClick={() => setShowModal(false)} className="px-5 py-2.5 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-50">
-                Cancel
-              </button>
-              <button onClick={handleSave} disabled={submitting || !form.text.trim()} className="px-5 py-2.5 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">
-                {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

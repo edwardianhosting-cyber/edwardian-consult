@@ -147,7 +147,7 @@ function normalizeQuestionItem(item: Record<string, any>, index: number, default
   institution?: string;
   year?: number;
 }): { data?: any; error?: string } | null {
-  const subject = String(item.subject || item.Subject || item.SUBJECT || item.text || item.question || item.Text || defaults?.subject || '').trim();
+  const subject = String(item.subject || item.Subject || item.SUBJECT || defaults?.subject || '').trim();
   const examType = String(item.examType || item.ExamType || item.EXAM_TYPE || item['Exam Type'] || defaults?.examType || '').trim();
   const institution = String(item.institution || item.Institution || item.INSTITUTION || defaults?.institution || '').trim();
   const yearStr = String(item.year || item.Year || item.YEAR || defaults?.year || '').trim();

@@ -90,10 +90,8 @@ router.delete('/:id', authenticate, authorize('ADMIN'), async (req: Request, res
 router.get('/sample', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
   try {
     const sampleData = [
-      { question: 'What is the value of x in 2x + 5 = 15?', options: '7|8|9|10', answer: 1, explanation: 'Subtract 5 from both sides then divide by 2' },
-      { question: 'Choose the correct option: She ___ to school every day.', options: 'go|goes|going|gone', answer: 1, explanation: 'Third person singular present tense adds -es' },
-      { question: 'Calculate the current in a circuit with 10V and 5Ω.', options: '1A|2A|3A|4A', answer: 1, explanation: "Ohm's Law: I = V/R = 10/5 = 2A" },
-      { question: 'What is the molecular formula of Ethane?', options: 'C2H4|C2H6|C3H8|CH4', answer: 1, explanation: 'Ethane has 2 carbons and 6 hydrogens' },
+      { question: 'What is the capital of Nigeria?', options: 'Lagos|Abuja|Kano|Port Harcourt', answer: 1, explanation: 'Abuja is the capital city of Nigeria.', imageUrl: '' },
+      { question: 'Solve for x: 2x + 5 = 13', options: 'x = 3|x = 4|x = 5|x = 6', answer: 1, explanation: '2x = 8, so x = 4', imageUrl: '' },
     ];
 
     const format = String(req.query.format || 'excel').toLowerCase();
