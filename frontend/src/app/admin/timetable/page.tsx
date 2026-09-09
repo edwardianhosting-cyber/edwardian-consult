@@ -25,10 +25,16 @@ interface Teacher {
   fullName: string;
 }
 
+interface Institution {
+  id: string;
+  name: string;
+}
+
 export default function AdminTimetablePage() {
   const [entries, setEntries] = useState<TimetableEntry[]>([]);
   const [subjects, setSubjects] = useState<StudySubject[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimetableEntry | null>(null);
@@ -46,6 +52,7 @@ export default function AdminTimetablePage() {
     fetchEntries();
     fetchSubjects();
     fetchTeachers();
+    fetchInstitutions();
   }, []);
 
   async function fetchEntries() {
@@ -79,6 +86,16 @@ export default function AdminTimetablePage() {
       setTeachers(teacherList);
     } catch (err) {
       console.error('Failed to fetch teachers:', err);
+    }
+  }
+
+  async function fetchInstitutions() {
+    try {
+      const data = await api.getInstitutions();
+      const institutionsData = (data as any).data || [];
+      setInstitutions(institutionsData);
+    } catch (err) {
+      console.error('Failed to fetch institutions:', err);
     }
   }
 
@@ -231,6 +248,19 @@ export default function AdminTimetablePage() {
               </select>
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Institution</label>
+              <select
+                value={formData.venue}
+                onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="">All Universities</option>
+                {institutions.map((inst) => (
+                  <option key={inst.id} value={inst.name}>{inst.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Instructor</label>
               <select
                 value={formData.instructor}
@@ -242,15 +272,6 @@ export default function AdminTimetablePage() {
                   <option key={teacher.id} value={teacher.fullName}>{teacher.fullName}</option>
                 ))}
               </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Venue</label>
-              <input
-                type="text"
-                value={formData.venue}
-                onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
-              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
