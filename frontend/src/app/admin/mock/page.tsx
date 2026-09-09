@@ -68,15 +68,19 @@ export default function AdminMockExamPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    console.log('[admin mock] handleSubmit', { editingExam: !!editingExam, formData });
     try {
       if (editingExam) {
-        await api.updateMockExam(editingExam.id, formData);
+        const res = await api.updateMockExam(editingExam.id, formData);
+        console.log('[admin mock] update response', res);
       } else {
-        await api.createMockExam(formData);
+        const res = await api.createMockExam(formData);
+        console.log('[admin mock] create response', res);
       }
       setShowModal(false);
       fetchExams();
     } catch (err: any) {
+      console.error('[admin mock] submit error', err);
       alert(err.message || 'Failed to save mock exam');
     }
   }
