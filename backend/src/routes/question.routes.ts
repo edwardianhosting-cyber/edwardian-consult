@@ -1,14 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize } from '../middleware/auth.middleware';
-import multer from 'multer';
 import * as XLSX from 'xlsx';
 import { z } from 'zod';
 import prisma from '../lib/prisma';
 import { uploadQuestionImage, bulkCreateQuestionsFromCSV, bulkCreateQuestionsFromExcel, bulkCreateQuestionsFromJSON } from '../services/question.service';
+import { upload } from '../lib/upload';
 
 const router = Router();
-
-const upload = multer({ storage: multer.memoryStorage() });
 
 // Create single question
 router.post('/', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {

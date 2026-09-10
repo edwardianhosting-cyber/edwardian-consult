@@ -4,10 +4,14 @@ import prisma from './prisma';
 // All emails are sent via the PHP mailer hosted on Whogohost.
 // The PHP script handles SMTP internally — no SMTP ports needed from Render.
 
-const PHP_MAILER_URL = process.env.PHP_MAILER_URL || 'https://edwardianeducationalconsult.com.ng/mailer/send.php';
-const PHP_MAILER_KEY = process.env.PHP_MAILER_KEY || 'eiec-mailer-2026';
-const FRONTEND_URL   = process.env.FRONTEND_URL   || 'https://edwardian-consult.vercel.app';
-const FROM_EMAIL     = process.env.FROM_EMAIL || 'edwardianeducationalconsult@gmail.com';
+const PHP_MAILER_URL = process.env.PHP_MAILER_URL;
+const PHP_MAILER_KEY = process.env.PHP_MAILER_KEY;
+const FRONTEND_URL   = process.env.FRONTEND_URL;
+const FROM_EMAIL     = process.env.FROM_EMAIL;
+
+if (!PHP_MAILER_URL || !PHP_MAILER_KEY || !FROM_EMAIL) {
+  throw new Error('PHP_MAILER_URL, PHP_MAILER_KEY, and FROM_EMAIL are required');
+}
 
 export type EmailPurpose = 'REGISTRAR' | 'SECURITY' | 'NOTIFICATION';
 

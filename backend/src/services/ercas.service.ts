@@ -157,9 +157,19 @@ export async function processSuccessfulPayment(reference: string) {
 
   if (!payment) throw new Error('Payment not found');
 
+  if (payment.status === 'COMPLETED') {
+    return payment;
+  }
+
   const updatedPayment = await prisma.payment.update({
     where: { id: payment.id },
     data: { status: 'COMPLETED', paidAt: new Date() },
+  });
+
+  const wallet = await prisma.wallet.upsert({
+    where: { userId: payment.userId },
+    update: { balance: { increment: payment.amount } },
+    create: { userId: payment.userId, balance: payment.amount, currency: 'NGN' },
   });
 
   await prisma.walletItem.create({
@@ -171,8 +181,10 @@ export async function processSuccessfulPayment(reference: string) {
       reference: payment.reference,
       metadata: {
         amount: payment.amount,
-        date: payment.paidAt,
+        date: updatedPayment.paidAt,
         reference: payment.reference,
+        type: 'deposit',
+        walletBalance: wallet.balance,
       },
     },
   });

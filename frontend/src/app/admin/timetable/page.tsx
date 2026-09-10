@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import api, { studyApi } from '@/lib/api';
 import { Calendar, Plus, Trash2, Save, Edit } from 'lucide-react';
+import { showError } from '@/lib/toast';
 
 interface TimetableEntry {
   id: string;
@@ -61,7 +62,7 @@ export default function AdminTimetablePage() {
       const data = await api.getAllTimetableEntries();
       setEntries((data as any).data || []);
     } catch (err: any) {
-      alert(err.message || 'Failed to fetch timetable');
+      showError(err.message || 'Failed to fetch timetable');
     } finally {
       setLoading(false);
     }
@@ -143,7 +144,7 @@ export default function AdminTimetablePage() {
       });
       fetchEntries();
     } catch (err: any) {
-      alert(err.message || 'Failed to create entry');
+      showError(err.message || 'Failed to create entry');
     }
   }
 
@@ -165,7 +166,7 @@ export default function AdminTimetablePage() {
       });
       fetchEntries();
     } catch (err: any) {
-      alert(err.message || 'Failed to update entry');
+      showError(err.message || 'Failed to update entry');
     }
   }
 
@@ -175,7 +176,7 @@ export default function AdminTimetablePage() {
       await api.deleteTimetableEntry(id);
       setEntries(prev => prev.filter(e => e.id !== id));
     } catch (err: any) {
-      alert(err.message || 'Failed to delete entry');
+      showError(err.message || 'Failed to delete entry');
     }
   }
 

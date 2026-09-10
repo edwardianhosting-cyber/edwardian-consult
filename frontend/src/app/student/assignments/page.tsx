@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import api from '@/lib/api';
 import { ClipboardList, Calendar, Upload, CheckCircle, Clock, AlertCircle, AlertTriangle } from 'lucide-react';
+import { showError } from '@/lib/toast';
 
 interface Assignment {
   id: string;
@@ -112,9 +113,9 @@ export default function AssignmentsPage() {
             } : a)
           );
         };
-        reader.readAsDataURL(file);
+         reader.readAsDataURL(file);
       } catch (err: any) {
-        alert(err.message || 'Failed to submit assignment');
+        showError(err.message || 'Failed to submit assignment');
       } finally {
         setSubmitting(null);
       }

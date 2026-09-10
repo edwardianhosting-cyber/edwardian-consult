@@ -1,12 +1,15 @@
 import { Router, Request, Response } from 'express';
-import { authenticate } from '../middleware/auth.middleware';
+import { authenticate, authorize, parentReadOnly } from '../middleware/auth.middleware';
 import { generateTranscript, getTranscripts } from '../services/transcript.service';
 
 const router = Router();
 
 // Generate transcript
-router.post('/generate', authenticate, async (req: Request, res: Response) => {
+router.post('/generate', authenticate, authorize('STUDENT'), async (req: Request, res: Response) => {
   try {
+    if (req.user!.role === 'PARENT_VIEW') {
+      return res.status(403).json({ success: false, message: 'Read-only access' });
+    }
     const transcript = await generateTranscript(req.user!.userId);
     res.json({ success: true, data: transcript });
   } catch (error: any) {
@@ -16,7 +19,7 @@ router.post('/generate', authenticate, async (req: Request, res: Response) => {
 });
 
 // Get user transcripts
-router.get('/', authenticate, async (req: Request, res: Response) => {
+router.get('/', authenticate, parentReadOnly, async (req: Request, res: Response) => {
   try {
     const transcripts = await getTranscripts(req.user!.userId);
     res.json({ success: true, data: transcripts });

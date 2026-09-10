@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { authenticate, authorize } from '../middleware/auth.middleware';
+import { authenticate, authorize, parentReadOnly } from '../middleware/auth.middleware';
 import {
   markAttendance,
   markAttendanceByQR,
@@ -11,8 +11,11 @@ import {
 const router = Router();
 
 // Mark attendance (check-in/check-out)
-router.post('/', authenticate, async (req: Request, res: Response) => {
+router.post('/', authenticate, authorize('STUDENT'), async (req: Request, res: Response) => {
   try {
+    if (req.user!.role === 'PARENT_VIEW') {
+      return res.status(403).json({ success: false, message: 'Read-only access' });
+    }
     const log = await markAttendance(req.user!.userId, req.body.type);
     res.json({ success: true, data: log });
   } catch (error: any) {
@@ -20,10 +23,17 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
   }
 });
 
-// Mark attendance by QR scan (public endpoint with portalId)
-router.post('/scan', async (req: Request, res: Response) => {
+// Mark attendance by QR scan (authenticated)
+router.post('/scan', authenticate, authorize('STUDENT'), async (req: Request, res: Response) => {
   try {
-    const log = await markAttendanceByQR(req.body.portalId);
+    if (req.user!.role === 'PARENT_VIEW') {
+      return res.status(403).json({ success: false, message: 'Read-only access' });
+    }
+    const { portalId } = req.body;
+    if (!portalId) {
+      return res.status(400).json({ success: false, message: 'portalId is required' });
+    }
+    const log = await markAttendanceByQR(portalId);
     res.json({ success: true, data: log });
   } catch (error: any) {
     res.status(400).json({ success: false, message: error.message });
@@ -31,7 +41,7 @@ router.post('/scan', async (req: Request, res: Response) => {
 });
 
 // Get user attendance log
-router.get('/', authenticate, async (req: Request, res: Response) => {
+router.get('/', authenticate, parentReadOnly, async (req: Request, res: Response) => {
   try {
     const startDate = req.query.start ? new Date(req.query.start as string) : undefined;
     const endDate = req.query.end ? new Date(req.query.end as string) : undefined;
@@ -43,7 +53,7 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
 });
 
 // Get attendance stats
-router.get('/stats', authenticate, async (req: Request, res: Response) => {
+router.get('/stats', authenticate, parentReadOnly, async (req: Request, res: Response) => {
   try {
     const stats = await getAttendanceStats(req.user!.userId);
     res.json({ success: true, data: stats });

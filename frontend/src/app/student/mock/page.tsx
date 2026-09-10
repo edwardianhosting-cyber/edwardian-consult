@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { FileText, Clock, Play, CheckCircle, XCircle } from 'lucide-react';
 import api from '@/lib/api';
+import { showError } from '@/lib/toast';
 
 interface MockExam {
   id: string;
@@ -45,7 +46,7 @@ export default function MockPage() {
       const newExamId = (res as any).data?.examId || (res as any).examId;
       window.location.href = `/student/cbt?examId=${newExamId}&mode=mock`;
     } catch (err: any) {
-      alert(err.message || 'Failed to start exam');
+      showError(err.message || 'Failed to start exam');
     } finally {
       setLoading(false);
     }

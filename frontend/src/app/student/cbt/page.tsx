@@ -4,8 +4,8 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Play, Clock, Award, ChevronRight, CheckCircle, XCircle, Trophy, TrendingUp, Calculator, X, AlertTriangle, BookOpen, Globe } from 'lucide-react';
-import { api } from '@/lib/api';
-import { API_BASE } from '@/lib/api';
+import { api, API_BASE } from '@/lib/api';
+import { showError } from '@/lib/toast';
 
 interface CBTQuestion {
   id: string;
@@ -229,7 +229,7 @@ export default function CBTPracticePage() {
       setPhase('exam');
     } catch (error) {
       console.error('Failed to start CBT:', error);
-      alert('Failed to start CBT. Please try again.');
+      showError('Failed to start CBT. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -250,7 +250,7 @@ export default function CBTPracticePage() {
       setPhase('result');
     } catch (error) {
       console.error('Failed to submit CBT:', error);
-      alert('Failed to submit. Please try again.');
+      showError('Failed to submit. Please try again.');
       hasSubmitted.current = false;
     } finally {
       setLoading(false);

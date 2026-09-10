@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
+import { showError } from '@/lib/toast';
 import { Plus, Trash2, Edit2, Save, X, Bell, Pin, Calendar } from 'lucide-react';
 
 interface Notice {
@@ -104,7 +105,7 @@ export default function AdminNoticesPage() {
       resetForm();
       fetchNotices();
     } catch (err: any) {
-      alert(err.message || 'Failed to save notice');
+      showError(err.message || 'Failed to save notice');
     }
   }
 
@@ -114,7 +115,7 @@ export default function AdminNoticesPage() {
       await api.deleteNotice(id);
       setNotices(prev => prev.filter(n => n.id !== id));
     } catch (err: any) {
-      alert(err.message || 'Failed to delete notice');
+      showError(err.message || 'Failed to delete notice');
     }
   }
 

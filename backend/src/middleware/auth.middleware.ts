@@ -1,7 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET is required');
+}
+const SECRET = JWT_SECRET as string;
 
 export interface JwtPayload {
   userId: string;
@@ -31,7 +35,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    const decoded = jwt.verify(token, SECRET) as JwtPayload;
     
     req.user = decoded;
     next();
@@ -63,13 +67,31 @@ export function authorize(...roles: string[]) {
   };
 }
 
+export function parentReadOnly(req: Request, res: Response, next: NextFunction) {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentication required',
+    });
+  }
+
+  if (req.user.role === 'PARENT_VIEW' && req.method !== 'GET') {
+    return res.status(403).json({
+      success: false,
+      message: 'Read-only access',
+    });
+  }
+
+  next();
+}
+
 export function generateToken(payload: JwtPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign(payload, SECRET, { expiresIn: '7d' });
 }
 
 export function verifyToken(token: string): JwtPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JwtPayload;
+    return jwt.verify(token, SECRET) as JwtPayload;
   } catch {
     return null;
   }

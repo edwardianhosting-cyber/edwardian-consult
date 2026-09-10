@@ -4,8 +4,8 @@ import prisma from '../lib/prisma';
 
 const router = Router();
 
-// Get all settings (public)
-router.get('/', async (req: Request, res: Response) => {
+// Get all settings (admin only)
+router.get('/', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     const settings = await prisma.settings.findMany({
       orderBy: { key: 'asc' },
@@ -20,8 +20,8 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-// Get single setting by key (public)
-router.get('/:key', async (req: Request, res: Response) => {
+// Get single setting by key (admin only)
+router.get('/:key', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     const setting = await prisma.settings.findUnique({
       where: { key: req.params.key },

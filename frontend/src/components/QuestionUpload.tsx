@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Upload, FileText, Image, CheckCircle, Loader2, Download, Copy, Check } from 'lucide-react';
 import { api, API_BASE } from '@/lib/api';
+import { showSuccess, showError } from '@/lib/toast';
 
 interface Question {
   id: string;
@@ -111,7 +112,7 @@ export default function QuestionUpload() {
       const urls = uploaded.map(r => r.data.url);
       setImageUrls(urls);
     } catch (error: any) {
-      alert(error.message || 'Failed to upload some images');
+      showError(error.message || 'Failed to upload some images');
     } finally {
       setImageLoading(false);
     }
@@ -140,7 +141,7 @@ export default function QuestionUpload() {
       setBulkResult(response.data);
       await fetchQuestions();
     } catch (error: any) {
-      alert(error.message || 'Failed to upload file');
+      showError(error.message || 'Failed to upload file');
     } finally {
       setBulkLoading(false);
     }
@@ -163,7 +164,7 @@ export default function QuestionUpload() {
       setQuestionsJsonText('');
       await fetchQuestions();
     } catch (error: any) {
-      alert(error.message || 'Failed to upload JSON questions');
+      showError(error.message || 'Failed to upload JSON questions');
     } finally {
       setUploadingQuestionsJson(false);
     }
@@ -191,7 +192,7 @@ export default function QuestionUpload() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error: any) {
-      alert(error.message || 'Failed to download sample');
+      showError(error.message || 'Failed to download sample');
     }
   }
 

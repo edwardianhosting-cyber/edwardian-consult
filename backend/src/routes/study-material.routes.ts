@@ -1,6 +1,5 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize } from '../middleware/auth.middleware';
-import multer from 'multer';
 import prisma from '../lib/prisma';
 import {
   createStudySubject,
@@ -25,11 +24,9 @@ import {
   bulkUploadTopicsFromJson,
 } from '../services/study-material.service';
 import { getFileCategory, saveBufferToDisk } from '../lib/local-file-storage';
+import { upload } from '../lib/upload';
 
 const router = Router();
-
-const storage = multer({ storage: multer.memoryStorage() });
-const upload = multer({ storage: multer.memoryStorage() });
 
 // Subjects
 router.get('/subjects', authenticate, async (req: Request, res: Response) => {
@@ -263,20 +260,10 @@ router.post('/upload', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), upl
     }
 
     const category = getFileCategory(req.file.mimetype);
-    const useCloudinary = fileType === 'pdf' || fileType === 'word';
-    let url = '';
-    let textContent: string | undefined;
-    let imageUrl: string | undefined;
-
-    if (useCloudinary) {
-      const result = await uploadStudyMaterialFile(req.file, fileType);
-      url = result.url;
-      textContent = result.textContent;
-      imageUrl = result.imageUrl;
-    } else {
-      const localCategory = category === 'other' ? 'other' : category;
-      url = saveBufferToDisk(req.file.buffer, req.file.mimetype, localCategory as 'image' | 'video' | 'audio');
-    }
+    const result = await uploadStudyMaterialFile(req.file, fileType);
+    const url = result.url;
+    const textContent = result.textContent;
+    const imageUrl = result.imageUrl;
 
     let resource: any = null;
     const topicId = req.body.topicId as string | undefined;

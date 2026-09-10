@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Wallet, CreditCard, Plus, ArrowDownRight, RefreshCw } from 'lucide-react';
 import api from '@/lib/api';
+import { showSuccess, showError } from '@/lib/toast';
 
 interface WalletItem {
   id: string;
@@ -65,9 +66,9 @@ export default function WalletPage() {
       setBalance(data.data);
       setShowDepositModal(false);
       setDepositAmount('');
-      alert('Deposit successful!');
+      showSuccess('Deposit successful!');
     } catch (error: any) {
-      alert(error.message || 'Deposit failed');
+      showError(error.message || 'Deposit failed');
     } finally {
       setDepositing(false);
     }

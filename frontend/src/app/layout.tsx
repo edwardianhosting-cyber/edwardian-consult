@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Poppins } from 'next/font/google';
 import Script from 'next/script';
+import { Toaster } from 'react-hot-toast';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth';
 
@@ -65,6 +66,7 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased">
         <AuthProvider>{children}</AuthProvider>
+        <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
         <Script src="/app.js" defer />
       </body>
     </html>

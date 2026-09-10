@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Mail, Lock, UserCheck, Eye, EyeOff } from 'lucide-react';
 import { authApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { showError } from '@/lib/toast';
 
 type LoginMode = 'credentials' | 'parent';
 
@@ -15,7 +16,6 @@ export default function LoginPage() {
   const [mode, setMode] = useState<LoginMode>('credentials');
   const [formData, setFormData] = useState({ email: '', password: '', portalId: '', accessCode: '' });
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -31,7 +31,6 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     console.log('[login] handleSubmit called', { mode, formData: { email: formData.email, password: formData.password ? '***' : '' } });
     e.preventDefault();
-    setError('');
     setLoading(true);
 
     try {
@@ -66,7 +65,7 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       console.error('[login] submit error', err);
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials and try again.');
+      showError(err.response?.data?.message || 'Login failed. Please check your credentials and try again.');
     } finally {
       setLoading(false);
     }
@@ -87,14 +86,14 @@ export default function LoginPage() {
           <div className="flex rounded-lg bg-gray-100 p-1 mb-6">
             <button
               type="button"
-              onClick={() => { setMode('credentials'); setError(''); }}
+              onClick={() => setMode('credentials')}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${mode === 'credentials' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
             >
               Student / Staff
             </button>
             <button
               type="button"
-              onClick={() => { setMode('parent'); setError(''); }}
+              onClick={() => setMode('parent')}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${mode === 'parent' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
             >
               Parent
@@ -102,12 +101,6 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm animate-shake">
-                {error}
-              </div>
-            )}
-
             {mode === 'credentials' ? (
               <>
                 <div>

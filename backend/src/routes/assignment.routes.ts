@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { authenticate, authorize } from '../middleware/auth.middleware';
-import multer from 'multer';
+import { authenticate, authorize, parentReadOnly } from '../middleware/auth.middleware';
+import { z } from 'zod';
 import {
   createAssignment,
   getAssignments,
@@ -16,11 +16,11 @@ import {
   publishAssignment,
   unpublishAssignment,
 } from '../services/assignment.service';
+import { upload } from '../lib/upload';
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage() });
 
-router.get('/', authenticate, async (req: Request, res: Response) => {
+router.get('/', authenticate, parentReadOnly, async (req: Request, res: Response) => {
   try {
     const assignments = await getAssignments(req.user!.userId, req.user!.role);
     res.json({ success: true, data: assignments });
@@ -29,7 +29,7 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
   }
 });
 
-router.get('/available', authenticate, async (req: Request, res: Response) => {
+router.get('/available', authenticate, parentReadOnly, async (req: Request, res: Response) => {
   try {
     const assignments = await getPublishedAssignmentsForUser(req.user!.userId);
     res.json({ success: true, data: assignments });
@@ -38,7 +38,7 @@ router.get('/available', authenticate, async (req: Request, res: Response) => {
   }
 });
 
-router.get('/results', authenticate, async (req: Request, res: Response) => {
+router.get('/results', authenticate, parentReadOnly, async (req: Request, res: Response) => {
   try {
     const results = await getAssignmentResults(req.user!.userId);
     res.json({ success: true, data: results });
@@ -47,7 +47,7 @@ router.get('/results', authenticate, async (req: Request, res: Response) => {
   }
 });
 
-router.get('/:id', authenticate, async (req: Request, res: Response) => {
+router.get('/:id', authenticate, parentReadOnly, async (req: Request, res: Response) => {
   try {
     const assignment = await getAssignmentById(req.params.id);
     res.json({ success: true, data: assignment });
@@ -56,7 +56,7 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
   }
 });
 
-router.get('/:id/questions', authenticate, async (req: Request, res: Response) => {
+router.get('/:id/questions', authenticate, parentReadOnly, async (req: Request, res: Response) => {
   try {
     const questions = await getAssignmentQuestions(req.params.id);
     res.json({ success: true, data: questions });
@@ -92,12 +92,23 @@ router.delete('/:id', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), asyn
   }
 });
 
-router.post('/:id/submit', authenticate, async (req: Request, res: Response) => {
+router.post('/:id/submit', authenticate, authorize('STUDENT'), async (req: Request, res: Response) => {
   try {
-    const result = await submitAssignmentAttempt(req.user!.userId, req.params.id, req.body);
+    if (req.user!.role === 'PARENT_VIEW') {
+      return res.status(403).json({ success: false, message: 'Read-only access' });
+    }
+
+    const schema = z.object({
+      answers: z.record(z.string(), z.any()).optional(),
+      text: z.string().max(5000).optional(),
+      fileUrl: z.string().url().optional(),
+    });
+
+    const body = schema.parse(req.body);
+    const result = await submitAssignmentAttempt(req.user!.userId, req.params.id, body);
     res.status(201).json({ success: true, data: result });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to submit assignment' });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message || 'Failed to submit assignment' });
   }
 });
 

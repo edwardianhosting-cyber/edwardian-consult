@@ -3,12 +3,10 @@ import { authenticate, authorize, hashPassword, generatePortalId, generateParent
 import prisma from '../lib/prisma';
 import { z } from 'zod';
 import { verifyPassword } from '../lib/auth';
-import multer from 'multer';
 import { uploadToCloudinary } from '../services/cloudinary.service';
+import { upload } from '../lib/upload';
 
 const router = Router();
-
-const upload = multer({ storage: multer.memoryStorage() });
 
 // Get users (admin/tutor/teacher)
 router.get('/', authenticate, authorize('ADMIN', 'TUTOR', 'TEACHER'), async (req: Request, res: Response) => {

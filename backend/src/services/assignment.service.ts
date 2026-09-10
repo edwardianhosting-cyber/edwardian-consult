@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma';
+import { uploadToCloudinary } from './cloudinary.service';
 
 export async function createAssignment(teacherId: string, data: any) {
   return prisma.assignment.create({
@@ -154,7 +155,6 @@ export async function getAssignmentResultById(id: string) {
 }
 
 export async function uploadAssignmentFile(file: Express.Multer.File) {
-  const fileName = `${Date.now()}-${file.originalname}`;
-  const filePath = `uploads/assignments/${fileName}`;
-  return { url: `/${filePath}`, fileName };
+  const result = await uploadToCloudinary(file.buffer, 'assignments', 'auto');
+  return { url: result.url, fileName: file.originalname };
 }

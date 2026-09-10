@@ -192,7 +192,6 @@ router.post('/resend-welcome', authenticate, authorize('ADMIN'), async (req: Req
         portalId: true,
         parentAccessCode: true,
         studentEmail: true,
-        passwordHash: true,
       },
     });
 
@@ -203,13 +202,11 @@ router.post('/resend-welcome', authenticate, authorize('ADMIN'), async (req: Req
       });
     }
 
-    const generatedPassword = ' resent-welcome';
-
     const success = await sendWelcomeEmail(
       user.email,
       user.fullName,
       user.portalId,
-      generatedPassword,
+      '********',
       user.parentAccessCode,
       user.studentEmail || undefined
     );

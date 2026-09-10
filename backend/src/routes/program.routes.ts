@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
+import { authenticate, authorize } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -16,7 +17,19 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-// Get single program by slug
+// Get all programs including inactive (admin only)
+router.get('/admin/all', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const programs = await prisma.program.findMany({
+      orderBy: { order: 'asc' },
+    });
+    res.json({ success: true, data: programs });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Get single program by slug (public)
 router.get('/:slug', async (req: Request, res: Response) => {
   try {
     const program = await prisma.program.findUnique({
@@ -32,7 +45,7 @@ router.get('/:slug', async (req: Request, res: Response) => {
 });
 
 // Create program (admin only)
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     const { title, description, features, icon, imageUrl, price, duration, order } = req.body;
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -57,7 +70,7 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // Update program (admin only)
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     const { title, description, features, icon, imageUrl, price, duration, isActive, order } = req.body;
     const program = await prisma.program.update({
@@ -81,24 +94,12 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // Delete program (admin only)
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     await prisma.program.delete({
       where: { id: req.params.id },
     });
     res.json({ success: true, message: 'Program deleted' });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// Get all programs including inactive (admin only)
-router.get('/admin/all', async (req: Request, res: Response) => {
-  try {
-    const programs = await prisma.program.findMany({
-      orderBy: { order: 'asc' },
-    });
-    res.json({ success: true, data: programs });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }

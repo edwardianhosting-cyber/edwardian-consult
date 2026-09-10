@@ -1,10 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize } from '../middleware/auth.middleware';
-import multer from 'multer';
 import { uploadToCloudinary } from '../services/cloudinary.service';
+import { upload } from '../lib/upload';
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage() });
 
 router.post('/image', authenticate, authorize('ADMIN'), upload.single('file'), async (req: Request, res: Response) => {
   try {

@@ -1,7 +1,7 @@
 # Edwardian Educational Consult — Launch Checklist
 
 **Live database (Neon PostgreSQL):**
-`postgresql://neondb_owner:npg_S1nRIhXK6qyb@ep-wandering-forest-ay59vucq-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require`
+`postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require`
 
 The connection string is already written to `backend/.env` as `DATABASE_URL`. Do **not** commit that file — it's in `.gitignore`.
 
@@ -19,8 +19,8 @@ The connection string is already written to `backend/.env` as `DATABASE_URL`. Do
 | ExamQuestion | 254 | 20 questions per exam |
 | InstitutionCourse | 21 | 3–5 courses per institution (UNILAG, UI, ABU, OAU, UNN, Covenant, Babcock, LASU) |
 | TimetableEntry | 25 | Mon–Fri × 5 class periods for SSS3 |
-| User — Admin | 1 | `admin@edwardian.ng` / `Admin@123` |
-| User — Tutors | 6 | `tutor.{physics,chemistry,maths,english,biology,economics}@edwardian.ng` / `Tutor@123` |
+| User — Admin | 1 | `admin@edwardian.ng` / `***` |
+| User — Tutors | 6 | `tutor.{physics,chemistry,maths,english,biology,economics}@edwardian.ng` / `***` |
 | User — Students | 3 | Existing demo accounts |
 | User — Teacher | 1 | Existing teacher account |
 | NewsArticle | 3 | Pre-existing |
@@ -38,13 +38,13 @@ The connection string is already written to `backend/.env` as `DATABASE_URL`. Do
 
 | Role | Email | Password |
 |---|---|---|
-| Admin | `admin@edwardian.ng` | `Admin@123` |
-| Tutor — Physics | `tutor.physics@edwardian.ng` | `Tutor@123` |
-| Tutor — Chemistry | `tutor.chemistry@edwardian.ng` | `Tutor@123` |
-| Tutor — Maths | `tutor.maths@edwardian.ng` | `Tutor@123` |
-| Tutor — English | `tutor.english@edwardian.ng` | `Tutor@123` |
-| Tutor — Biology | `tutor.biology@edwardian.ng` | `Tutor@123` |
-| Tutor — Economics | `tutor.economics@edwardian.ng` | `Tutor@123` |
+| Admin | `admin@edwardian.ng` | `***` |
+| Tutor — Physics | `tutor.physics@edwardian.ng` | `***` |
+| Tutor — Chemistry | `tutor.chemistry@edwardian.ng` | `***` |
+| Tutor — Maths | `tutor.maths@edwardian.ng` | `***` |
+| Tutor — English | `tutor.english@edwardian.ng` | `***` |
+| Tutor — Biology | `tutor.biology@edwardian.ng` | `***` |
+| Tutor — Economics | `tutor.economics@edwardian.ng` | `***` |
 
 > **Before going public:** change every password. For now, these are useful for first-launch QA.
 
@@ -75,10 +75,10 @@ UPDATE "User" SET "passwordHash" = '<bcrypt-hash-of-new-password>' WHERE "id" = 
 
 1. **Create a Web Service on Render** (or import `backend/render.yaml` as a Blueprint).
 2. **Set environment variables in the Render dashboard** (the Blueprint marks them `sync: false` for security):
-   - `DATABASE_URL` → `postgresql://neondb_owner:npg_S1nRIhXK6qyb@ep-wandering-forest-ay59vucq-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require`
+   - `DATABASE_URL` → your Neon connection string
    - `JWT_SECRET` → generate a new strong random string
    - `FRONTEND_URL` → `https://edwardian-consult.vercel.app` (or your final frontend domain)
-    - `PHP_MAILER_KEY` → already set in render.yaml as a generated value; confirm it matches `eiec-mailer-2026`
+    - `PHP_MAILER_KEY` → your mailer key
    - `TERMII_API_KEY` → from Termii dashboard
    - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` → from Cloudinary dashboard
 3. **Build command:** `npm install && npm run prisma:generate && npm run build`

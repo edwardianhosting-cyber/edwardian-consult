@@ -15,19 +15,34 @@
  */
 
 // ─── Config ──────────────────────────────────────────────────────────────────
+// In production, set these via environment variables or a separate config file
+// that is not checked into version control.
 
-define('API_KEY',    'eiec-mailer-2026');
-define('SMTP_HOST',  'mail.edwardianeducationalconsult.com.ng');
-define('SMTP_PORT',  587);
-define('SMTP_USER',  'registrar@edwardianeducationalconsult.com.ng');
-define('SMTP_PASS',  'YOUR_WHOGOHOST_EMAIL_PASSWORD'); // <-- REPLACE THIS
-define('FROM_NAME',  'Edwardian Educational Consult');
-define('FROM_EMAIL', 'registrar@edwardianeducationalconsult.com.ng');
+$apiKey    = getenv('MAILER_API_KEY') ?: 'CHANGE_ME_MAILER_API_KEY';
+$smtpHost  = getenv('MAILER_SMTP_HOST') ?: 'mail.edwardianeducationalconsult.com.ng';
+$smtpPort  = (int)(getenv('MAILER_SMTP_PORT') ?: 587);
+$smtpUser  = getenv('MAILER_SMTP_USER') ?: 'registrar@edwardianeducationalconsult.com.ng';
+$smtpPass  = getenv('MAILER_SMTP_PASS') ?: '';
+$fromName  = getenv('MAILER_FROM_NAME') ?: 'Edwardian Educational Consult';
+$fromEmail = getenv('MAILER_FROM_EMAIL') ?: 'registrar@edwardianeducationalconsult.com.ng';
 
-// ─── CORS headers ─────────────────────────────────────────────────────────────
+if ($smtpPass === '' || $apiKey === 'CHANGE_ME_MAILER_API_KEY') {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Mailer is not configured']);
+    exit();
+}
+
+// Only allow requests from the backend origin
+$allowedOrigin = getenv('MAILER_ALLOWED_ORIGIN') ?: 'http://localhost:5000';
+$requestOrigin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+if ($requestOrigin !== $allowedOrigin) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Forbidden origin']);
+    exit();
+}
 
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Origin: ' . $allowedOrigin);
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
@@ -59,7 +74,7 @@ if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
     $token = trim($matches[1]);
 }
 
-if ($token !== API_KEY) {
+if ($token !== $apiKey) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit();
@@ -103,22 +118,15 @@ $mail = new PHPMailer\PHPMailer\PHPMailer(true);
 try {
     // SMTP settings
     $mail->isSMTP();
-    $mail->Host       = SMTP_HOST;
+    $mail->Host       = $smtpHost;
     $mail->SMTPAuth   = true;
-    $mail->Username   = SMTP_USER;
-    $mail->Password   = SMTP_PASS;
+    $mail->Username   = $smtpUser;
+    $mail->Password   = $smtpPass;
     $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-    $mail->Port       = SMTP_PORT;
-    $mail->SMTPOptions = [
-        'ssl' => [
-            'verify_peer'       => false,
-            'verify_peer_name'  => false,
-            'allow_self_signed' => true,
-        ],
-    ];
+    $mail->Port       = $smtpPort;
 
     // Sender & recipient
-    $mail->setFrom(FROM_EMAIL, FROM_NAME);
+    $mail->setFrom($fromEmail, $fromName);
     $mail->addAddress($to);
 
     // Content

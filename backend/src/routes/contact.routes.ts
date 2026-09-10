@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { authenticate, authorize } from '../middleware/auth.middleware';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -23,8 +24,8 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-// Get all sections including inactive (admin)
-router.get('/admin/all', async (req: Request, res: Response) => {
+// Get all sections including inactive (admin only)
+router.get('/admin/all', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     const sections = await prisma.contactSection.findMany({
       orderBy: { order: 'asc' },
@@ -40,8 +41,8 @@ router.get('/admin/all', async (req: Request, res: Response) => {
   }
 });
 
-// Create section
-router.post('/sections', async (req: Request, res: Response) => {
+// Create section (admin only)
+router.post('/sections', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     const { title, order } = req.body;
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -55,8 +56,8 @@ router.post('/sections', async (req: Request, res: Response) => {
   }
 });
 
-// Update section
-router.put('/sections/:id', async (req: Request, res: Response) => {
+// Update section (admin only)
+router.put('/sections/:id', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     const { title, order, isActive } = req.body;
     const section = await prisma.contactSection.update({
@@ -69,8 +70,8 @@ router.put('/sections/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Delete section
-router.delete('/sections/:id', async (req: Request, res: Response) => {
+// Delete section (admin only)
+router.delete('/sections/:id', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     await prisma.contactSection.delete({
       where: { id: req.params.id },
@@ -81,8 +82,8 @@ router.delete('/sections/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Create card
-router.post('/cards', async (req: Request, res: Response) => {
+// Create card (admin only)
+router.post('/cards', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     const { title, description, icon, link, linkType, order, sectionId } = req.body;
 
@@ -103,8 +104,8 @@ router.post('/cards', async (req: Request, res: Response) => {
   }
 });
 
-// Update card
-router.put('/cards/:id', async (req: Request, res: Response) => {
+// Update card (admin only)
+router.put('/cards/:id', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     const { title, description, icon, link, linkType, order, isActive } = req.body;
     const card = await prisma.contactCard.update({
@@ -117,8 +118,8 @@ router.put('/cards/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Delete card
-router.delete('/cards/:id', async (req: Request, res: Response) => {
+// Delete card (admin only)
+router.delete('/cards/:id', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     await prisma.contactCard.delete({
       where: { id: req.params.id },

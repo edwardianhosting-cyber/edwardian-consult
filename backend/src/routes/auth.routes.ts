@@ -6,6 +6,7 @@ import { hashPassword, verifyPassword, generateToken, generatePortalId, generate
 import { sendWelcomeEmail, sendPasswordResetEmail } from '../lib/email';
 import { generateStudentEmail, createStudentEmailAccount } from '../lib/whohost';
 import { useReferralCode } from '../services/referral.service';
+import { authenticate } from '../middleware/auth.middleware';
 
 // Reset tokens are emailed in plaintext but only ever stored as a SHA-256 hash,
 // the same principle as password storage: a leaked DB row shouldn't hand out
@@ -457,19 +458,10 @@ router.post('/reset-password', async (req: Request, res: Response) => {
 });
 
 // Get current user
-router.get('/me', async (req: Request, res: Response) => {
+router.get('/me', authenticate, async (req: Request, res: Response) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ success: false, message: 'No token provided' });
-    }
-
-    const token = authHeader.split(' ')[1];
-    const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-
     const currentUser = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where: { id: req.user!.userId },
       select: {
         id: true,
         fullName: true,
@@ -514,7 +506,7 @@ router.get('/me', async (req: Request, res: Response) => {
       data: currentUser,
     });
   } catch (error) {
-    return res.status(401).json({ success: false, message: 'Invalid token' });
+    return res.status(500).json({ success: false, message: 'Failed to fetch user' });
   }
 });
 

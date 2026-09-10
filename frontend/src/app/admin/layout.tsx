@@ -298,20 +298,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                       >
                         Dashboard
                       </Link>
-                      <Link
-                        href="/admin/settings"
-                        onClick={() => setAvatarDropdownOpen(false)}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Settings
-                      </Link>
-                      <Link
-                        href="/admin/profile"
-                        onClick={() => setAvatarDropdownOpen(false)}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Profile
-                      </Link>
                     </div>
                   </>
                 )}

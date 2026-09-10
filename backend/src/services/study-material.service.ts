@@ -152,7 +152,7 @@ export async function deleteStudyResource(id: string) {
   });
 }
 
-export async function uploadStudyMaterialFile(file: Express.Multer.File, type: 'pdf' | 'word' | 'video' | 'audio'): Promise<{ url: string; textContent?: string; imageUrl?: string }> {
+export async function uploadStudyMaterialFile(file: Express.Multer.File, type: 'pdf' | 'word' | 'video' | 'audio' | 'image'): Promise<{ url: string; textContent?: string; imageUrl?: string }> {
   let resourceType: 'image' | 'auto' | 'video' | 'raw' = 'auto';
   let eager: any[] | undefined;
 

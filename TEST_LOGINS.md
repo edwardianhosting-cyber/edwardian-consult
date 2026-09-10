@@ -4,19 +4,19 @@ Use these credentials to test the application locally and on live deployment.
 
 ## Admin
 - **Email:** `admin@edwardianconsult.com`
-- **Password:** `Admin@123`
+- **Password:** `***`
 - **Login URL:** `/login?mode=credentials`
 - **Dashboard:** `/admin/dashboard`
 
 ## Teacher / Tutor
 - **Email:** `tutor@edwardianconsult.com`
-- **Password:** `Tutor@123`
+- **Password:** `***`
 - **Login URL:** `/login?mode=credentials`
 - **Dashboard:** `/teacher/dashboard`
 
 ## Student
 - **Email:** `student@edwardianconsult.com`
-- **Password:** `Student@123`
+- **Password:** `***`
 - **Login URL:** `/login?mode=credentials`
 - **Dashboard:** `/student/dashboard`
 
@@ -32,12 +32,12 @@ Use these credentials to test the application locally and on live deployment.
 cd backend
 
 # Windows PowerShell
-$env:DATABASE_URL="postgresql://neondb_owner:npg_NrjdLgA43DQy@ep-late-rain-axs61xfx-pooler.c-4.us-east-2.aws.neon.tech/edwardian_db?sslmode=require&channel_binding=require"
+$env:DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
 npx prisma db push
 npx prisma db seed
 
 # Git Bash
-export DATABASE_URL="postgresql://neondb_owner:npg_NrjdLgA43DQy@ep-late-rain-axs61xfx-pooler.c-4.us-east-2.aws.neon.tech/edwardian_db?sslmode=require&channel_binding=require"
+export DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
 npx prisma db push
 npx prisma db seed
 ```

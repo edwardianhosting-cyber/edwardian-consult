@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, Edit2, X, Save } from 'lucide-react';
 import api from '@/lib/api';
+import { showError } from '@/lib/toast';
 
 interface Announcement {
   id: string;
@@ -99,7 +100,7 @@ export default function AdminAnnouncementsPage() {
       resetForm();
       fetchAnnouncements();
     } catch (err: any) {
-      alert(err.message || 'Failed to save announcement');
+      showError(err.message || 'Failed to save announcement');
     }
   }
 
@@ -109,7 +110,7 @@ export default function AdminAnnouncementsPage() {
       await api.adminDeleteAdmissionAnnouncement(id);
       setAnnouncements(prev => prev.filter(a => a.id !== id));
     } catch (err: any) {
-      alert(err.message || 'Failed to delete announcement');
+      showError(err.message || 'Failed to delete announcement');
     }
   }
 

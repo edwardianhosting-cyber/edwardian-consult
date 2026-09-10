@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Plus, Search, Edit2, Trash2, Eye, UserCheck, UserX, RefreshCw, X, Award, CreditCard, FileText, Key } from 'lucide-react';
 import { api } from '@/lib/api';
+import { showSuccess, showError } from '@/lib/toast';
 
 interface Student {
   id: string;
@@ -164,7 +165,7 @@ export default function AdminStudentsPage() {
     setError(null);
     try {
       await api.resetParentCode(student.id);
-      alert('Parent access code reset successfully');
+      showSuccess('Parent access code reset successfully');
     } catch (err: any) {
       setError(err.message || 'Failed to reset parent code');
     } finally {

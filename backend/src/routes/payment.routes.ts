@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { authenticate, authorize } from '../middleware/auth.middleware';
+import { authenticate, authorize, parentReadOnly } from '../middleware/auth.middleware';
+import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import {
   initiateERCASPayment,
@@ -17,9 +18,20 @@ import {
 const router = Router();
 
 // Initialize payment
-router.post('/initialize', authenticate, async (req: Request, res: Response) => {
+router.post('/initialize', authenticate, authorize('STUDENT'), async (req: Request, res: Response) => {
   try {
-    const { amount, description, type, metadata } = req.body;
+    if (req.user!.role === 'PARENT_VIEW') {
+      return res.status(403).json({ success: false, message: 'Read-only access' });
+    }
+
+    const schema = z.object({
+      amount: z.number().positive('Amount must be positive'),
+      description: z.string().max(500).optional(),
+      type: z.string().max(50).optional(),
+      metadata: z.record(z.any()).optional(),
+    });
+
+    const { amount, description, type, metadata } = schema.parse(req.body);
     const user = req.user!;
 
     const reference = generatePaymentReference();
@@ -99,21 +111,50 @@ router.post('/ercas/callback', async (req: Request, res: Response) => {
   try {
     const { reference, status } = req.body;
 
-    if (status === 'successful') {
-      await processSuccessfulPayment(reference);
-    } else {
-      await handleFailedPayment(reference);
+    if (!reference) {
+      return res.status(400).json({ success: false, message: 'Missing reference' });
     }
 
-    res.json({ success: true });
+    const payment = await prisma.payment.findUnique({
+      where: { reference },
+    });
+
+    if (!payment) {
+      return res.status(404).json({ success: false, message: 'Payment not found' });
+    }
+
+    if (payment.status === 'COMPLETED') {
+      return res.json({ success: true, message: 'Payment already processed' });
+    }
+
+    if (status !== 'successful') {
+      await handleFailedPayment(reference);
+      return res.json({ success: true, message: 'Payment marked as failed' });
+    }
+
+    const verification = await verifyERCASPayment(reference);
+
+    if (!verification.success || verification.status !== 'successful') {
+      await handleFailedPayment(reference, 'ERCAS verification failed');
+      return res.json({ success: false, message: 'Payment verification failed' });
+    }
+
+    if (verification.amount !== payment.amount) {
+      await handleFailedPayment(reference, 'Amount mismatch');
+      return res.json({ success: false, message: 'Amount mismatch' });
+    }
+
+    await processSuccessfulPayment(reference);
+
+    res.json({ success: true, message: 'Payment processed' });
   } catch (error) {
     console.error('ERCAS callback error:', error);
-    res.status(500).json({ success: false });
+    res.status(500).json({ success: false, message: 'Failed to process callback' });
   }
 });
 
 // Get user payments
-router.get('/', authenticate, async (req: Request, res: Response) => {
+router.get('/', authenticate, parentReadOnly, async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const result = await getUserPayments(req.user!.userId, page);
@@ -124,7 +165,7 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
 });
 
 // Get payment stats
-router.get('/stats', authenticate, async (req: Request, res: Response) => {
+router.get('/stats', authenticate, parentReadOnly, async (req: Request, res: Response) => {
   try {
     const stats = await getPaymentStats(req.user!.userId);
     res.json({ success: true, data: stats });
@@ -134,7 +175,7 @@ router.get('/stats', authenticate, async (req: Request, res: Response) => {
 });
 
 // Get single payment by ID
-router.get('/:id', authenticate, async (req: Request, res: Response) => {
+router.get('/:id', authenticate, parentReadOnly, async (req: Request, res: Response) => {
   try {
     const payment = await getPaymentById(req.params.id);
     if (!payment) {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, FileText, Clock, Trash2, Edit, Eye, BookOpen, Upload } from 'lucide-react';
 import api from '@/lib/api';
+import { showError } from '@/lib/toast';
 
 interface MockExam {
   id: string;
@@ -81,7 +82,7 @@ export default function AdminMockExamPage() {
       fetchExams();
     } catch (err: any) {
       console.error('[admin mock] submit error', err);
-      alert(err.message || 'Failed to save mock exam');
+      showError(err.message || 'Failed to save mock exam');
     }
   }
 
@@ -91,7 +92,7 @@ export default function AdminMockExamPage() {
       await api.deleteMockExam(examId);
       fetchExams();
     } catch (err: any) {
-      alert(err.message || 'Failed to delete mock exam');
+      showError(err.message || 'Failed to delete mock exam');
     }
   }
 
@@ -104,7 +105,7 @@ export default function AdminMockExamPage() {
       }
       fetchExams();
     } catch (err: any) {
-      alert(err.message || 'Failed to update publish status');
+      showError(err.message || 'Failed to update publish status');
     }
   }
 
