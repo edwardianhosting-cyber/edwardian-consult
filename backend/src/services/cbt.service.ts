@@ -62,12 +62,23 @@ export async function generateCBT(userId: string, params: {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error('User not found');
 
+  const userExamTypes = (user.examTypes as string[]) || [];
+  if (userExamTypes.length === 0) {
+    throw new Error('No exam types registered. Please update your profile first.');
+  }
+
+  const normalizedRequested = params.examType.toUpperCase();
+  const allowedExamTypes = userExamTypes.map(t => t.toUpperCase());
+  if (!allowedExamTypes.includes(normalizedRequested)) {
+    throw new Error(`You are not registered for ${params.examType}. Your registered exam types are: ${userExamTypes.join(', ')}`);
+  }
+
   const questionCount = params.questionCount || 20;
-  
+
   const where: any = {
     isActive: true,
     subject: params.subject,
-    examType: params.examType,
+    examType: normalizedRequested,
   };
 
   if (params.topics && params.topics.length > 0) {
@@ -75,22 +86,20 @@ export async function generateCBT(userId: string, params: {
   }
 
   const allQuestions = await prisma.question.findMany({ where });
-  
-  // Randomize questions
+
+  if (allQuestions.length === 0) {
+    throw new Error(`No questions available for ${params.subject} (${params.examType}). Please contact support.`);
+  }
+
   const shuffled = shuffleArray([...allQuestions]);
   const selectedQuestions = shuffled.slice(0, questionCount);
 
-  if (selectedQuestions.length === 0) {
-    throw new Error('No questions available for the selected criteria');
-  }
-
-  // Create exam record
   const exam = await prisma.exam.create({
     data: {
       title: `${params.subject} CBT - ${new Date().toLocaleDateString()}`,
-      examType: params.examType,
+      examType: normalizedRequested,
       subject: params.subject,
-      duration: selectedQuestions.length * 2, // 2 minutes per question
+      duration: selectedQuestions.length * 2,
       totalMarks: selectedQuestions.length * 5,
       questions: {
         create: selectedQuestions.map((q, index) => ({
@@ -107,11 +116,10 @@ export async function generateCBT(userId: string, params: {
     },
   });
 
-  // Randomize options for each question
   const questionsWithRandomizedOptions = exam.questions.map(eq => {
     const originalOptions = eq.question.options as string[];
     const correctAnswer = originalOptions[eq.question.correctOption];
-    
+
     const shuffledOptions = shuffleArray([...originalOptions]);
     const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
 
@@ -496,13 +504,17 @@ export async function startMockExamAttempt(userId: string, examId: string) {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { jambSubjects: true },
+    select: { examTypes: true, jambSubjects: true },
   });
 
+  const userExamTypes = (user?.examTypes as string[]) || [];
   const userSubjects = (user?.jambSubjects as string[]) || [];
-  if (userSubjects.length === 0) {
-    throw new Error('No subjects registered. Please register subjects first.');
+
+  if (userExamTypes.length === 0) {
+    throw new Error('No exam types registered. Please update your profile first.');
   }
+
+  const primaryExamType = userExamTypes[0].toUpperCase();
 
   const allSelectedQuestions: any[] = [];
 
@@ -510,7 +522,7 @@ export async function startMockExamAttempt(userId: string, examId: string) {
     const where: any = {
       isActive: true,
       subject,
-      examType: 'JAMB',
+      examType: primaryExamType,
     };
 
     const subjectQuestions = await prisma.question.findMany({ where });
@@ -523,14 +535,14 @@ export async function startMockExamAttempt(userId: string, examId: string) {
   const finalShuffled = shuffleArray([...allSelectedQuestions]);
 
   if (finalShuffled.length === 0) {
-    throw new Error('No questions available for your registered subjects');
+    throw new Error(`No ${primaryExamType} questions available for your registered subjects. Please contact support.`);
   }
 
   const attemptExam = await prisma.exam.create({
     data: {
       title: `${exam.title} - ${new Date().toLocaleDateString()}`,
       examType: 'MOCK',
-      subject: userSubjects[0],
+      subject: userSubjects[0] || exam.subject,
       duration: exam.duration,
       totalMarks: 100,
       questions: {
@@ -741,15 +753,19 @@ export async function uploadQuestionsToMockExam(examId: string, questions: Array
   const createdQuestions: any[] = [];
 
   for (const q of questions) {
+    if (!q.examType) {
+      throw new Error('examType is required for each question');
+    }
+
     const created = await prisma.question.create({
       data: {
         subject: q.subject || exam.subject,
-        examType: q.examType || 'MOCK',
+        examType: q.examType.toUpperCase(),
         text: q.text,
         options: q.options,
         correctOption: q.correctOption,
-      topic: q.topic,
-      explanation: q.explanation,
+        topic: q.topic,
+        explanation: q.explanation,
         year: new Date().getFullYear(),
       },
     });
