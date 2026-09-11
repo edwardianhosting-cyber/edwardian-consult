@@ -233,7 +233,6 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 
     if (!user) {
-      console.log('Login failed: user not found for email:', validated.email);
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password',
@@ -242,7 +241,6 @@ router.post('/login', async (req: Request, res: Response) => {
 
     const isValid = await verifyPassword(validated.password, user.passwordHash);
     if (!isValid) {
-      console.log('Login failed: invalid password for email:', validated.email);
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password',
@@ -250,7 +248,6 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 
     if (!user.isActive) {
-      console.log('Login failed: inactive account for email:', validated.email);
       return res.status(403).json({
         success: false,
         message: 'Your account has been deactivated. Please contact support.',

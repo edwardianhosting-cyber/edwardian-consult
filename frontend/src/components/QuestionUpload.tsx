@@ -8,8 +8,11 @@ import { showSuccess, showError } from '@/lib/toast';
 interface Question {
   id: string;
   subject: string;
+  examType: string;
   text: string;
   imageUrl?: string;
+  year?: number;
+  topic?: string;
 }
 
 interface Institution {
@@ -41,6 +44,21 @@ export default function QuestionUpload() {
   const [questionsJsonText, setQuestionsJsonText] = useState('');
   const [uploadingQuestionsJson, setUploadingQuestionsJson] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
+  const [filterExamType, setFilterExamType] = useState('');
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [manualQuestion, setManualQuestion] = useState({
+    text: '',
+    options: ['', '', '', ''],
+    correctOption: 0,
+    explanation: '',
+    subject: '',
+    topic: '',
+    examType: 'JAMB',
+    imageUrl: '',
+  });
+  const [manualLoading, setManualLoading] = useState(false);
+  const [manualSuccess, setManualSuccess] = useState<string | null>(null);
+  const [manualError, setManualError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchQuestions();
@@ -52,7 +70,9 @@ export default function QuestionUpload() {
   async function fetchQuestions() {
     setLoadingQuestions(true);
     try {
-      const response = await api.getAllQuestions({ limit: '100' });
+      const params: Record<string, string> = { limit: '100' };
+      if (filterExamType) params.examType = filterExamType;
+      const response = await api.getAllQuestions(params);
       setQuestions(response.data || []);
     } catch (error) {
       console.error('Failed to fetch questions:', error);
@@ -193,6 +213,36 @@ export default function QuestionUpload() {
       URL.revokeObjectURL(url);
     } catch (error: any) {
       showError(error.message || 'Failed to download sample');
+    }
+  }
+
+  async function handleManualSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setManualLoading(true);
+    setManualSuccess(null);
+    setManualError(null);
+    try {
+      const payload = {
+        ...manualQuestion,
+        options: manualQuestion.options.filter(o => o.trim() !== ''),
+      };
+      const response = await api.createQuestion(payload);
+      setManualSuccess('Question added successfully.');
+      setManualQuestion({
+        text: '',
+        options: ['', '', '', ''],
+        correctOption: 0,
+        explanation: '',
+        subject: '',
+        topic: '',
+        examType: manualQuestion.examType,
+        imageUrl: '',
+      });
+      await fetchQuestions();
+    } catch (error: any) {
+      setManualError(error.message || 'Failed to add question');
+    } finally {
+      setManualLoading(false);
     }
   }
 
@@ -481,9 +531,189 @@ export default function QuestionUpload() {
         )}
       </div>
 
+      {/* Manual Question Entry */}
+      <div className="bg-white rounded-xl border p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Manual Question Entry</h3>
+            <p className="text-xs text-gray-500">Add a single question directly to the Question Bank.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowManualForm(!showManualForm)}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium"
+          >
+            {showManualForm ? 'Close' : '+ Add Question'}
+          </button>
+        </div>
+
+        {showManualForm && (
+          <form onSubmit={handleManualSubmit} className="space-y-4">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Question Text</label>
+                <textarea
+                  value={manualQuestion.text}
+                  onChange={(e) => setManualQuestion({ ...manualQuestion, text: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="Enter the question text"
+                  required
+                />
+              </div>
+              {manualQuestion.options.map((option, idx) => (
+                <div key={idx}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Option {String.fromCharCode(65 + idx)}</label>
+                  <input
+                    type="text"
+                    value={option}
+                    onChange={(e) => {
+                      const updated = [...manualQuestion.options];
+                      updated[idx] = e.target.value;
+                      setManualQuestion({ ...manualQuestion, options: updated });
+                    }}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    placeholder={`Option ${String.fromCharCode(65 + idx)}`}
+                    required
+                  />
+                </div>
+              ))}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Correct Answer</label>
+                <select
+                  value={manualQuestion.correctOption}
+                  onChange={(e) => setManualQuestion({ ...manualQuestion, correctOption: parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                >
+                  {manualQuestion.options.map((_, idx) => (
+                    <option key={idx} value={idx}>{String.fromCharCode(65 + idx)}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                <select
+                  value={manualQuestion.subject}
+                  onChange={(e) => setManualQuestion({ ...manualQuestion, subject: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  required
+                >
+                  <option value="">Select subject...</option>
+                  {subjects.map((subject) => (
+                    <option key={subject} value={subject}>{subject}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Topic (optional)</label>
+                <input
+                  type="text"
+                  value={manualQuestion.topic}
+                  onChange={(e) => setManualQuestion({ ...manualQuestion, topic: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="e.g. Algebra"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Exam Type</label>
+                <select
+                  value={manualQuestion.examType}
+                  onChange={(e) => setManualQuestion({ ...manualQuestion, examType: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="JAMB">JAMB</option>
+                  <option value="WAEC">WAEC</option>
+                  <option value="NECO">NECO</option>
+                  <option value="POST-UTME">POST-UTME</option>
+                  <option value="MOCK">MOCK</option>
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Explanation (optional)</label>
+                <textarea
+                  value={manualQuestion.explanation}
+                  onChange={(e) => setManualQuestion({ ...manualQuestion, explanation: e.target.value })}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="Explain why the correct answer is correct"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Image URL (optional)</label>
+                <input
+                  type="url"
+                  value={manualQuestion.imageUrl}
+                  onChange={(e) => setManualQuestion({ ...manualQuestion, imageUrl: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="https://example.com/image.jpg"
+                />
+              </div>
+            </div>
+
+            {manualSuccess && (
+              <div className="p-3 rounded-lg border border-green-200 bg-green-50 text-green-700 text-sm">
+                {manualSuccess}
+              </div>
+            )}
+            {manualError && (
+              <div className="p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">
+                {manualError}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                disabled={manualLoading}
+                className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 font-medium"
+              >
+                {manualLoading ? 'Saving...' : 'Save Question'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setManualQuestion({
+                    text: '',
+                    options: ['', '', '', ''],
+                    correctOption: 0,
+                    explanation: '',
+                    subject: manualQuestion.subject,
+                    topic: manualQuestion.topic,
+                    examType: manualQuestion.examType,
+                    imageUrl: '',
+                  });
+                  setManualSuccess(null);
+                  setManualError(null);
+                }}
+                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-medium"
+              >
+                Clear
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+
       {/* Recent Questions */}
       <div className="bg-white rounded-xl border p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Questions</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Recent Questions</h3>
+          <select
+            value={filterExamType}
+            onChange={(e) => {
+              setFilterExamType(e.target.value);
+              fetchQuestions();
+            }}
+            className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">All Exam Types</option>
+            <option value="JAMB">JAMB</option>
+            <option value="WAEC">WAEC</option>
+            <option value="NECO">NECO</option>
+            <option value="POST-UTME">POST-UTME</option>
+            <option value="MOCK">MOCK</option>
+          </select>
+        </div>
         {loadingQuestions ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
@@ -495,18 +725,26 @@ export default function QuestionUpload() {
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-2 px-3 font-medium text-gray-700">ID</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-700">Exam Type</th>
                   <th className="text-left py-2 px-3 font-medium text-gray-700">Subject</th>
-                  <th className="text-left py-2 px-3 font-medium text-gray-700">Text</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-700">Question</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-700">Year</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-700">Topic</th>
                   <th className="text-left py-2 px-3 font-medium text-gray-700">Image</th>
                 </tr>
               </thead>
               <tbody>
                 {questions.map((q) => (
                   <tr key={q.id} className="border-b last:border-0">
-                    <td className="py-2 px-3 text-gray-600 font-mono text-xs">{q.id}</td>
+                    <td className="py-2 px-3 text-gray-900">
+                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-primary-50 text-primary-700">
+                        {q.examType}
+                      </span>
+                    </td>
                     <td className="py-2 px-3 text-gray-900">{q.subject}</td>
                     <td className="py-2 px-3 text-gray-600 max-w-md truncate">{q.text}</td>
+                    <td className="py-2 px-3 text-gray-600">{q.year || '-'}</td>
+                    <td className="py-2 px-3 text-gray-600">{q.topic || '-'}</td>
                     <td className="py-2 px-3">
                       {q.imageUrl ? (
                         <img src={q.imageUrl} alt="" className="h-10 w-10 object-cover rounded border" />

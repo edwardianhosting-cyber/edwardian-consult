@@ -7,8 +7,11 @@ import { api, API_BASE } from '@/lib/api';
 interface Question {
   id: string;
   subject: string;
+  examType: string;
   text: string;
   imageUrl?: string;
+  year?: number;
+  topic?: string;
 }
 
 interface Institution {
@@ -22,6 +25,7 @@ export default function TeacherQuestions() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [subjectFilter, setSubjectFilter] = useState('');
+  const [examTypeFilter, setExamTypeFilter] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [bulkResult, setBulkResult] = useState<{ created: number; errors: string[] } | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -56,6 +60,7 @@ export default function TeacherQuestions() {
       setLoading(true);
       const params: Record<string, string> = { limit: '100' };
       if (subjectFilter) params.subject = subjectFilter;
+      if (examTypeFilter) params.examType = examTypeFilter;
       const data = await api.getAllQuestions(params);
       if (data?.success && data.data) {
         setQuestions(data.data);
@@ -215,7 +220,8 @@ export default function TeacherQuestions() {
     const matchesSearch = q.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
       q.subject.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSubject = !subjectFilter || q.subject === subjectFilter;
-    return matchesSearch && matchesSubject;
+    const matchesExamType = !examTypeFilter || q.examType === examTypeFilter;
+    return matchesSearch && matchesSubject && matchesExamType;
   });
 
   return (
@@ -528,16 +534,30 @@ export default function TeacherQuestions() {
               className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
-          <select
-            value={subjectFilter}
-            onChange={(e) => setSubjectFilter(e.target.value)}
-            className="mt-2 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="">All Subjects</option>
-            {uniqueSubjects.map((subject) => (
-              <option key={subject} value={subject}>{subject}</option>
-            ))}
-          </select>
+          <div className="mt-2 flex gap-2">
+            <select
+              value={subjectFilter}
+              onChange={(e) => setSubjectFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">All Subjects</option>
+              {uniqueSubjects.map((subject) => (
+                <option key={subject} value={subject}>{subject}</option>
+              ))}
+            </select>
+            <select
+              value={examTypeFilter}
+              onChange={(e) => setExamTypeFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">All Exam Types</option>
+              <option value="JAMB">JAMB</option>
+              <option value="WAEC">WAEC</option>
+              <option value="NECO">NECO</option>
+              <option value="POST-UTME">POST-UTME</option>
+              <option value="MOCK">MOCK</option>
+            </select>
+          </div>
         </div>
         {loading ? (
           <div className="flex items-center justify-center py-8">
@@ -550,7 +570,7 @@ export default function TeacherQuestions() {
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-2 px-3 font-medium text-gray-700">ID</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-700">Exam Type</th>
                   <th className="text-left py-2 px-3 font-medium text-gray-700">Subject</th>
                   <th className="text-left py-2 px-3 font-medium text-gray-700">Text</th>
                   <th className="text-left py-2 px-3 font-medium text-gray-700">Image</th>
@@ -559,7 +579,11 @@ export default function TeacherQuestions() {
               <tbody>
                 {filteredQuestions.map((q) => (
                   <tr key={q.id} className="border-b last:border-0">
-                    <td className="py-2 px-3 text-gray-600 font-mono text-xs">{q.id}</td>
+                    <td className="py-2 px-3 text-gray-900">
+                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-primary-50 text-primary-700">
+                        {q.examType}
+                      </span>
+                    </td>
                     <td className="py-2 px-3 text-gray-900">{q.subject}</td>
                     <td className="py-2 px-3 text-gray-600 max-w-md truncate">{q.text}</td>
                     <td className="py-2 px-3">

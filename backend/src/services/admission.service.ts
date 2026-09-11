@@ -195,6 +195,53 @@ export async function createAdmissionApplication(userId: string, data: {
   });
 }
 
+export async function getAllApplications(filters?: { status?: string; search?: string; page?: number; limit?: number }) {
+  const page = filters?.page || 1;
+  const limit = filters?.limit || 20;
+  const skip = (page - 1) * limit;
+
+  const where: any = {};
+  if (filters?.status) where.status = filters.status;
+
+  const [applications, total] = await Promise.all([
+    prisma.admissionApplication.findMany({
+      where,
+      include: {
+        user: { select: { id: true, email: true, fullName: true } },
+        institution: { select: { id: true, name: true, abbreviation: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.admissionApplication.count({ where }),
+  ]);
+
+  return {
+    applications: applications.map(app => ({
+      id: app.id,
+      userId: app.userId,
+      userName: app.user.fullName || app.user.email,
+      userEmail: app.user.email,
+      institutionId: app.institutionId,
+      institutionName: app.institution.name,
+      courseId: app.courseId,
+      choiceNumber: app.choiceNumber,
+      status: app.status,
+      utmeScore: app.utmeScore,
+      submittedAt: app.submittedAt,
+      decisionAt: app.decisionAt,
+      notes: app.notes,
+      createdAt: app.createdAt,
+      updatedAt: app.updatedAt,
+    })),
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+}
+
 export async function getAdmissionTracker(userId: string) {
   const applications = await prisma.admissionApplication.findMany({
     where: { userId },

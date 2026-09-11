@@ -216,6 +216,15 @@ export const api = {
   submitApplication: (data: any) => fetchAPI('/admission/apply', { method: 'POST', body: JSON.stringify(data) }),
   updateMyApplicationStatus: (id: string, status: string) => fetchAPI(`/admission/my-applications/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   
+  // Admin - Applications
+  adminGetAllApplications: (params?: { status?: string; search?: string; page?: number; limit?: number }) => {
+    const query = params ? '?' + new URLSearchParams(
+      Object.entries(params).reduce((acc, [k, v]) => { if (v !== undefined && v !== null && v !== '') acc[k] = String(v); return acc; }, {} as Record<string, string>)
+    ).toString() : '';
+    return fetchAPI(`/admission/admin/applications${query}`);
+  },
+  adminUpdateApplicationStatus: (id: string, status: string, notes?: string) => fetchAPI(`/admission/applications/${id}`, { method: 'PATCH', body: JSON.stringify({ status, notes }) }),
+  
   // Admin - Admission
   adminCreateInstitution: (data: any) => fetchAPI('/admission/institutions', { method: 'POST', body: JSON.stringify(data) }),
   adminUpdateInstitution: (id: string, data: any) => fetchAPI(`/admission/institutions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),

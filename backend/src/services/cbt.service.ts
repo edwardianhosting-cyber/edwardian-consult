@@ -102,10 +102,18 @@ export async function generateCBT(userId: string, params: {
       duration: selectedQuestions.length * 2,
       totalMarks: selectedQuestions.length * 5,
       questions: {
-        create: selectedQuestions.map((q, index) => ({
-          questionId: q.id,
-          order: index + 1,
-        })),
+        create: selectedQuestions.map((q, index) => {
+          const originalOptions = q.options as string[];
+          const correctAnswer = originalOptions[q.correctOption];
+          const shuffledOptions = shuffleArray([...originalOptions]);
+          const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
+          return {
+            questionId: q.id,
+            order: index + 1,
+            options: shuffledOptions,
+            correctOption: newCorrectIndex,
+          };
+        }),
       },
     },
     include: {
@@ -116,23 +124,14 @@ export async function generateCBT(userId: string, params: {
     },
   });
 
-  const questionsWithRandomizedOptions = exam.questions.map(eq => {
-    const originalOptions = eq.question.options as string[];
-    const correctAnswer = originalOptions[eq.question.correctOption];
-
-    const shuffledOptions = shuffleArray([...originalOptions]);
-    const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
-
-    return {
-      id: eq.question.id,
-      text: eq.question.text,
-      imageUrl: eq.question.imageUrl,
-      options: shuffledOptions,
-      correctOption: newCorrectIndex,
-      topic: eq.question.topic,
-      explanation: eq.question.explanation,
-    };
-  });
+  const questionsWithRandomizedOptions = exam.questions.map(eq => ({
+    id: eq.question.id,
+    text: eq.question.text,
+    imageUrl: eq.question.imageUrl,
+    options: (eq.options as string[]) || [],
+    topic: eq.question.topic,
+    explanation: eq.question.explanation,
+  }));
 
   return {
     examId: exam.id,
@@ -141,13 +140,7 @@ export async function generateCBT(userId: string, params: {
     duration: exam.duration,
     totalMarks: exam.totalMarks,
     questionCount: questionsWithRandomizedOptions.length,
-    questions: questionsWithRandomizedOptions.map(q => ({
-      id: q.id,
-      text: q.text,
-      imageUrl: q.imageUrl,
-      options: q.options,
-      topic: q.topic,
-    })),
+    questions: questionsWithRandomizedOptions,
   };
 }
 
@@ -167,7 +160,8 @@ export async function submitCBT(userId: string, examId: string, answers: Record<
 
   for (const eq of exam.questions) {
     const userAnswer = answers[eq.question.id];
-    const isCorrect = userAnswer === eq.question.correctOption;
+    const correctAnswer = eq.correctOption ?? eq.question.correctOption;
+    const isCorrect = userAnswer === correctAnswer;
     const topic = eq.question.topic || 'General';
 
     if (userAnswer === undefined || userAnswer === -1) {
@@ -189,7 +183,7 @@ export async function submitCBT(userId: string, examId: string, answers: Record<
   }
 
   const totalQuestions = exam.questions.length;
-  const score = (correctAnswers / totalQuestions) * 100;
+  const score = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
   const durationUsed = exam.duration;
 
   const result = await prisma.cbtResult.create({
@@ -209,10 +203,8 @@ export async function submitCBT(userId: string, examId: string, answers: Record<
     },
   });
 
-  // Check for badges
   await checkAndAwardBadges(userId);
 
-  // Notify if score is low
   if (score < 50) {
     await createNotification({
       userId,
@@ -275,23 +267,13 @@ export async function getExamById(examId: string) {
 
   if (!exam) return null;
 
-  const questionsWithRandomizedOptions = exam.questions.map(eq => {
-    const originalOptions = eq.question.options as string[];
-    const correctAnswer = originalOptions[eq.question.correctOption];
-    
-    const shuffledOptions = shuffleArray([...originalOptions]);
-    const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
-
-    return {
-      id: eq.question.id,
-      text: eq.question.text,
-      imageUrl: eq.question.imageUrl,
-      options: shuffledOptions,
-      correctOption: newCorrectIndex,
-      topic: eq.question.topic,
-      explanation: eq.question.explanation,
-    };
-  });
+  const questions = exam.questions.map((eq) => ({
+    id: eq.question.id,
+    text: eq.question.text,
+    imageUrl: eq.question.imageUrl,
+    options: (eq.options as string[]) || (eq.question.options as string[]),
+    topic: eq.question.topic,
+  }));
 
   return {
     examId: exam.id,
@@ -299,14 +281,8 @@ export async function getExamById(examId: string) {
     subject: exam.subject,
     duration: exam.duration,
     totalMarks: exam.totalMarks,
-    questionCount: questionsWithRandomizedOptions.length,
-    questions: questionsWithRandomizedOptions.map(q => ({
-      id: q.id,
-      text: q.text,
-      imageUrl: q.imageUrl,
-      options: q.options,
-      topic: q.topic,
-    })),
+    questionCount: questions.length,
+    questions,
   };
 }
 
@@ -546,10 +522,18 @@ export async function startMockExamAttempt(userId: string, examId: string) {
       duration: exam.duration,
       totalMarks: 100,
       questions: {
-        create: finalShuffled.map((q, index) => ({
-          questionId: q.id,
-          order: index + 1,
-        })),
+        create: finalShuffled.map((q, index) => {
+          const originalOptions = q.options as string[];
+          const correctAnswer = originalOptions[q.correctOption];
+          const shuffledOptions = shuffleArray([...originalOptions]);
+          const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
+          return {
+            questionId: q.id,
+            order: index + 1,
+            options: shuffledOptions,
+            correctOption: newCorrectIndex,
+          };
+        }),
       },
     },
     include: {
@@ -560,24 +544,15 @@ export async function startMockExamAttempt(userId: string, examId: string) {
     },
   });
 
-  const questionsWithRandomizedOptions = attemptExam.questions.map(eq => {
-    const originalOptions = eq.question.options as string[];
-    const correctAnswer = originalOptions[eq.question.correctOption];
-
-    const shuffledOptions = shuffleArray([...originalOptions]);
-    const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
-
-    return {
-      id: eq.question.id,
-      text: eq.question.text,
-      imageUrl: eq.question.imageUrl,
-      options: shuffledOptions,
-      correctOption: newCorrectIndex,
-      topic: eq.question.topic,
-      explanation: eq.question.explanation,
-      subject: eq.question.subject,
-    };
-  });
+  const questionsWithRandomizedOptions = attemptExam.questions.map(eq => ({
+    id: eq.question.id,
+    text: eq.question.text,
+    imageUrl: eq.question.imageUrl,
+    options: (eq.options as string[]) || [],
+    topic: eq.question.topic,
+    explanation: eq.question.explanation,
+    subject: eq.question.subject,
+  }));
 
   return {
     examId: attemptExam.id,
@@ -586,14 +561,7 @@ export async function startMockExamAttempt(userId: string, examId: string) {
     duration: attemptExam.duration,
     totalMarks: attemptExam.totalMarks,
     questionCount: questionsWithRandomizedOptions.length,
-    questions: questionsWithRandomizedOptions.map(q => ({
-      id: q.id,
-      text: q.text,
-      imageUrl: q.imageUrl,
-      options: q.options,
-      topic: q.topic,
-      subject: q.subject,
-    })),
+    questions: questionsWithRandomizedOptions,
   };
 }
 

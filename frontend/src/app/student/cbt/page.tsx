@@ -15,7 +15,6 @@ interface CBTQuestion {
   topic?: string;
   difficulty?: string;
   explanation?: string;
-  correctOption: number;
 }
 
 interface CBTData {
@@ -300,14 +299,13 @@ export default function CBTPracticePage() {
   function viewCorrections() {
     if (!result || !cbtData) return;
 
-    const correctionsList = cbtData.questions.map(q => {
+    const correctionsList = cbtData.questions.map((q, idx) => {
       const userAnswer = answers[q.id];
       return {
+        questionNumber: idx + 1,
         question: q.text,
         options: q.options,
-        correctOption: q.correctOption,
         userAnswer,
-        isCorrect: userAnswer === q.correctOption,
         explanation: q.explanation,
       };
     });
@@ -908,29 +906,31 @@ export default function CBTPracticePage() {
                 </button>
               </div>
               <div className="space-y-4">
-                {corrections.map((correction, index) => (
-                  <div key={index} className={`p-4 rounded-xl border-2 ${correction.isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
-                    <p className="font-medium text-gray-900 mb-2">Q{index + 1}: {correction.question}</p>
-                    <div className="space-y-1 mb-2">
-                      {correction.options.map((option: string, optIndex: number) => (
-                        <div key={optIndex} className={`text-sm p-2 rounded ${
-                          optIndex === correction.correctOption ? 'bg-green-100 text-green-800 font-medium' :
-                          optIndex === correction.userAnswer && optIndex !== correction.correctOption ? 'bg-red-100 text-red-800' :
-                          'text-gray-600'
-                        }`}>
-                          {String.fromCharCode(65 + optIndex)}. {option}
-                          {optIndex === correction.correctOption && ' ✓'}
-                          {optIndex === correction.userAnswer && optIndex !== correction.correctOption && ' ✗ (Your answer)'}
-                        </div>
-                      ))}
-                    </div>
-                    {correction.explanation && (
-                      <div className="mt-2 p-3 bg-white rounded-lg">
-                        <p className="text-sm text-gray-700"><strong>Explanation:</strong> {correction.explanation}</p>
+                {corrections.map((correction, index) => {
+                  const answer = result?.userAnswers?.[cbtData!.questions[index]?.id];
+                  const isCorrect = answer?.correct ?? false;
+                  return (
+                    <div key={index} className={`p-4 rounded-xl border-2 ${isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+                      <p className="font-medium text-gray-900 mb-2">Q{correction.questionNumber}: {correction.question}</p>
+                      <div className="space-y-1 mb-2">
+                        {correction.options.map((option: string, optIndex: number) => (
+                          <div key={optIndex} className={`text-sm p-2 rounded ${
+                            optIndex === answer?.selected ? 'bg-blue-100 text-blue-800 font-medium' :
+                            'text-gray-600'
+                          }`}>
+                            {String.fromCharCode(65 + optIndex)}. {option}
+                            {optIndex === answer?.selected && ' (Your answer)'}
+                          </div>
+                        ))}
                       </div>
-                    )}
-                  </div>
-                ))}
+                      {correction.explanation && (
+                        <div className="mt-2 p-3 bg-white rounded-lg">
+                          <p className="text-sm text-gray-700"><strong>Explanation:</strong> {correction.explanation}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

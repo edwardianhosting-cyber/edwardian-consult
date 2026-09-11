@@ -66,32 +66,117 @@ function parseQuestionRow(row: Record<string, any>, lineIndex: number, defaults?
   };
 }
 
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const nextChar = line[i + 1];
+    
+    if (inQuotes) {
+      if (char === '"' && nextChar === '"') {
+        current += '"';
+        i++;
+      } else if (char === '"') {
+        inQuotes = false;
+      } else {
+        current += char;
+      }
+    } else {
+      if (char === '"') {
+        inQuotes = true;
+      } else if (char === ',') {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+  }
+  
+  result.push(current.trim());
+  return result;
+}
+
+function parseCSV(csvText: string): string[][] {
+  const lines: string[][] = [];
+  let currentLine: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < csvText.length; i++) {
+    const char = csvText[i];
+    const nextChar = csvText[i + 1];
+    
+    if (inQuotes) {
+      if (char === '"' && nextChar === '"') {
+        current += '"';
+        i++;
+      } else if (char === '"') {
+        inQuotes = false;
+      } else {
+        current += char;
+      }
+    } else {
+      if (char === '"') {
+        inQuotes = true;
+      } else if (char === ',') {
+        currentLine.push(current);
+        current = '';
+      } else if (char === '\n' || (char === '\r' && nextChar === '\n')) {
+        currentLine.push(current);
+        lines.push(currentLine);
+        currentLine = [];
+        current = '';
+        if (char === '\r') i++;
+      } else {
+        current += char;
+      }
+    }
+  }
+  
+  if (current || currentLine.length > 0) {
+    currentLine.push(current);
+    lines.push(currentLine);
+  }
+  
+  return lines;
+}
+
 export async function bulkCreateQuestionsFromCSV(csvText: string, defaults?: {
   subject?: string;
   examType?: string;
   institution?: string;
   year?: number;
 }): Promise<{ created: number; errors: string[] }> {
-  const lines = csvText.split(/\r?\n/).filter((line) => line.trim() !== '' && !line.trim().startsWith('#'));
+  const rows = parseCSV(csvText).filter(row => row.some(cell => cell.trim() !== '') && !row[0]?.trim().startsWith('#'));
+  
+  if (rows.length === 0) {
+    return { created: 0, errors: ['No data rows found'] };
+  }
+  
+  const headers = rows[0].map(h => h.trim().toLowerCase());
+  const dataRows = rows.slice(1);
+  
   let created = 0;
   const errors: string[] = [];
-
-  const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
-  const dataLines = lines.slice(1);
-
-  for (let i = 0; i < dataLines.length; i++) {
-    const values = dataLines[i].split(',').map((v) => v.trim());
+  
+  for (let i = 0; i < dataRows.length; i++) {
+    const values = dataRows[i];
     const row: Record<string, string> = {};
+    
     headers.forEach((header, index) => {
       row[header] = values[index] || '';
     });
-
+    
     const parsed = parseQuestionRow(row, i + 2, defaults);
     if (parsed?.error) {
       errors.push(parsed.error);
       continue;
     }
-
+    
     if (parsed?.data) {
       try {
         await prisma.question.create({ data: parsed.data });
@@ -101,7 +186,7 @@ export async function bulkCreateQuestionsFromCSV(csvText: string, defaults?: {
       }
     }
   }
-
+  
   return { created, errors };
 }
 

@@ -16,6 +16,7 @@ import {
   updateApplicationStatus,
   updateMyApplicationStatus,
   getAdmissionHub,
+  getAllApplications,
 } from '../services/admission.service';
 import {
   getAdmissionAnnouncements,
@@ -165,6 +166,20 @@ router.patch('/my-applications/:id/status', authenticate, async (req: Request, r
     res.json({ success: true, data: application });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to update application status' });
+  }
+});
+
+router.get('/admin/applications', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const applications = await getAllApplications({
+      status: req.query.status as string | undefined,
+      search: req.query.search as string | undefined,
+      page: req.query.page ? parseInt(req.query.page as string) : undefined,
+      limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
+    });
+    res.json({ success: true, data: applications });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch applications' });
   }
 });
 
