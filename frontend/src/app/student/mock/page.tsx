@@ -120,7 +120,7 @@ export default function MockPage() {
                 </div>
                 <div className="flex items-center gap-1 text-sm text-gray-500">
                   {getStatusIcon(exam.status)}
-                  <span className="capitalize">{exam.status.replace('_', ' ')}</span>
+                  <span className="capitalize">{(exam.status || '').replace('_', ' ')}</span>
                 </div>
               </div>
               <h3 className="font-semibold text-gray-900 mb-1">{exam.title}</h3>
