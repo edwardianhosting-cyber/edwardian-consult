@@ -480,17 +480,29 @@ export async function startMockExamAttempt(userId: string, examId: string) {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { examTypes: true, jambSubjects: true },
+    select: { examTypes: true, jambSubjects: true, olevelResults: true },
   });
 
   const userExamTypes = (user?.examTypes as string[]) || [];
-  const userSubjects = (user?.jambSubjects as string[]) || [];
+  const jambSubjects = (user?.jambSubjects as string[]) || [];
+  const olevelResults = (user?.olevelResults as string[]) || [];
 
   if (userExamTypes.length === 0) {
     throw new Error('No exam types registered. Please update your profile first.');
   }
 
   const primaryExamType = userExamTypes[0].toUpperCase();
+
+  let userSubjects: string[] = [];
+  if (primaryExamType === 'WAEC' || primaryExamType === 'NECO') {
+    userSubjects = olevelResults;
+  } else {
+    userSubjects = jambSubjects;
+  }
+
+  if (userSubjects.length === 0) {
+    throw new Error(`No subjects registered for ${primaryExamType}. Please update your profile first.`);
+  }
 
   const allSelectedQuestions: any[] = [];
 
