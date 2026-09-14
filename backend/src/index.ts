@@ -47,6 +47,7 @@ import analyticsRoutes from './routes/analytics.routes';
 import { errorHandler } from './middleware/error.middleware';
 
 const app: Application = express();
+const HOST = process.env.HOST || '0.0.0.0';
 const PORT = process.env.PORT || 5000;
 
 app.set('trust proxy', 1);
@@ -294,14 +295,14 @@ app.use((req: Request, res: Response) => {
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, HOST, () => {
   console.log(`
   ============================================
    Edwardian Educational Consult API
   ============================================
-   Server running on port: ${PORT}
+   Server running on: http://${HOST}:${PORT}
    Environment: ${process.env.NODE_ENV || 'development'}
-   API URL: http://localhost:${PORT}/api
+   API URL: http://${HOST}:${PORT}/api
   ============================================
   `);
 });

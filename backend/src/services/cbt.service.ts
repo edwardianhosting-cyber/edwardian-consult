@@ -309,12 +309,35 @@ export async function getMockExamsForUser(userId: string) {
     orderBy: { createdAt: 'desc' },
   });
 
-  return exams.map(exam => ({
-    ...exam,
-    totalQuestions: (exam as any).questionsPerSubject
-      ? (exam as any).questionsPerSubject * Math.max(userSubjects.length, 1)
-      : exam.questions.length,
-  }));
+  const mockResults = await prisma.cbtResult.findMany({
+    where: {
+      userId,
+      type: 'MOCK',
+      examId: { not: null },
+    },
+    select: {
+      examId: true,
+      score: true,
+      completedAt: true,
+    },
+  });
+
+  const resultMap = new Map(
+    mockResults.filter(r => r.examId !== null).map(r => [r.examId!, { score: r.score, completedAt: r.completedAt }])
+  );
+
+  return exams.map(exam => {
+    const result = resultMap.get(exam.id);
+    return {
+      ...exam,
+      totalQuestions: (exam as any).questionsPerSubject
+        ? (exam as any).questionsPerSubject * Math.max(userSubjects.length, 1)
+        : exam.questions.length,
+      status: result ? 'completed' : 'available',
+      score: result?.score,
+      completedAt: result?.completedAt?.toISOString(),
+    };
+  });
 }
 
 export async function getAllMockExamsForTeacher(userId: string) {
