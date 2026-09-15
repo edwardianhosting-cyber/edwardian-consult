@@ -44,7 +44,7 @@ export default function MockPage() {
       setLoading(true);
       const res = await api.startMockExam(examId);
       const newExamId = (res as any).data?.examId || (res as any).examId;
-      window.location.href = `/student/cbt?examId=${newExamId}&mode=mock`;
+      window.location.href = `/student/mock-exam/${newExamId}`;
     } catch (err: any) {
       showError(err.message || 'Failed to start exam');
     } finally {

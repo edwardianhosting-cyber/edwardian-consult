@@ -105,7 +105,7 @@ export default function MockResultsPage() {
         {results.map((result) => (
           <Link
             key={result.id}
-            href={`/student/cbt/results/${result.id}`}
+            href={`/student/mock-result/${result.id}`}
             className="block bg-white rounded-xl border border-gray-100 p-6 hover:shadow-md transition-shadow"
           >
             <div className="flex items-center justify-between">
