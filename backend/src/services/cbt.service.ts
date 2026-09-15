@@ -273,6 +273,8 @@ export async function getExamById(examId: string) {
     imageUrl: eq.question.imageUrl,
     options: (eq.options as string[]) || (eq.question.options as string[]),
     topic: eq.question.topic,
+    explanation: eq.question.explanation,
+    subject: eq.question.subject,
   }));
 
   return {
@@ -557,18 +559,10 @@ export async function startMockExamAttempt(userId: string, examId: string) {
       duration: exam.duration,
       totalMarks: 100,
       questions: {
-        create: finalShuffled.map((q, index) => {
-          const originalOptions = q.options as string[];
-          const correctAnswer = originalOptions[q.correctOption];
-          const shuffledOptions = shuffleArray([...originalOptions]);
-          const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
-          return {
-            questionId: q.id,
-            order: index + 1,
-            options: shuffledOptions,
-            correctOption: newCorrectIndex,
-          };
-        }),
+        create: finalShuffled.map((q, index) => ({
+          questionId: q.id,
+          order: index + 1,
+        })),
       },
     },
     include: {
@@ -579,15 +573,24 @@ export async function startMockExamAttempt(userId: string, examId: string) {
     },
   });
 
-  const questionsWithRandomizedOptions = attemptExam.questions.map(eq => ({
-    id: eq.question.id,
-    text: eq.question.text,
-    imageUrl: eq.question.imageUrl,
-    options: (eq.options as string[]) || [],
-    topic: eq.question.topic,
-    explanation: eq.question.explanation,
-    subject: eq.question.subject,
-  }));
+  const questionsWithRandomizedOptions = attemptExam.questions.map(eq => {
+    const originalOptions = eq.question.options as string[];
+    const correctAnswer = originalOptions[eq.question.correctOption];
+
+    const shuffledOptions = shuffleArray([...originalOptions]);
+    const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
+
+    return {
+      id: eq.question.id,
+      text: eq.question.text,
+      imageUrl: eq.question.imageUrl,
+      options: shuffledOptions,
+      correctOption: newCorrectIndex,
+      topic: eq.question.topic,
+      explanation: eq.question.explanation,
+      subject: eq.question.subject,
+    };
+  });
 
   return {
     examId: attemptExam.id,
@@ -959,12 +962,13 @@ export async function getCBTResultById(userId: string, resultId: string) {
     return {
       questionNumber: index + 1,
       question: eq.question.text,
-      options: eq.question.options as string[],
-      correctOption: eq.question.correctOption,
+      options: (eq.options as string[]) || (eq.question.options as string[]),
+      correctOption: eq.correctOption ?? eq.question.correctOption,
       userAnswer: answer?.selected ?? -1,
       isCorrect: answer?.correct ?? false,
       explanation: eq.question.explanation,
       topic: eq.question.topic,
+      subject: eq.question.subject,
     };
   });
 
