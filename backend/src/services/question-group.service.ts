@@ -130,8 +130,8 @@ export async function removeQuestionFromGroup(questionId: string) {
   return prisma.question.update({
     where: { id: questionId },
     data: {
-      groupId: undefined,
-      groupOrder: undefined,
+      groupId: null,
+      groupOrder: null,
       groupType: null,
     },
   });
@@ -160,20 +160,24 @@ export async function getGroupedExamQuestionsForEnglish(params: {
   const comprehensionGroupCount = params.comprehensionGroupCount ?? blueprint.comprehensionGroupCount;
   const clozeGroupCount = params.clozeGroupCount ?? blueprint.clozeGroupCount;
 
-  const groupedQuestions: Array<{
-    id: string;
-    text: string;
-    imageUrl?: string;
-    options: string[];
-    correctOption: number;
-    topic?: string;
-    explanation?: string;
-    groupType: string;
+  const blocks: Array<{
+    type: 'COMPREHENSION' | 'CLOZE' | 'STANDALONE';
     groupId?: string;
-    groupOrder?: number;
-    passage?: string;
-    title?: string;
-    instructions?: string;
+    questions: Array<{
+      id: string;
+      text: string;
+      imageUrl?: string;
+      options: string[];
+      correctOption: number;
+      topic?: string;
+      explanation?: string;
+      groupType: string;
+      groupId?: string;
+      groupOrder?: number;
+      passage?: string;
+      title?: string;
+      instructions?: string;
+    }>;
   }> = [];
 
   const selectedGroupIds = new Set<string>();
@@ -202,24 +206,33 @@ export async function getGroupedExamQuestionsForEnglish(params: {
       const group = shuffledGroups[i];
       selectedGroupIds.add(group.id);
 
-      for (const q of group.questions) {
-        if (usedQuestions.has(q.id)) continue;
-        groupedQuestions.push({
-          id: q.id,
-          text: q.text,
-          imageUrl: q.imageUrl || undefined,
-          options: q.options as string[],
-          correctOption: q.correctOption,
-          topic: q.topic || undefined,
-          explanation: q.explanation || undefined,
-          groupType: 'COMPREHENSION',
-          groupId: group.id,
-          groupOrder: q.groupOrder || undefined,
-          passage: group.passage || undefined,
-          title: group.title || undefined,
-          instructions: group.instructions || undefined,
+      const questions = group.questions
+        .filter(q => !usedQuestions.has(q.id))
+        .map(q => {
+          usedQuestions.add(q.id);
+          return {
+            id: q.id,
+            text: q.text,
+            imageUrl: q.imageUrl || undefined,
+            options: q.options as string[],
+            correctOption: q.correctOption,
+            topic: q.topic || undefined,
+            explanation: q.explanation || undefined,
+            groupType: 'COMPREHENSION',
+            groupId: group.id,
+            groupOrder: q.groupOrder || undefined,
+            passage: group.passage || undefined,
+            title: group.title || undefined,
+            instructions: group.instructions || undefined,
+          };
         });
-        usedQuestions.add(q.id);
+
+      if (questions.length > 0) {
+        blocks.push({
+          type: 'COMPREHENSION',
+          groupId: group.id,
+          questions,
+        });
       }
     }
   }
@@ -247,29 +260,39 @@ export async function getGroupedExamQuestionsForEnglish(params: {
       const group = shuffledGroups[i];
       selectedGroupIds.add(group.id);
 
-      for (const q of group.questions) {
-        if (usedQuestions.has(q.id)) continue;
-        groupedQuestions.push({
-          id: q.id,
-          text: q.text,
-          imageUrl: q.imageUrl || undefined,
-          options: q.options as string[],
-          correctOption: q.correctOption,
-          topic: q.topic || undefined,
-          explanation: q.explanation || undefined,
-          groupType: 'CLOZE',
-          groupId: group.id,
-          groupOrder: q.groupOrder || undefined,
-          passage: group.passage || undefined,
-          title: group.title || undefined,
-          instructions: group.instructions || undefined,
+      const questions = group.questions
+        .filter(q => !usedQuestions.has(q.id))
+        .map(q => {
+          usedQuestions.add(q.id);
+          return {
+            id: q.id,
+            text: q.text,
+            imageUrl: q.imageUrl || undefined,
+            options: q.options as string[],
+            correctOption: q.correctOption,
+            topic: q.topic || undefined,
+            explanation: q.explanation || undefined,
+            groupType: 'CLOZE',
+            groupId: group.id,
+            groupOrder: q.groupOrder || undefined,
+            passage: group.passage || undefined,
+            title: group.title || undefined,
+            instructions: group.instructions || undefined,
+          };
         });
-        usedQuestions.add(q.id);
+
+      if (questions.length > 0) {
+        blocks.push({
+          type: 'CLOZE',
+          groupId: group.id,
+          questions,
+        });
       }
     }
   }
 
-  const remaining = totalQuestions - groupedQuestions.length;
+  const groupedQuestionCount = blocks.reduce((sum, block) => sum + block.questions.length, 0);
+  const remaining = totalQuestions - groupedQuestionCount;
 
   if (remaining > 0) {
     const standaloneQuestions = await prisma.question.findMany({
@@ -289,30 +312,42 @@ export async function getGroupedExamQuestionsForEnglish(params: {
     const shuffled = shuffleArray([...standaloneQuestions]);
     const selected = shuffled.slice(0, remaining);
 
-    for (const q of selected) {
-      groupedQuestions.push({
-        id: q.id,
-        text: q.text,
-        imageUrl: q.imageUrl || undefined,
-        options: q.options as string[],
-        correctOption: q.correctOption,
-        topic: q.topic || undefined,
-        explanation: q.explanation || undefined,
-      groupType: 'STANDALONE',
+    const standaloneBlock = selected.map(q => ({
+      id: q.id,
+      text: q.text,
+      imageUrl: q.imageUrl || undefined,
+      options: q.options as string[],
+      correctOption: q.correctOption,
+      topic: q.topic || undefined,
+      explanation: q.explanation || undefined,
+      groupType: 'STANDALONE' as const,
       groupId: undefined,
       groupOrder: undefined,
       passage: undefined,
       title: undefined,
       instructions: undefined,
+    }));
+
+    if (standaloneBlock.length > 0) {
+      blocks.push({
+        type: 'STANDALONE',
+        questions: standaloneBlock,
       });
     }
   }
 
-  const finalQuestions = [...groupedQuestions];
+  const shuffledBlocks = shuffleArray([...blocks]);
+
+  const questions = shuffledBlocks.flatMap(block => block.questions);
 
   return {
-    questions: finalQuestions,
+    questions,
     selectedGroupIds: [...selectedGroupIds],
+    blocks: shuffledBlocks.map(block => ({
+      type: block.type,
+      groupId: block.groupId,
+      questionCount: block.questions.length,
+    })),
   };
 }
 
