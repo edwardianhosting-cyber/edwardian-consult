@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 
@@ -30,7 +30,7 @@ interface AdminResult {
   };
 }
 
-export default function AdminPrintResultsPage() {
+function AdminPrintResultsInner() {
   const searchParams = useSearchParams();
   const type = searchParams.get('type') || 'ALL';
   const examId = searchParams.get('examId') || undefined;
@@ -506,5 +506,13 @@ export default function AdminPrintResultsPage() {
         ))}
       </div>
     </>
+  );
+}
+
+export default function AdminPrintResultsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div></div>}>
+      <AdminPrintResultsInner />
+    </Suspense>
   );
 }
