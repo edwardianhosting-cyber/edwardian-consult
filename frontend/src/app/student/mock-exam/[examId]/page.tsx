@@ -166,9 +166,13 @@ export default function MockExamPage() {
       (attemptData as MockExamData).questions.forEach((q: MockQuestion) => subjectSet.add(q.subject));
       const subjectList = Array.from(subjectSet);
       setSubjects(subjectList);
-      if (subjectList.length > 0) {
-        setSelectedSubject(subjectList[0]);
-      }
+
+      const firstSubject = subjectList.length > 0 ? subjectList[0] : null;
+      setSelectedSubject(firstSubject);
+
+      const filtered = firstSubject ? (attemptData as MockExamData).questions.filter(q => q.subject === firstSubject) : [];
+      setSubjectQuestions(filtered);
+      setCurrentQuestion(0);
 
       setExamStarted(true);
       setPhase('exam');
@@ -366,6 +370,14 @@ export default function MockExamPage() {
   if (phase === 'exam' && cbtData) {
     const question = subjectQuestions[currentQuestion];
     const answeredCount = Object.keys(answers).length;
+
+    if (!question || subjectQuestions.length === 0) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        </div>
+      );
+    }
 
     return (
       <div className="max-w-7xl mx-auto">
