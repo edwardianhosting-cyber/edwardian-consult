@@ -42,9 +42,7 @@ export default function MockPage() {
   async function startExam(examId: string) {
     try {
       setLoading(true);
-      const res = await api.startMockExam(examId);
-      const newExamId = (res as any).data?.examId || (res as any).examId;
-      window.location.href = `/student/mock-exam/${newExamId}`;
+      window.location.href = `/student/mock-exam/${examId}`;
     } catch (err: any) {
       showError(err.message || 'Failed to start exam');
     } finally {

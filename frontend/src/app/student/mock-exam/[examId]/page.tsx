@@ -177,9 +177,10 @@ export default function MockExamPage() {
       setExamStarted(true);
       setPhase('exam');
       hasSubmitted.current = false;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to start mock exam:', error);
-      showError('Failed to start mock exam. Please try again.');
+      const message = error?.message || 'Failed to start mock exam. Please try again.';
+      showError(message);
     } finally {
       setLoading(false);
     }
