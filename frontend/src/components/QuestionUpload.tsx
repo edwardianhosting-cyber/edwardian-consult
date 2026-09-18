@@ -536,12 +536,18 @@ export default function QuestionUpload({ onUploaded }: QuestionUploadProps) {
                     },
                     questions: [
                       {
+                        subject: 'English Language',
+                        examType: 'JAMB',
+                        year: 2024,
                         text: 'What is the main idea of the passage?',
                         options: ['A', 'B', 'C', 'D'],
                         correctOption: 1,
                         explanation: 'Option B best summarizes the passage.',
                       },
                       {
+                        subject: 'English Language',
+                        examType: 'JAMB',
+                        year: 2024,
                         text: 'According to the passage, ...',
                         options: ['A', 'B', 'C', 'D'],
                         correctOption: 2,

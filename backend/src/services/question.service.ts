@@ -390,6 +390,7 @@ export async function bulkCreateGroupsFromJSON(
     for (let j = 0; j < questions.length; j++) {
       const q = questions[j];
       const parsed = normalizeQuestionItem(q, j, {
+        ...defaults,
         subject: finalSubject,
         examType: finalExamType,
       });
