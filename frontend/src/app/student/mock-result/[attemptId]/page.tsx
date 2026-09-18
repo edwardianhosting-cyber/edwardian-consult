@@ -244,43 +244,67 @@ export default function MockResultPage() {
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <h3 className="text-xl font-bold text-gray-900 mb-4">Corrections</h3>
           <div className="space-y-4">
-            {result.corrections.map((correction, index) => (
-              <div
-                key={index}
-                className={`p-4 rounded-xl border-2 ${
-                  correction.isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
-                }`}
-              >
-                <p className="font-medium text-gray-900 mb-2">
-                  Q{correction.questionNumber}: {correction.question}
-                </p>
-                <div className="space-y-1 mb-2">
-                  {correction.options.map((option: string, optIndex: number) => (
-                    <div
-                      key={optIndex}
-                      className={`text-sm p-2 rounded ${
-                        optIndex === correction.correctOption
-                          ? 'bg-green-100 text-green-800 font-medium'
-                          : optIndex === correction.userAnswer && optIndex !== correction.correctOption
-                            ? 'bg-blue-100 text-blue-800 font-medium'
-                            : 'text-gray-600'
-                      }`}
-                    >
-                      {String.fromCharCode(65 + optIndex)}. {option}
-                      {optIndex === correction.correctOption && ' (Correct)'}
-                      {optIndex === correction.userAnswer && optIndex !== correction.correctOption && ' (Your answer)'}
-                    </div>
-                  ))}
-                </div>
-                {correction.explanation && (
-                  <div className="mt-2 p-3 bg-white rounded-lg">
-                    <p className="text-sm text-gray-700">
-                      <strong>Explanation:</strong> {correction.explanation}
-                    </p>
+            {result.corrections.map((correction, index) => {
+              const isCorrect = correction.isCorrect;
+              const isUnanswered = correction.userAnswer === -1;
+
+              return (
+                <div
+                  key={index}
+                  className={`p-4 rounded-xl border-2 ${
+                    isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+                  }`}
+                >
+                  <p className="font-medium text-gray-900 mb-2">
+                    Q{correction.questionNumber}: {correction.question}
+                  </p>
+                  <div className="space-y-1 mb-2">
+                    {correction.options.map((option: string, optIndex: number) => {
+                      const isCorrectOption = optIndex === correction.correctOption;
+                      const isUserAnswer = optIndex === correction.userAnswer;
+                      const isWrongUserAnswer = isUserAnswer && !isCorrectOption;
+
+                      let className = 'text-sm p-2 rounded ';
+                      if (isCorrectOption) {
+                        className += 'bg-green-100 text-green-800 font-medium';
+                      } else if (isWrongUserAnswer) {
+                        className += 'bg-red-100 text-red-800';
+                      } else {
+                        className += 'text-gray-600';
+                      }
+
+                      let label = '';
+                      if (isCorrectOption && isCorrect) {
+                        label = ' ✓ YOUR ANSWER - CORRECT ANSWER';
+                      } else if (isCorrectOption && !isCorrect && !isUnanswered) {
+                        label = ' ✓ CORRECT ANSWER';
+                      } else if (isCorrectOption && isUnanswered) {
+                        label = ' ✓ CORRECT ANSWER';
+                      } else if (isWrongUserAnswer) {
+                        label = ' ✗ YOUR ANSWER';
+                      }
+
+                      return (
+                        <div key={optIndex} className={className}>
+                          {String.fromCharCode(65 + optIndex)}. {option}
+                          {label && <span className="ml-2 font-bold">{label}</span>}
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
-              </div>
-            ))}
+                  {isUnanswered && (
+                    <div className="mt-2 text-sm text-gray-500 italic">Not answered</div>
+                  )}
+                  {correction.explanation && (
+                    <div className="mt-2 p-3 bg-white rounded-lg">
+                      <p className="text-sm text-gray-700">
+                        <strong>Explanation:</strong> {correction.explanation}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

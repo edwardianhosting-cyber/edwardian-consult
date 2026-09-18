@@ -98,7 +98,9 @@ export const api = {
     return fetchAPI(`/cbt/questions${query}`);
   },
   generateCBT: (data: any) => fetchAPI('/cbt/generate', { method: 'POST', body: JSON.stringify(data) }),
+  startMockExamAttempt: (examId: string) => fetchAPI(`/cbt/mock-exams/${examId}/start`, { method: 'POST' }),
   submitCBT: (examId: string, answers: any, type = 'PRACTICE') => fetchAPI(`/cbt/submit/${examId}`, { method: 'POST', body: JSON.stringify({ answers, type }) }),
+  getExamById: (examId: string) => fetchAPI(`/cbt/exams/${examId}`),
   getCBTResults: (page = 1, type?: string) => {
     const query = type ? `?page=${page}&type=${type}` : `?page=${page}`;
     return fetchAPI(`/cbt/results${query}`);
@@ -183,6 +185,16 @@ export const api = {
   adminGetAllCBTResults: (page = 1, limit = 20) => {
     const query = `?page=${page}&limit=${limit}`;
     return fetchAPI(`/cbt/admin/results${query}`);
+  },
+  adminGetFilteredResults: (params: { type?: string; examId?: string; sortBy?: string; page?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params.type) query.set('type', params.type);
+    if (params.examId) query.set('examId', params.examId);
+    if (params.sortBy) query.set('sortBy', params.sortBy);
+    if (params.page) query.set('page', String(params.page));
+    if (params.limit) query.set('limit', String(params.limit));
+    const qs = query.toString();
+    return fetchAPI(`/cbt/admin/results/filtered${qs ? `?${qs}` : ''}`);
   },
   
   // Study Planner
@@ -399,6 +411,9 @@ export const api = {
   getSettings: () => fetchAPI('/settings'),
   updateSetting: (key: string, value: string) => fetchAPI(`/settings/${key}`, { method: 'PUT', body: JSON.stringify({ value }) }),
   bulkUpdateSettings: (data: Record<string, string>) => fetchAPI('/settings/bulk', { method: 'POST', body: JSON.stringify(data) }),
+  getEnglishBlueprint: () => fetchAPI('/settings/english_exam_blueprint'),
+  updateEnglishBlueprint: (data: { totalQuestions: number; comprehensionGroupCount: number; clozeGroupCount: number }) =>
+    fetchAPI('/settings/english_exam_blueprint', { method: 'PUT', body: JSON.stringify(data) }),
   
   // Admin - Study Subjects
   getStudySubjects: () => fetchAPI('/study-material/subjects'),
@@ -431,6 +446,27 @@ export const api = {
     const query = params ? '?' + new URLSearchParams(params).toString() : '';
     return fetchAPI(`/cbt/questions${query}`);
   },
+  createQuestion: (data: any) => fetchAPI('/questions', { method: 'POST', body: JSON.stringify(data) }),
+  updateQuestion: (id: string, data: any) => fetchAPI(`/questions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteQuestion: (id: string) => fetchAPI(`/questions/${id}`, { method: 'DELETE' }),
+  downloadQuestionSample: (format = 'excel') => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return fetch(`${API_BASE}/questions/sample?format=${format}`, { headers }).then(res => res.blob());
+  },
+  createQuestionGroup: (data: any) => fetchAPI('/question-groups', { method: 'POST', body: JSON.stringify(data) }),
+  updateQuestionGroup: (id: string, data: any) => fetchAPI(`/question-groups/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteQuestionGroup: (id: string) => fetchAPI(`/question-groups/${id}`, { method: 'DELETE' }),
+  getQuestionGroups: (params?: Record<string, string>) => {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    return fetchAPI(`/question-groups${query}`);
+  },
+  getQuestionGroup: (id: string) => fetchAPI(`/question-groups/${id}`),
+  reorderQuestionsInGroup: (groupId: string, questionIds: string[]) =>
+    fetchAPI(`/question-groups/${groupId}/reorder`, { method: 'POST', body: JSON.stringify({ questionIds }) }),
+  sendMockResultEmail: (resultId: string) =>
+    fetchAPI(`/cbt/admin/mock-results/${resultId}/send-email`, { method: 'POST' }),
   
   // Teacher Dashboard
   getTeacherStats: () => fetchAPI('/users/teacher-stats'),
@@ -465,17 +501,6 @@ export const api = {
     return fetchAPI(`/attendance${query}`);
   },
   markAttendance: (data: any) => fetchAPI('/attendance', { method: 'POST', body: JSON.stringify(data) }),
-  
-  // Questions
-  createQuestion: (data: any) => fetchAPI('/questions', { method: 'POST', body: JSON.stringify(data) }),
-  updateQuestion: (id: string, data: any) => fetchAPI(`/questions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteQuestion: (id: string) => fetchAPI(`/questions/${id}`, { method: 'DELETE' }),
-  downloadQuestionSample: (format = 'excel') => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    const headers: Record<string, string> = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    return fetch(`${API_BASE}/questions/sample?format=${format}`, { headers }).then(res => res.blob());
-  },
 };
 
 // Auth API (login, register)

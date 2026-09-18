@@ -60,6 +60,7 @@ const sidebarSections = [
     items: [
       { name: 'Subjects', href: '/admin/subjects', icon: BookOpen },
       { name: 'Question Bank', href: '/admin/questions', icon: FileText },
+      { name: 'English Language Setup', href: '/admin/english-setup', icon: BookOpen },
       { name: 'Study Materials', href: '/admin/materials', icon: FileText },
       { name: 'Timetable', href: '/admin/timetable', icon: Calendar },
     ],

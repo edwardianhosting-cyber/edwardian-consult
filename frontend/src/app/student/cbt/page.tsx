@@ -5,16 +5,24 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Play, Clock, Award, ChevronRight, CheckCircle, XCircle, Trophy, TrendingUp, Calculator, X, AlertTriangle, BookOpen, Globe } from 'lucide-react';
 import { api, API_BASE } from '@/lib/api';
-import { showError } from '@/lib/toast';
+import { showError, showSuccess } from '@/lib/toast';
 
 interface CBTQuestion {
   id: string;
   text: string;
   imageUrl?: string;
   options: string[];
+  subject?: string;
   topic?: string;
   difficulty?: string;
   explanation?: string;
+  correctOption?: number;
+  groupType?: string;
+  groupId?: string;
+  groupOrder?: number;
+  passage?: string;
+  groupTitle?: string;
+  groupInstructions?: string;
 }
 
 interface CBTData {
@@ -187,20 +195,17 @@ export default function CBTPracticePage() {
   async function loadExam(examId: string) {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/exams/${examId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setCbtData(data.data);
-        setTimeLeft(data.data.duration * 60 || 3600);
-        if (data.data.subject) {
-          setSelectedSubject(data.data.subject);
-        }
-        setPhase('instructions');
+      const res = await api.getExamById(examId);
+      const examData = res.data as CBTData;
+      setCbtData(examData);
+      setTimeLeft(examData.duration * 60 || 3600);
+      if (examData.subject) {
+        setSelectedSubject(examData.subject);
       }
+      setPhase('instructions');
     } catch (error) {
       console.error('Failed to load exam:', error);
+      showError('Failed to load exam');
     } finally {
       setLoading(false);
     }
@@ -247,6 +252,7 @@ export default function CBTPracticePage() {
       setResult(data.data);
       setShowResult(true);
       setPhase('result');
+      showSuccess('CBT submitted successfully');
     } catch (error) {
       console.error('Failed to submit CBT:', error);
       showError('Failed to submit. Please try again.');
@@ -296,21 +302,36 @@ export default function CBTPracticePage() {
     }
   }
 
-  function viewCorrections() {
+  async function viewCorrections() {
     if (!result || !cbtData) return;
 
-    const correctionsList = cbtData.questions.map((q, idx) => {
-      const userAnswer = answers[q.id];
-      return {
-        questionNumber: idx + 1,
-        question: q.text,
-        options: q.options,
-        userAnswer,
-        explanation: q.explanation,
-      };
-    });
-
-    setCorrections(correctionsList);
+    try {
+      const res = await api.getCBTResult(result.resultId);
+      const data = res.data;
+      setCorrections(data.corrections || []);
+    } catch (error) {
+      console.error('Failed to load corrections:', error);
+      const correctionsList = cbtData.questions.map((q, idx) => {
+        const answer = result.userAnswers?.[q.id];
+        return {
+          questionNumber: idx + 1,
+          question: q.text,
+          options: q.options,
+          correctOption: (q as any).correctOption ?? -1,
+          userAnswer: answer?.selected ?? -1,
+          isCorrect: answer?.correct ?? false,
+          explanation: q.explanation,
+          topic: q.topic,
+          subject: q.subject,
+          groupType: (q as any).groupType,
+          groupId: (q as any).groupId,
+          passage: (q as any).passage,
+          groupTitle: (q as any).groupTitle,
+          groupInstructions: (q as any).groupInstructions,
+        };
+      });
+      setCorrections(correctionsList);
+    }
     setShowCorrections(true);
   }
 
@@ -672,6 +693,18 @@ export default function CBTPracticePage() {
                 )}
               </div>
 
+              {(question.groupType === 'COMPREHENSION' || question.groupType === 'CLOZE') && question.passage && (
+                <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  {question.groupTitle && (
+                    <h3 className="text-sm font-semibold text-yellow-900 mb-2">{question.groupTitle}</h3>
+                  )}
+                  {question.groupInstructions && (
+                    <p className="text-xs text-yellow-800 mb-2">{question.groupInstructions}</p>
+                  )}
+                  <div className="text-sm text-yellow-900 whitespace-pre-wrap leading-relaxed">{question.passage}</div>
+                </div>
+              )}
+
               <p className="text-lg text-gray-900 mb-6 leading-relaxed">{question.text}</p>
 
               {question.imageUrl && (
@@ -905,32 +938,80 @@ export default function CBTPracticePage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
+
+              <div className="flex flex-wrap items-center gap-4 mb-4 text-xs text-gray-600">
+                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-green-100 border border-green-300 inline-block" /> Correct Answer</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-100 border border-red-300 inline-block" /> Your Wrong Answer</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-gray-100 border border-gray-200 inline-block" /> Your Answer</span>
+                <span className="flex items-center gap-1 text-gray-500">Not Answered</span>
+              </div>
+
               <div className="space-y-4">
-                {corrections.map((correction, index) => {
-                  const answer = result?.userAnswers?.[cbtData!.questions[index]?.id];
-                  const isCorrect = answer?.correct ?? false;
+                {corrections.map((correction, idx) => {
+                  const correctIndex = correction.correctOption ?? -1;
+                  const userSelected = correction.userAnswer ?? -1;
+                  const answered = userSelected >= 0;
+                  const prevCorrection = idx > 0 ? corrections[idx - 1] : null;
+                  const isNewGroup = correction.groupId && (!prevCorrection || prevCorrection.groupId !== correction.groupId);
+
                   return (
-                    <div key={index} className={`p-4 rounded-xl border-2 ${isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
-                      <p className="font-medium text-gray-900 mb-2">Q{correction.questionNumber}: {correction.question}</p>
-                      <div className="space-y-1 mb-2">
-                        {correction.options.map((option: string, optIndex: number) => (
-                          <div key={optIndex} className={`text-sm p-2 rounded ${
-                            optIndex === answer?.selected ? 'bg-blue-100 text-blue-800 font-medium' :
-                            'text-gray-600'
-                          }`}>
-                            {String.fromCharCode(65 + optIndex)}. {option}
-                            {optIndex === answer?.selected && ' (Your answer)'}
-                          </div>
-                        ))}
-                      </div>
-                      {correction.explanation && (
-                        <div className="mt-2 p-3 bg-white rounded-lg">
-                          <p className="text-sm text-gray-700"><strong>Explanation:</strong> {correction.explanation}</p>
+                    <div key={correction.questionNumber}>
+                      {isNewGroup && correction.passage && (
+                        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          {correction.groupTitle && (
+                            <h3 className="text-sm font-semibold text-yellow-900 mb-2">{correction.groupTitle}</h3>
+                          )}
+                          {correction.groupInstructions && (
+                            <p className="text-xs text-yellow-800 mb-2">{correction.groupInstructions}</p>
+                          )}
+                          <div className="text-sm text-yellow-900 whitespace-pre-wrap leading-relaxed">{correction.passage}</div>
                         </div>
                       )}
-                    </div>
-                  );
-                })}
+                      <div className="p-4 rounded-xl border border-gray-200 bg-white">
+                        <p className="font-medium text-gray-900 mb-2">
+                          Q{correction.questionNumber}: {correction.question}
+                        </p>
+                      <div className="space-y-1 mb-2">
+                        {correction.options.map((option: string, optIndex: number) => {
+                          const isCorrect = optIndex === correctIndex;
+                          const isUserWrong = answered && optIndex === userSelected && !isCorrect;
+                          const isUserAnswer = answered && optIndex === userSelected && isCorrect;
+
+                          let className = 'text-sm p-2 rounded border ';
+                          if (isCorrect) {
+                            className += 'bg-green-50 border-green-300 text-green-800';
+                          } else if (isUserWrong) {
+                            className += 'bg-red-50 border-red-300 text-red-800';
+                          } else if (isUserAnswer) {
+                            className += 'bg-blue-50 border-blue-300 text-blue-800';
+                          } else {
+                            className += 'bg-gray-50 border-gray-200 text-gray-700';
+                          }
+
+                          return (
+                            <div key={optIndex} className={className}>
+                              <span className="font-medium">{String.fromCharCode(65 + optIndex)}.</span>{' '}
+                              {option}
+                              {isCorrect && <span className="ml-2 text-xs font-semibold text-green-700">✓ Correct Answer</span>}
+                              {isUserWrong && <span className="ml-2 text-xs font-semibold text-red-700">✕ Your Wrong Answer</span>}
+                              {isUserAnswer && <span className="ml-2 text-xs font-semibold text-blue-700">Your Answer</span>}
+                              {!answered && isCorrect && <span className="ml-2 text-xs font-semibold text-green-700">Correct Answer</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {!answered && (
+                        <p className="text-xs text-gray-500 mb-2">Not Answered</p>
+                      )}
+                      {correction.explanation && (
+                        <div className="mt-2 p-3 bg-gray-50 rounded-lg">
+                          <p className="text-sm text-gray-700"><strong>Explanation:</strong> {correction.explanation}</p>
+                        </div>
+                       )}
+                     </div>
+                   </div>
+                   );
+                 })}
               </div>
             </div>
           </div>

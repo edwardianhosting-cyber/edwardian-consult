@@ -14,12 +14,22 @@ interface MockExam {
   questions?: any[];
 }
 
-interface CBTResult {
+interface AdminResult {
   id: string;
+  studentName: string;
+  email: string;
   score: number;
-  subject: string;
-  type: string;
+  subject?: string;
+  aggregate: number;
+  correctAnswers: number;
+  wrongAnswers: number;
+  skippedAnswers: number;
   completedAt: string;
+  type: string;
+  examTitle: string;
+  examId?: string;
+  subjectScores: Record<string, { total: number; correct: number }>;
+  subjectEntries: { subject: string; score: number; correct: number; total: number }[];
   user?: {
     fullName: string;
     email: string;
@@ -37,27 +47,39 @@ interface CBTStats {
   publishedExams: number;
   draftExams: number;
   averageScore: number;
-  recentResults: CBTResult[];
+  recentResults: any[];
 }
 
 type View = 'home' | 'practice' | 'mock' | 'results';
+type ResultTypeFilter = 'MOCK' | 'PRACTICE' | 'ALL';
 
 export default function AdminResultsPage() {
   const [view, setView] = useState<View>('home');
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<CBTStats | null>(null);
   const [exams, setExams] = useState<MockExam[]>([]);
-  const [results, setResults] = useState<CBTResult[]>([]);
+  const [results, setResults] = useState<AdminResult[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [resultTypeFilter, setResultTypeFilter] = useState<ResultTypeFilter>('ALL');
+  const [selectedMockExamId, setSelectedMockExamId] = useState<string>('');
   const [examTypeFilter, setExamTypeFilter] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
   const [orgName, setOrgName] = useState('Edwardian Educational Consult');
+
+  const examTypes = ['ALL', 'JAMB', 'WAEC', 'NECO', 'POST-UTME', 'MOCK', 'PRACTICE'];
+
+  const filteredResults = results.filter((result) => {
+    if (examTypeFilter === 'ALL') return true;
+    if (examTypeFilter === 'PRACTICE') return result.type !== 'MOCK';
+    return result.type === examTypeFilter || result.exam?.examType === examTypeFilter;
+  });
 
   useEffect(() => {
     fetchData();
-  }, [view, examTypeFilter, currentPage]);
+  }, [view, resultTypeFilter, selectedMockExamId, currentPage]);
 
   async function fetchData() {
     setLoading(true);
@@ -70,15 +92,42 @@ export default function AdminResultsPage() {
         const data = await api.adminGetAllMockExams();
         setExams(data.data || []);
       }
-      if (view === 'practice' || view === 'mock') {
-        const data = await api.adminGetAllCBTResults(currentPage, 50);
-        setResults(data.data?.results || []);
-        setTotalPages(data.data?.pagination?.totalPages || 1);
+      if (view === 'practice') {
+        const data = await api.adminGetFilteredResults({
+          type: 'PRACTICE',
+          sortBy: 'score',
+          page: currentPage,
+          limit: 50,
+        });
+        const response = data as any;
+        setResults(response.data?.results || []);
+        setTotalPages(response.data?.pagination?.totalPages || 1);
+        setTotalResults(response.data?.pagination?.total || 0);
+      }
+      if (view === 'mock') {
+        const data = await api.adminGetFilteredResults({
+          type: 'MOCK',
+          sortBy: 'score',
+          page: currentPage,
+          limit: 50,
+        });
+        const response = data as any;
+        setResults(response.data?.results || []);
+        setTotalPages(response.data?.pagination?.totalPages || 1);
+        setTotalResults(response.data?.pagination?.total || 0);
       }
       if (view === 'results') {
-        const data = await api.adminGetAllCBTResults(currentPage, 50);
-        setResults(data.data?.results || []);
-        setTotalPages(data.data?.pagination?.totalPages || 1);
+        const data = await api.adminGetFilteredResults({
+          type: resultTypeFilter === 'ALL' ? undefined : resultTypeFilter,
+          examId: resultTypeFilter === 'MOCK' ? selectedMockExamId || undefined : undefined,
+          sortBy: 'score',
+          page: currentPage,
+          limit: 50,
+        });
+        const response = data as any;
+        setResults(response.data?.results || []);
+        setTotalPages(response.data?.pagination?.totalPages || 1);
+        setTotalResults(response.data?.pagination?.total || 0);
       }
     } catch (error) {
       console.error('Failed to fetch CBT data:', error);
@@ -125,14 +174,17 @@ export default function AdminResultsPage() {
   }
 
   function handlePrint() {
-    window.print();
+    const params = new URLSearchParams();
+    if (resultTypeFilter !== 'ALL') {
+      params.set('type', resultTypeFilter);
+    }
+    if (resultTypeFilter === 'MOCK' && selectedMockExamId) {
+      params.set('examId', selectedMockExamId);
+    }
+    params.set('sortBy', 'score');
+    const printUrl = `/results-print?${params.toString()}`;
+    window.open(printUrl, '_blank', 'width=1200,height=800');
   }
-
-  const filteredResults = results.filter((result) => {
-    if (examTypeFilter === 'ALL') return true;
-    if (examTypeFilter === 'PRACTICE') return result.type !== 'MOCK';
-    return result.type === examTypeFilter || result.exam?.examType === examTypeFilter;
-  });
 
   const homeCards = [
     {
@@ -167,7 +219,14 @@ export default function AdminResultsPage() {
     },
   ];
 
-  const examTypes = ['ALL', 'JAMB', 'WAEC', 'NECO', 'POST-UTME', 'MOCK', 'PRACTICE'];
+  const resultTypeOptions: { value: ResultTypeFilter; label: string }[] = [
+    { value: 'ALL', label: 'All Results' },
+    { value: 'MOCK', label: 'Mock Results' },
+    { value: 'PRACTICE', label: 'CBT Results' },
+  ];
+
+  const selectedMockExam = exams.find(e => e.id === selectedMockExamId);
+  const mockSubjects = selectedMockExam ? selectedMockExam.subject.split(',').map(s => s.trim()) : [];
 
   return (
     <div className="space-y-6">
@@ -221,26 +280,47 @@ export default function AdminResultsPage() {
             </div>
           )}
 
-          {/* Practice/Mock Results View */}
-          {(view === 'practice' || view === 'mock') && (
+          {/* Results View */}
+          {view === 'results' && (
             <div className="space-y-4">
               <div className="bg-white rounded-xl border border-gray-100 p-4">
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Exam Type</label>
+                  <div className="sm:w-48">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Result Type</label>
                     <select
-                      value={examTypeFilter}
+                      value={resultTypeFilter}
                       onChange={(e) => {
-                        setExamTypeFilter(e.target.value);
+                        setResultTypeFilter(e.target.value as ResultTypeFilter);
+                        setSelectedMockExamId('');
                         setCurrentPage(1);
                       }}
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
                     >
-                      {examTypes.map((type) => (
-                        <option key={type} value={type}>{type === 'ALL' ? 'All Types' : type}</option>
+                      {resultTypeOptions.map(option => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
                     </select>
                   </div>
+
+                  {resultTypeFilter === 'MOCK' && (
+                    <div className="sm:w-64">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Mock Exam</label>
+                      <select
+                        value={selectedMockExamId}
+                        onChange={(e) => {
+                          setSelectedMockExamId(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                      >
+                        <option value="">All Mock Exams</option>
+                        {exams.map(exam => (
+                          <option key={exam.id} value={exam.id}>{exam.title}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
                   <div className="flex items-end">
                     <button
                       onClick={handlePrint}
@@ -252,6 +332,114 @@ export default function AdminResultsPage() {
                   </div>
                 </div>
               </div>
+
+              <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+                {results.length === 0 ? (
+                  <div className="text-center py-16">
+                    <p className="text-gray-500">No results found</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-gray-50 border-b">
+                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">S/N</th>
+                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Student Name</th>
+                            {mockSubjects.length > 0 && mockSubjects.map(subject => (
+                              <th key={subject} className="text-center px-2 py-3 text-sm font-semibold text-gray-600">{subject.toUpperCase()}</th>
+                            ))}
+                            <th className="text-center px-4 py-3 text-sm font-semibold text-gray-600">AGG/100</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {results.map((result, index) => (
+                            <tr key={result.id} className="border-b last:border-0 hover:bg-gray-50">
+                              <td className="px-4 py-3 text-sm text-gray-900">{index + 1 + (currentPage - 1) * 50}</td>
+                              <td className="px-4 py-3 text-sm text-gray-900 font-medium">{result.studentName}</td>
+                              {mockSubjects.length > 0 && mockSubjects.map(subject => {
+                                const subjectScore = result.subjectScores[subject];
+                                const score = subjectScore ? Math.round((subjectScore.correct / subjectScore.total) * 100) : 0;
+                                return (
+                                  <td key={subject} className="px-2 py-3 text-sm text-center">
+                                    <span className={`font-medium ${
+                                      score >= 70 ? 'text-green-600' : score >= 50 ? 'text-yellow-600' : 'text-red-600'
+                                    }`}>
+                                      {score}
+                                    </span>
+                                  </td>
+                                );
+                              })}
+                              <td className="px-4 py-3 text-center">
+                                <span className={`text-sm font-bold ${
+                                  result.aggregate >= 70 ? 'text-green-600' : result.aggregate >= 50 ? 'text-yellow-600' : 'text-red-600'
+                                }`}>
+                                  {result.aggregate}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between px-4 py-3 border-t">
+                        <button
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          Previous
+                        </button>
+                        <span className="text-sm text-gray-600">Page {currentPage} of {totalPages}</span>
+                        <button
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                          className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          Next
+                      </button>
+                    </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Practice/Mock Management View */}
+          {(view === 'practice' || view === 'mock') && (
+            <div className="space-y-4">
+              {(view === 'practice' || view === 'mock') && (
+                <div className="bg-white rounded-xl border border-gray-100 p-4">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Exam Type</label>
+                      <select
+                        value={examTypeFilter}
+                        onChange={(e) => {
+                          setExamTypeFilter(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                      >
+                        {examTypes.map((type) => (
+                          <option key={type} value={type}>{type === 'ALL' ? 'All Types' : type}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex items-end">
+                      <button
+                        onClick={handlePrint}
+                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
+                      >
+                        <Printer className="w-4 h-4" />
+                        Print Results
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Print Header */}
               <div className="hidden print:block mb-6">
@@ -325,8 +513,8 @@ export default function AdminResultsPage() {
                           className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
                         >
                           Next
-                        </button>
-                      </div>
+                      </button>
+                    </div>
                     )}
                   </>
                 )}

@@ -1,8 +1,28 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize } from '../middleware/auth.middleware';
 import prisma from '../lib/prisma';
+import { getEnglishExamBlueprint, updateEnglishExamBlueprint } from '../services/exam-blueprint.service';
 
 const router = Router();
+
+// English exam blueprint
+router.get('/english_exam_blueprint', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const blueprint = await getEnglishExamBlueprint();
+    res.json({ success: true, data: blueprint });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.put('/english_exam_blueprint', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const blueprint = await updateEnglishExamBlueprint(req.body);
+    res.json({ success: true, data: blueprint });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 // Get all settings (admin only)
 router.get('/', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { api, API_BASE } from '@/lib/api';
-import { showError } from '@/lib/toast';
+import { showError, showSuccess } from '@/lib/toast';
 import { Play, Clock, Award, ChevronRight, CheckCircle, XCircle, Trophy, TrendingUp, Calculator, X, AlertTriangle, BookOpen, Globe } from 'lucide-react';
 
 interface MockQuestion {
@@ -14,6 +14,12 @@ interface MockQuestion {
   topic?: string;
   explanation?: string;
   subject: string;
+  groupType?: string;
+  groupId?: string;
+  groupOrder?: number;
+  passage?: string;
+  groupTitle?: string;
+  groupInstructions?: string;
 }
 
 interface MockExamData {
@@ -48,6 +54,7 @@ export default function MockExamPage() {
   const [calcDisplay, setCalcDisplay] = useState('0');
   const [result, setResult] = useState<any>(null);
   const [examStarted, setExamStarted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hasSubmitted = useRef(false);
@@ -96,26 +103,20 @@ export default function MockExamPage() {
   }
 
   async function loadExam(examId: string) {
+    if (examStarted) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/exams/${examId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const examData = data.data as MockExamData;
-        setCbtData(examData);
-        setTimeLeft(examData.duration * 60 || 3600);
+      const res = await api.getExamById(examId);
+      const examData = res.data as MockExamData;
+      setCbtData(examData);
+      setTimeLeft(examData.duration * 60 || 3600);
 
-        const subjectSet = new Set<string>();
-        examData.questions.forEach(q => subjectSet.add(q.subject));
-        const subjectList = Array.from(subjectSet);
-        setSubjects(subjectList);
-        if (subjectList.length > 0) {
-          setSelectedSubject(subjectList[0]);
-        }
-      } else {
-        showError('Failed to load mock exam');
+      const subjectSet = new Set<string>();
+      examData.questions.forEach(q => subjectSet.add(q.subject));
+      const subjectList = Array.from(subjectSet);
+      setSubjects(subjectList);
+      if (subjectList.length > 0) {
+        setSelectedSubject(subjectList[0]);
       }
     } catch (error) {
       console.error('Failed to load exam:', error);
@@ -156,11 +157,25 @@ export default function MockExamPage() {
   async function beginExam() {
     setLoading(true);
     try {
+      const res = await api.startMockExamAttempt(examId);
+      const attemptData = (res as any).data || res;
+      setCbtData(attemptData as MockExamData);
+      setTimeLeft((attemptData as MockExamData).duration * 60 || 3600);
+
+      const subjectSet = new Set<string>();
+      (attemptData as MockExamData).questions.forEach((q: MockQuestion) => subjectSet.add(q.subject));
+      const subjectList = Array.from(subjectSet);
+      setSubjects(subjectList);
+      if (subjectList.length > 0) {
+        setSelectedSubject(subjectList[0]);
+      }
+
       setExamStarted(true);
       setPhase('exam');
+      hasSubmitted.current = false;
     } catch (error) {
-      console.error('Failed to start exam:', error);
-      showError('Failed to start exam');
+      console.error('Failed to start mock exam:', error);
+      showError('Failed to start mock exam. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -170,18 +185,21 @@ export default function MockExamPage() {
     if (!cbtData || hasSubmitted.current) return;
 
     hasSubmitted.current = true;
+    setSubmitError(null);
     if (timerRef.current) clearInterval(timerRef.current);
 
     setLoading(true);
     try {
       const res = await api.submitCBT(cbtData.examId, answers, 'MOCK');
-      const data = res as any;
-      setResult(data.data);
+      const data = (res as any)?.data || res || {};
+      setResult(data);
       setShowSubmitModal(false);
       setPhase('result');
+      showSuccess('Mock exam submitted successfully');
     } catch (error) {
       console.error('Failed to submit exam:', error);
       showError('Failed to submit. Please try again.');
+      setSubmitError('Failed to submit your mock exam. Please check your connection and try again.');
       hasSubmitted.current = false;
     } finally {
       setLoading(false);
@@ -190,6 +208,7 @@ export default function MockExamPage() {
 
   function confirmSubmit() {
     setShowSubmitModal(false);
+    setSubmitError(null);
     handleSubmitCBT();
   }
 
@@ -208,6 +227,7 @@ export default function MockExamPage() {
     setSubjects([]);
     setSelectedSubject(null);
     setSubjectQuestions([]);
+    setSubmitError(null);
     hasSubmitted.current = false;
   }
 
@@ -343,7 +363,7 @@ export default function MockExamPage() {
   }
 
   // Phase: Exam in Progress
-  if (phase === 'exam' && cbtData && !showSubmitModal) {
+  if (phase === 'exam' && cbtData) {
     const question = subjectQuestions[currentQuestion];
     const answeredCount = Object.keys(answers).length;
 
@@ -456,6 +476,18 @@ export default function MockExamPage() {
                   </span>
                 )}
               </div>
+
+              {(question.groupType === 'COMPREHENSION' || question.groupType === 'CLOZE') && question.passage && (
+                <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  {question.groupTitle && (
+                    <h3 className="text-sm font-semibold text-yellow-900 mb-2">{question.groupTitle}</h3>
+                  )}
+                  {question.groupInstructions && (
+                    <p className="text-xs text-yellow-800 mb-2">{question.groupInstructions}</p>
+                  )}
+                  <div className="text-sm text-yellow-900 whitespace-pre-wrap leading-relaxed">{question.passage}</div>
+                </div>
+              )}
 
               <p className="text-lg text-gray-900 mb-6 leading-relaxed">{question.text}</p>
 
@@ -605,45 +637,23 @@ export default function MockExamPage() {
   }
 
   // Phase: Result
-  if (phase === 'result' && result) {
+  if (phase === 'result') {
     return (
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
-          <div className={`w-24 h-24 mx-auto rounded-full flex items-center justify-center mb-6 ${
-            result.score >= 70 ? 'bg-green-100' : result.score >= 50 ? 'bg-yellow-100' : 'bg-red-100'
-          }`}>
-            <span className={`text-4xl font-bold ${
-              result.score >= 70 ? 'text-green-600' : result.score >= 50 ? 'text-yellow-600' : 'text-red-600'
-            }`}>
-              {Math.round(result.score)}%
-            </span>
+          <div className="w-24 h-24 mx-auto rounded-full flex items-center justify-center mb-6 bg-green-100">
+            <CheckCircle className="w-12 h-12 text-green-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Mock Exam Complete!</h2>
-          <p className="text-gray-600 mb-6">{cbtData?.title}</p>
-
-          <div className="grid grid-cols-3 gap-4 mb-8">
-            <div className="bg-green-50 rounded-xl p-4">
-              <CheckCircle className="w-6 h-6 text-green-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-green-600">{result.correctAnswers}</p>
-              <p className="text-sm text-gray-500">Correct</p>
-            </div>
-            <div className="bg-red-50 rounded-xl p-4">
-              <XCircle className="w-6 h-6 text-red-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-red-600">{result.wrongAnswers}</p>
-              <p className="text-sm text-gray-500">Wrong</p>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-4">
-              <p className="text-2xl font-bold text-gray-600">{result.skippedAnswers}</p>
-              <p className="text-sm text-gray-500">Skipped</p>
-            </div>
-          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Mock Exam Submitted Successfully</h2>
+          <p className="text-gray-600 mb-6">You have successfully completed your mock examination.</p>
+          <p className="text-sm text-gray-500 mb-8">Your submission has been recorded. You can view your results later from the Mock Results page.</p>
 
           <div className="flex gap-3 justify-center">
             <button
               onClick={resetExam}
               className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
             >
-              Take Another Mock
+              Back to Dashboard
             </button>
             <button
               onClick={() => router.push('/student/mock-results')}
@@ -657,5 +667,45 @@ export default function MockExamPage() {
     );
   }
 
-  return null;
+  if (phase === 'instructions' && !cbtData && loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  if (submitError) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <XCircle className="w-8 h-8 text-red-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Something went wrong</h2>
+          <p className="text-gray-600 mb-6">{submitError}</p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={resetExam}
+              className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+            >
+              Back to Dashboard
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-center h-64">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+    </div>
+  );
 }

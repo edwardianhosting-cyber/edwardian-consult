@@ -4,8 +4,10 @@ import { useEffect, useState, useRef } from 'react';
 import { User, Mail, Phone, MapPin, School, Calendar, Camera, Loader2, Lock, GraduationCap, Target } from 'lucide-react';
 import api from '@/lib/api';
 import { JAMB_SUBJECTS, WAEC_NECO_SUBJECTS } from '@/lib/subjects';
+import { useAuth } from '@/lib/auth';
 
 interface ProfileData {
+  id: string;
   fullName: string;
   email: string;
   phone: string;
@@ -33,6 +35,7 @@ interface ProfileData {
 }
 
 export default function ProfilePage() {
+  const { setUser } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -49,6 +52,7 @@ export default function ProfilePage() {
       const res = await api.getProfile();
       const data = (res as any).data || res;
       setProfile({
+        id: data?.id || '',
         fullName: data?.fullName || '',
         email: data?.email || data?.studentEmail || '',
         phone: data?.phone || '',
@@ -90,7 +94,20 @@ export default function ProfilePage() {
     try {
       const res = await api.uploadAvatar(file);
       const updated = (res as any).data || res;
-      setProfile((prev) => prev ? { ...prev, avatar: updated.avatar } : prev);
+      const newAvatar = updated.avatar;
+
+      setProfile((prev) => prev ? { ...prev, avatar: newAvatar } : prev);
+
+      if (newAvatar && profile?.id) {
+        setUser({
+          id: profile.id,
+          fullName: profile.fullName || '',
+          email: profile.email || profile.studentEmail || '',
+          role: profile.role || 'STUDENT',
+          portalId: profile.portalId || '',
+          avatar: newAvatar,
+        });
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to upload avatar');
     } finally {

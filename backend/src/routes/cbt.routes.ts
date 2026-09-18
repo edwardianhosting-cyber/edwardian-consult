@@ -17,6 +17,7 @@ import {
   updateMockExam,
   deleteMockExam,
   getCBTResultById,
+  getCBTResultByIdForAdmin,
   getAdminCBTStats,
   getAllCBTResultsForAdmin,
   getMockExamQuestions,
@@ -24,7 +25,11 @@ import {
   uploadQuestionsToMockExam,
   removeQuestionFromMockExam,
   startMockExamAttempt,
+  getFilteredCBTResultsForAdmin,
+  getAdminFilteredResults,
 } from '../services/cbt.service';
+import { sendMockResultEmail } from '../lib/email';
+import prisma from '../lib/prisma';
 
 const router = Router();
 
@@ -282,6 +287,73 @@ router.get('/admin/results', authenticate, authorize('ADMIN'), async (req: Reque
     res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch results' });
+  }
+});
+
+// Admin: get filtered results with type, examId, and sorting
+router.get('/admin/results/filtered', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const type = (req.query.type as string) || 'ALL';
+    const examId = (req.query.examId as string) || undefined;
+    const sortBy = (req.query.sortBy as string) || 'score';
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50;
+
+    const data = await getAdminFilteredResults({
+      type: type === 'ALL' ? undefined : type,
+      examId,
+      sortBy: sortBy === 'date' ? 'date' : 'score',
+      page,
+      limit,
+    });
+
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch filtered results' });
+  }
+});
+
+// Admin: send mock result email to student
+router.post('/admin/mock-results/:resultId/send-email', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const { resultId } = req.params;
+    const resultData = await getCBTResultByIdForAdmin(resultId);
+
+    if (!resultData || resultData.result.type !== 'MOCK') {
+      return res.status(404).json({ success: false, message: 'Mock result not found' });
+    }
+
+    const result = resultData.result;
+    const exam = await getExamById(result.examId || '');
+    if (!exam) {
+      return res.status(404).json({ success: false, message: 'Mock exam not found' });
+    }
+
+    if (!result.email) {
+      return res.status(400).json({ success: false, message: 'Student email not found' });
+    }
+
+    const corrections = resultData.corrections || [];
+    const success = await sendMockResultEmail(
+      result.email,
+      result.studentName || 'Student',
+      exam.title,
+      exam.examType,
+      result.score,
+      result.score,
+      result.correctAnswers,
+      result.wrongAnswers,
+      result.skippedAnswers,
+      corrections as any
+    );
+
+    if (success) {
+      res.json({ success: true, message: 'Mock result email sent successfully' });
+    } else {
+      res.status(500).json({ success: false, message: 'Failed to send email' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to send email' });
   }
 });
 

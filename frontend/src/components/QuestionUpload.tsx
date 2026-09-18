@@ -21,7 +21,11 @@ interface Institution {
   abbreviation?: string;
 }
 
-export default function QuestionUpload() {
+interface QuestionUploadProps {
+  onUploaded?: () => void;
+}
+
+export default function QuestionUpload({ onUploaded }: QuestionUploadProps) {
   const [bulkFile, setBulkFile] = useState<File | null>(null);
   const [bulkResult, setBulkResult] = useState<{ created: number; errors: string[] } | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -160,6 +164,7 @@ export default function QuestionUpload() {
       });
       setBulkResult(response.data);
       await fetchQuestions();
+      onUploaded?.();
     } catch (error: any) {
       showError(error.message || 'Failed to upload file');
     } finally {
@@ -183,6 +188,7 @@ export default function QuestionUpload() {
       setBulkResult(response.data);
       setQuestionsJsonText('');
       await fetchQuestions();
+      onUploaded?.();
     } catch (error: any) {
       showError(error.message || 'Failed to upload JSON questions');
     } finally {
@@ -239,6 +245,7 @@ export default function QuestionUpload() {
         imageUrl: '',
       });
       await fetchQuestions();
+      onUploaded?.();
     } catch (error: any) {
       setManualError(error.message || 'Failed to add question');
     } finally {

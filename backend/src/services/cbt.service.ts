@@ -1,6 +1,7 @@
 import { prisma } from '../lib/prisma';
 import { checkAndAwardBadges } from './gamification.service';
 import { createNotification } from './notification.service';
+import { getGroupedExamQuestionsForEnglish } from './question-group.service';
 
 interface CreateQuestionParams {
   subject: string;
@@ -75,24 +76,41 @@ export async function generateCBT(userId: string, params: {
 
   const questionCount = params.questionCount || 20;
 
-  const where: any = {
-    isActive: true,
-    subject: params.subject,
-    examType: normalizedRequested,
-  };
+  let selectedQuestions: any[] = [];
+  let selectedGroupIds: string[] = [];
 
-  if (params.topics && params.topics.length > 0) {
-    where.topic = { in: params.topics };
+  if (params.subject === 'English Language') {
+    const groupedResult = await getGroupedExamQuestionsForEnglish({
+      examType: normalizedRequested,
+      totalQuestions: questionCount,
+    });
+
+    selectedQuestions = groupedResult.questions;
+    selectedGroupIds = groupedResult.selectedGroupIds;
+  } else {
+    const where: any = {
+      isActive: true,
+      subject: params.subject,
+      examType: normalizedRequested,
+    };
+
+    if (params.topics && params.topics.length > 0) {
+      where.topic = { in: params.topics };
+    }
+
+    const allQuestions = await prisma.question.findMany({ where });
+
+    if (allQuestions.length === 0) {
+      throw new Error(`No questions available for ${params.subject} (${params.examType}). Please contact support.`);
+    }
+
+    const shuffled = shuffleArray([...allQuestions]);
+    selectedQuestions = shuffled.slice(0, questionCount);
   }
 
-  const allQuestions = await prisma.question.findMany({ where });
-
-  if (allQuestions.length === 0) {
+  if (selectedQuestions.length === 0) {
     throw new Error(`No questions available for ${params.subject} (${params.examType}). Please contact support.`);
   }
-
-  const shuffled = shuffleArray([...allQuestions]);
-  const selectedQuestions = shuffled.slice(0, questionCount);
 
   const exam = await prisma.exam.create({
     data: {
@@ -112,6 +130,8 @@ export async function generateCBT(userId: string, params: {
             order: index + 1,
             options: shuffledOptions,
             correctOption: newCorrectIndex,
+            questionGroupId: q.groupId || null,
+            questionGroupType: q.groupType || null,
           };
         }),
       },
@@ -131,6 +151,8 @@ export async function generateCBT(userId: string, params: {
     options: (eq.options as string[]) || [],
     topic: eq.question.topic,
     explanation: eq.question.explanation,
+    groupType: eq.questionGroupType,
+    groupId: eq.questionGroupId,
   }));
 
   return {
@@ -141,6 +163,7 @@ export async function generateCBT(userId: string, params: {
     totalMarks: exam.totalMarks,
     questionCount: questionsWithRandomizedOptions.length,
     questions: questionsWithRandomizedOptions,
+    selectedGroupIds,
   };
 }
 
@@ -225,12 +248,18 @@ export async function submitCBT(userId: string, examId: string, answers: Record<
 
   return {
     resultId: result.id,
-    score: result.score,
-    correctAnswers: result.correctAnswers,
-    wrongAnswers: result.wrongAnswers,
-    skippedAnswers: result.skippedAnswers,
-    totalQuestions: result.totalQuestions,
-    weakTopics: result.weakTopics,
+    type: result.type,
+    submittedAt: result.completedAt,
+    ...(type === 'PRACTICE'
+      ? {
+          score: result.score,
+          correctAnswers: result.correctAnswers,
+          wrongAnswers: result.wrongAnswers,
+          skippedAnswers: result.skippedAnswers,
+          totalQuestions: result.totalQuestions,
+          weakTopics: result.weakTopics,
+        }
+      : {}),
   };
 }
 
@@ -275,12 +304,15 @@ export async function getExamById(examId: string) {
     topic: eq.question.topic,
     explanation: eq.question.explanation,
     subject: eq.question.subject,
+    groupType: eq.questionGroupType,
+    groupId: eq.questionGroupId,
   }));
 
   return {
     examId: exam.id,
     title: exam.title,
     subject: exam.subject,
+    examType: exam.examType,
     duration: exam.duration,
     totalMarks: exam.totalMarks,
     questionCount: questions.length,
@@ -465,6 +497,104 @@ export async function getFilteredCBTResultsForAdmin(type?: string, examType?: st
   };
 }
 
+export async function getAdminFilteredResults(options: {
+  type?: string;
+  examId?: string;
+  sortBy?: 'score' | 'date';
+  page?: number;
+  limit?: number;
+}) {
+  const { type, examId, sortBy = 'score', page = 1, limit = 50 } = options;
+
+  const where: any = {};
+  if (type && type !== 'ALL') {
+    where.type = type;
+  }
+  if (examId) {
+    where.examId = examId;
+  }
+
+  const orderBy: any = sortBy === 'score'
+    ? { score: 'desc' }
+    : { completedAt: 'desc' };
+
+  const [results, total] = await Promise.all([
+    prisma.cbtResult.findMany({
+      where,
+      take: limit,
+      skip: (page - 1) * limit,
+      orderBy,
+      include: {
+        user: {
+          select: { fullName: true, email: true },
+        },
+        exam: {
+          include: {
+            questions: {
+              include: { question: true },
+            },
+          },
+        },
+      },
+    }),
+    prisma.cbtResult.count({ where }),
+  ]);
+
+  const examTitle = results.find(r => r.examId === examId)?.exam?.title || (results[0]?.exam?.title) || null;
+
+  const mappedResults = results.map(result => {
+    const exam = result.exam;
+    const userAnswers = (result.userAnswers as Record<string, { selected: number; correct: boolean }> | null) || {};
+    const subjectScores: Record<string, { total: number; correct: number }> = {};
+
+    (exam?.questions || []).forEach((eq: any) => {
+      const subject = eq.question?.subject || result.subject;
+      if (!subjectScores[subject]) {
+        subjectScores[subject] = { total: 0, correct: 0 };
+      }
+      subjectScores[subject].total++;
+      const answer = userAnswers[eq.questionId];
+      if (answer?.correct) {
+        subjectScores[subject].correct++;
+      }
+    });
+
+    const subjectEntries = Object.entries(subjectScores).map(([subject, data]) => ({
+      subject,
+      score: data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0,
+      correct: data.correct,
+      total: data.total,
+    }));
+
+    const aggregate = subjectEntries.length > 0
+      ? Math.round(subjectEntries.reduce((sum, s) => sum + s.score, 0) / subjectEntries.length)
+      : Math.round(result.score);
+
+    return {
+      id: result.id,
+      studentName: result.user?.fullName || result.user?.email || 'Unknown',
+      email: result.user?.email || '',
+      subjectScores,
+      subjectEntries,
+      aggregate,
+      score: result.score,
+      correctAnswers: result.correctAnswers,
+      wrongAnswers: result.wrongAnswers,
+      skippedAnswers: result.skippedAnswers,
+      completedAt: result.completedAt,
+      type: result.type,
+      examTitle: exam?.title || result.subject,
+      examId: result.examId,
+    };
+  });
+
+  return {
+    results: mappedResults,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    filter: { type: type || 'ALL', examId: examId || null, examTitle: examTitle, sortBy },
+  };
+}
+
 export async function createMockExam(teacherId: string, data: {
   title: string;
   subject: string;
@@ -530,22 +660,40 @@ export async function startMockExamAttempt(userId: string, examId: string) {
   }
 
   const allSelectedQuestions: any[] = [];
+  const allSelectedGroupIds: string[] = [];
 
   for (const subject of userSubjects) {
-    const where: any = {
-      isActive: true,
-      subject,
-      examType: primaryExamType,
-    };
+    if (subject === 'English Language') {
+      const groupedResult = await getGroupedExamQuestionsForEnglish({
+        examType: primaryExamType,
+        totalQuestions: questionsPerSubject,
+      });
 
-    const subjectQuestions = await prisma.question.findMany({ where });
-    const shuffled = shuffleArray([...subjectQuestions]);
-    const selected = shuffled.slice(0, questionsPerSubject);
+      allSelectedQuestions.push(...groupedResult.questions);
+      allSelectedGroupIds.push(...groupedResult.selectedGroupIds);
+    } else {
+      const where: any = {
+        isActive: true,
+        subject,
+        examType: primaryExamType,
+      };
 
-    allSelectedQuestions.push(...selected.map(q => ({ ...q, subject })));
+      const subjectQuestions = await prisma.question.findMany({ where });
+      const shuffled = shuffleArray([...subjectQuestions]);
+      const selected = shuffled.slice(0, questionsPerSubject);
+
+      allSelectedQuestions.push(...selected.map(q => ({ ...q, subject })));
+    }
   }
 
-  const finalShuffled = shuffleArray([...allSelectedQuestions]);
+  const englishQuestions = allSelectedQuestions.filter(q => q.subject === 'English Language');
+  const otherQuestions = allSelectedQuestions.filter(q => q.subject !== 'English Language');
+
+  const finalShuffled = [...shuffleArray([...otherQuestions])];
+
+  if (englishQuestions.length > 0) {
+    finalShuffled.unshift(...englishQuestions);
+  }
 
   if (finalShuffled.length === 0) {
     throw new Error(`No ${primaryExamType} questions available for your registered subjects. Please contact support.`);
@@ -562,6 +710,8 @@ export async function startMockExamAttempt(userId: string, examId: string) {
         create: finalShuffled.map((q, index) => ({
           questionId: q.id,
           order: index + 1,
+          questionGroupId: q.groupId || null,
+          questionGroupType: q.groupType || null,
         })),
       },
     },
@@ -581,6 +731,50 @@ export async function startMockExamAttempt(userId: string, examId: string) {
     const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
 
     return {
+      examId: attemptExam.id,
+      questionId: eq.questionId,
+      options: shuffledOptions,
+      correctOption: newCorrectIndex,
+      questionGroupId: eq.questionGroupId,
+      questionGroupType: eq.questionGroupType,
+    };
+  });
+
+  for (const q of questionsWithRandomizedOptions) {
+    await prisma.examQuestion.update({
+      where: {
+        examId_questionId: {
+          examId: q.examId,
+          questionId: q.questionId,
+        },
+      },
+      data: {
+        options: q.options,
+        correctOption: q.correctOption,
+        questionGroupId: q.questionGroupId,
+        questionGroupType: q.questionGroupType,
+      },
+    });
+  }
+
+  const updatedExam = await prisma.exam.findUnique({
+    where: { id: attemptExam.id },
+    include: {
+      questions: {
+        include: { question: true },
+        orderBy: { order: 'asc' },
+      },
+    },
+  });
+
+  const finalQuestions = (updatedExam?.questions || []).map(eq => {
+    const originalOptions = eq.question.options as string[];
+    const correctAnswer = originalOptions[eq.question.correctOption];
+
+    const shuffledOptions = (eq.options as string[]) || shuffleArray([...originalOptions]);
+    const newCorrectIndex = eq.correctOption ?? shuffledOptions.indexOf(correctAnswer);
+
+    return {
       id: eq.question.id,
       text: eq.question.text,
       imageUrl: eq.question.imageUrl,
@@ -589,6 +783,8 @@ export async function startMockExamAttempt(userId: string, examId: string) {
       topic: eq.question.topic,
       explanation: eq.question.explanation,
       subject: eq.question.subject,
+      groupType: eq.questionGroupType,
+      groupId: eq.questionGroupId,
     };
   });
 
@@ -598,8 +794,9 @@ export async function startMockExamAttempt(userId: string, examId: string) {
     subject: attemptExam.subject,
     duration: attemptExam.duration,
     totalMarks: attemptExam.totalMarks,
-    questionCount: questionsWithRandomizedOptions.length,
-    questions: questionsWithRandomizedOptions,
+    questionCount: finalQuestions.length,
+    questions: finalQuestions,
+    selectedGroupIds: allSelectedGroupIds,
   };
 }
 
@@ -969,6 +1166,8 @@ export async function getCBTResultById(userId: string, resultId: string) {
       explanation: eq.question.explanation,
       topic: eq.question.topic,
       subject: eq.question.subject,
+      groupType: eq.questionGroupType,
+      groupId: eq.questionGroupId,
     };
   });
 
@@ -985,6 +1184,67 @@ export async function getCBTResultById(userId: string, resultId: string) {
       durationUsed: result.durationUsed,
       completedAt: result.completedAt,
       weakTopics: result.weakTopics,
+    },
+    corrections,
+  };
+}
+
+export async function getCBTResultByIdForAdmin(resultId: string) {
+  const result = await prisma.cbtResult.findFirst({
+    where: { id: resultId },
+    include: {
+      user: {
+        select: { fullName: true, email: true },
+      },
+      exam: {
+        include: {
+          questions: {
+            include: { question: true },
+            orderBy: { order: 'asc' },
+          },
+        },
+      },
+    },
+  });
+
+  if (!result || !result.exam) return null;
+
+  const userAnswers = result.userAnswers as Record<string, { selected: number; correct: boolean }> | null;
+
+  const corrections = result.exam.questions.map((eq, index) => {
+    const answer = userAnswers?.[eq.question.id];
+    return {
+      questionNumber: index + 1,
+      question: eq.question.text,
+      options: (eq.options as string[]) || (eq.question.options as string[]),
+      correctOption: eq.correctOption ?? eq.question.correctOption,
+      userAnswer: answer?.selected ?? -1,
+      isCorrect: answer?.correct ?? false,
+      explanation: eq.question.explanation,
+      topic: eq.question.topic,
+      subject: eq.question.subject,
+      groupType: eq.questionGroupType,
+      groupId: eq.questionGroupId,
+    };
+  });
+
+  return {
+    result: {
+      id: result.id,
+      studentName: result.user?.fullName || result.user?.email || 'Unknown',
+      email: result.user?.email || '',
+      subject: result.subject,
+      type: result.type,
+      score: result.score,
+      totalQuestions: result.totalQuestions,
+      correctAnswers: result.correctAnswers,
+      wrongAnswers: result.wrongAnswers,
+      skippedAnswers: result.skippedAnswers,
+      durationUsed: result.durationUsed,
+      completedAt: result.completedAt,
+      weakTopics: result.weakTopics,
+      examTitle: result.exam?.title || result.subject,
+      examId: result.examId,
     },
     corrections,
   };

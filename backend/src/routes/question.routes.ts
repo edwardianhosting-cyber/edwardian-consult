@@ -23,23 +23,36 @@ router.post('/', authenticate, authorize('ADMIN'), async (req: Request, res: Res
       correctOption: z.number().int(),
       explanation: z.string().optional().nullable(),
       isActive: z.boolean().optional(),
+      groupId: z.string().optional().nullable(),
+      groupType: z.string().optional().nullable(),
+      groupOrder: z.number().int().optional(),
     });
 
     const validated = schema.parse(req.body);
+    const createData: any = {
+      subject: validated.subject,
+      examType: validated.examType,
+      institution: validated.institution || null,
+      year: validated.year || 0,
+      topic: validated.topic || null,
+      text: validated.text,
+      imageUrl: validated.imageUrl || null,
+      options: validated.options,
+      correctOption: validated.correctOption,
+      explanation: validated.explanation || null,
+      isActive: validated.isActive ?? true,
+      groupType: validated.groupType || null,
+      groupOrder: validated.groupOrder ?? null,
+    };
+
+    if (validated.groupId) {
+      createData.questionGroup = { connect: { id: validated.groupId } };
+    } else {
+      createData.groupId = null;
+    }
+
     const question = await prisma.question.create({
-      data: {
-        subject: validated.subject,
-        examType: validated.examType,
-        institution: validated.institution || null,
-        year: validated.year || 0,
-        topic: validated.topic || null,
-        text: validated.text,
-        imageUrl: validated.imageUrl || null,
-        options: validated.options,
-        correctOption: validated.correctOption,
-        explanation: validated.explanation || null,
-        isActive: validated.isActive ?? true,
-      },
+      data: createData,
     });
     return res.status(201).json({ success: true, data: question });
   } catch (error: any) {
@@ -62,12 +75,37 @@ router.put('/:id', authenticate, authorize('ADMIN'), async (req: Request, res: R
       correctOption: z.number().int().optional(),
       explanation: z.string().optional().nullable(),
       isActive: z.boolean().optional(),
+      groupId: z.string().optional().nullable(),
+      groupType: z.string().optional().nullable(),
+      groupOrder: z.number().int().optional(),
     });
 
     const validated = schema.parse(req.body);
+    const updateData: any = {
+      subject: validated.subject,
+      examType: validated.examType,
+      institution: validated.institution,
+      year: validated.year,
+      topic: validated.topic,
+      text: validated.text,
+      imageUrl: validated.imageUrl,
+      options: validated.options,
+      correctOption: validated.correctOption,
+      explanation: validated.explanation,
+      isActive: validated.isActive,
+      groupType: validated.groupType,
+      groupOrder: validated.groupOrder,
+    };
+
+    if (validated.groupId) {
+      updateData.questionGroup = { connect: { id: validated.groupId } };
+    } else if (validated.groupId === null) {
+      updateData.groupId = null;
+    }
+
     const question = await prisma.question.update({
       where: { id: req.params.id },
-      data: validated,
+      data: updateData,
     });
     return res.json({ success: true, data: question });
   } catch (error: any) {

@@ -179,3 +179,55 @@
 .perspective-1000 {
   perspective: 1000px;
 }
+
+/* Print Styles */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  body {
+    margin: 0;
+    background: white !important;
+  }
+
+  /* Hide everything by default */
+  body * {
+    display: none !important;
+  }
+
+  /* Show only the print result sheet */
+  .print-result-sheet,
+  .print-result-sheet * {
+    display: block !important;
+  }
+
+  .print-result-sheet {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 20mm;
+    background: white;
+    color: #000;
+    position: static;
+  }
+
+  /* Table styles for print */
+  .print-result-sheet table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  .print-result-sheet th,
+  .print-result-sheet td {
+    border: 1px solid #6B003B;
+    padding: 8px;
+    text-align: left;
+  }
+
+  .print-result-sheet th {
+    background-color: #fce4ec;
+    font-weight: bold;
+    color: #6B003B;
+  }
+}
