@@ -242,14 +242,26 @@ function normalizeQuestionItem(item: Record<string, any>, index: number, default
   const correctOptionRaw = item.correctOption ?? item.correct_option ?? item.answer ?? item.Answer ?? item.CORRECT_OPTION ?? item['Correct Option'] ?? item.answer;
   const explanation = String(item.explanation || item.Explanation || item.EXPLANATION || '').trim();
   const imageUrl = String(item.imageUrl || item.ImageUrl || item.IMAGE_URL || item['Image URL'] || '').trim();
+  const groupType = String(item.groupType || item.GroupType || item.GROUP_TYPE || item['Group Type'] || '').trim();
+  const groupId = String(item.groupId || item.GroupId || item.GROUP_ID || item['Group ID'] || '').trim() || undefined;
+  const groupOrderRaw = item.groupOrder ?? item.GroupOrder ?? item.GROUP_ORDER ?? item['Group Order'];
+  const groupOrder = groupOrderRaw !== undefined && groupOrderRaw !== null && String(groupOrderRaw).trim() !== '' ? parseInt(String(groupOrderRaw), 10) : undefined;
 
   const finalSubject = subject || defaults?.subject;
   const finalExamType = examType || defaults?.examType;
   const finalInstitution = institution || defaults?.institution || '';
   const finalYear = yearStr ? parseInt(yearStr, 10) : (defaults?.year || 0);
 
-  if (!finalSubject || !finalExamType || !finalYear || !text || options.length < 2 || correctOptionRaw === undefined || correctOptionRaw === null || correctOptionRaw === '') {
-    return { error: `Question ${index + 1}: missing required fields` };
+  const missing: string[] = [];
+  if (!finalSubject) missing.push('subject');
+  if (!finalExamType) missing.push('examType');
+  if (!finalYear) missing.push('year');
+  if (!text) missing.push('text/question');
+  if (options.length < 2) missing.push('options (at least 2 required)');
+  if (correctOptionRaw === undefined || correctOptionRaw === null || correctOptionRaw === '') missing.push('correctOption/answer');
+
+  if (missing.length > 0) {
+    return { error: `Question ${index + 1}: missing required fields: ${missing.join(', ')}` };
   }
 
   const correctOption = typeof correctOptionRaw === 'number' ? correctOptionRaw : parseInt(String(correctOptionRaw), 10);
@@ -262,20 +274,30 @@ function normalizeQuestionItem(item: Record<string, any>, index: number, default
     return { error: `Question ${index + 1}: correctOption must be between 0 and ${options.length - 1}` };
   }
 
-  return {
-    data: {
-      subject: finalSubject,
-      examType: finalExamType,
-      institution: finalInstitution || undefined,
-      year: finalYear,
-      text,
-      imageUrl: imageUrl || undefined,
-      options,
-      correctOption,
-      explanation: explanation || undefined,
-      isActive: true,
-    },
+  const data: any = {
+    subject: finalSubject,
+    examType: finalExamType,
+    institution: finalInstitution || undefined,
+    year: finalYear,
+    text,
+    imageUrl: imageUrl || undefined,
+    options,
+    correctOption,
+    explanation: explanation || undefined,
+    isActive: true,
   };
+
+  if (groupType) {
+    data.groupType = groupType;
+  }
+  if (groupId) {
+    data.groupId = groupId;
+  }
+  if (groupOrder !== undefined && !isNaN(groupOrder)) {
+    data.groupOrder = groupOrder;
+  }
+
+  return { data };
 }
 
 export async function bulkCreateQuestionsFromJSON(items: Record<string, any>[], defaults?: {

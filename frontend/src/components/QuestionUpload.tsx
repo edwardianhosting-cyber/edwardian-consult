@@ -421,7 +421,7 @@ export default function QuestionUpload({ onUploaded }: QuestionUploadProps) {
             onChange={(e) => setQuestionsJsonText(e.target.value)}
             rows={10}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 mb-3 font-mono text-xs"
-            placeholder={`Paste JSON here, for example:\n[\n  {\n    "text": "What is the capital of Nigeria?",\n    "options": ["Lagos", "Abuja", "Port Harcourt", "Kano"],\n    "correctOption": 1,\n    "explanation": "Abuja is the capital."\n  }\n]`}
+            placeholder={`Paste JSON here, for example:\n[\n  {\n    "subject": "English Language",\n    "examType": "JAMB",\n    "year": 2024,\n    "text": "What is the capital of Nigeria?",\n    "options": ["Lagos", "Abuja", "Port Harcourt", "Kano"],\n    "correctOption": 1,\n    "explanation": "Abuja is the capital.",\n    "groupType": "STANDALONE"\n  }\n]`}
           />
           <div className="flex items-center gap-2 mb-3">
             <button
@@ -429,16 +429,24 @@ export default function QuestionUpload({ onUploaded }: QuestionUploadProps) {
               onClick={() => {
                 const sample = [
                   {
-                    text: 'What is the value of x in 2x + 5 = 15?',
-                    options: ['7', '8', '9', '10'],
-                    correctOption: 1,
-                    explanation: 'Subtract 5 from both sides then divide by 2.',
-                  },
-                  {
+                    subject: 'English Language',
+                    examType: 'JAMB',
+                    year: 2024,
                     text: 'Choose the correct option: She ___ to school every day.',
                     options: ['go', 'goes', 'going', 'gone'],
                     correctOption: 1,
                     explanation: 'Third person singular present tense adds -es.',
+                    groupType: 'STANDALONE',
+                  },
+                  {
+                    subject: 'English Language',
+                    examType: 'JAMB',
+                    year: 2024,
+                    text: 'Identify the synonym of "happy".',
+                    options: ['sad', 'joyful', 'angry', 'tired'],
+                    correctOption: 1,
+                    explanation: '"Joyful" means the same as "happy".',
+                    groupType: 'STANDALONE',
                   },
                 ];
                 setQuestionsJsonText(JSON.stringify(sample, null, 2));
@@ -468,7 +476,7 @@ export default function QuestionUpload({ onUploaded }: QuestionUploadProps) {
               </>
             )}
           </button>
-          <p className="text-xs text-gray-500 mt-2">Supported fields: text, options, correctOption, explanation, imageUrl.</p>
+          <p className="text-xs text-gray-500 mt-2">Supported fields: text, options, correctOption, explanation, imageUrl, subject, examType, year, groupType, groupId, groupOrder.</p>
         </div>
       </div>
 
