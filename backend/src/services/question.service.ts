@@ -328,3 +328,94 @@ export async function bulkCreateQuestionsFromJSON(items: Record<string, any>[], 
 
   return { created, errors };
 }
+
+export async function bulkCreateGroupsFromJSON(
+  groups: Array<{
+    group?: Record<string, any>;
+    questions?: Record<string, any>[];
+  }>,
+  defaults?: {
+    subject?: string;
+    examType?: string;
+    institution?: string;
+    year?: number;
+  }
+): Promise<{ createdGroups: number; createdQuestions: number; errors: string[] }> {
+  let createdGroups = 0;
+  let createdQuestions = 0;
+  const errors: string[] = [];
+
+  for (let i = 0; i < groups.length; i++) {
+    const rawGroup = groups[i];
+    const groupPayload = (rawGroup.group || rawGroup) as Record<string, any>;
+    const questions = Array.isArray(rawGroup.questions) ? rawGroup.questions : [];
+
+    const subject = String(groupPayload.subject || groupPayload.Subject || groupPayload.SUBJECT || defaults?.subject || '').trim();
+    const examType = String(groupPayload.examType || groupPayload.ExamType || groupPayload.EXAM_TYPE || groupPayload['Exam Type'] || defaults?.examType || '').trim();
+    const groupType = String(groupPayload.groupType || groupPayload.GroupType || groupPayload.GROUP_TYPE || groupPayload['Group Type'] || '').trim();
+    const title = String(groupPayload.title || groupPayload.Title || groupPayload.TITLE || groupPayload['Title'] || '').trim();
+    const instructions = String(groupPayload.instructions || groupPayload.Instructions || groupPayload.INSTRUCTIONS || groupPayload['Instructions'] || '').trim();
+    const passage = String(groupPayload.passage || groupPayload.Passage || groupPayload.PASSAGE || groupPayload['Passage'] || '').trim();
+    const imageUrl = String(groupPayload.imageUrl || groupPayload.ImageUrl || groupPayload.IMAGE_URL || groupPayload['Image URL'] || '').trim();
+
+    const finalSubject = subject || defaults?.subject;
+    const finalExamType = examType || defaults?.examType;
+
+    if (!finalSubject || !finalExamType || !groupType) {
+      errors.push(`Group ${i + 1}: missing required fields: subject, examType, groupType`);
+      continue;
+    }
+
+    let questionGroup;
+    try {
+      questionGroup = await prisma.questionGroup.create({
+        data: {
+          subject: finalSubject,
+          examType: finalExamType,
+          groupType,
+          title: title || undefined,
+          instructions: instructions || undefined,
+          passage: passage || undefined,
+          imageUrl: imageUrl || undefined,
+          order: 0,
+          isActive: true,
+        },
+      });
+      createdGroups += 1;
+    } catch (error) {
+      errors.push(`Group ${i + 1}: ${(error as Error).message}`);
+      continue;
+    }
+
+    for (let j = 0; j < questions.length; j++) {
+      const q = questions[j];
+      const parsed = normalizeQuestionItem(q, j, {
+        subject: finalSubject,
+        examType: finalExamType,
+      });
+
+      if (parsed?.error) {
+        errors.push(`Group ${i + 1} Question ${j + 1}: ${parsed.error}`);
+        continue;
+      }
+
+      if (parsed?.data) {
+        try {
+          await prisma.question.create({
+            data: {
+              ...parsed.data,
+              groupId: questionGroup.id,
+              groupType: questionGroup.groupType,
+              groupOrder: parsed.data.groupOrder ?? j + 1,
+            },
+          });
+          createdQuestions += 1;
+        } catch (error) {
+          errors.push(`Group ${i + 1} Question ${j + 1}: ${(error as Error).message}`);
+        }
+      }
+    }
+  }
+
+  return { createdGroups, createdQuestions, errors };
+}

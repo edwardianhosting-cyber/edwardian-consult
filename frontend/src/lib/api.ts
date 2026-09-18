@@ -442,6 +442,9 @@ export const api = {
   uploadQuestionsJson: (questions: any[], defaults?: { subject?: string; examType?: string; institution?: string; year?: number; topic?: string }) => {
     return fetchAPI('/questions/bulk-upload-json', { method: 'POST', body: JSON.stringify({ questions, defaults }) });
   },
+  uploadGroupsJson: (groups: any[], defaults?: { subject?: string; examType?: string; institution?: string; year?: number; topic?: string }) => {
+    return fetchAPI('/questions/bulk-upload-groups-json', { method: 'POST', body: JSON.stringify({ groups, defaults }) });
+  },
   getAllQuestions: (params?: Record<string, string>) => {
     const query = params ? '?' + new URLSearchParams(params).toString() : '';
     return fetchAPI(`/cbt/questions${query}`);

@@ -3,7 +3,7 @@ import { authenticate, authorize } from '../middleware/auth.middleware';
 import * as XLSX from 'xlsx';
 import { z } from 'zod';
 import prisma from '../lib/prisma';
-import { uploadQuestionImage, bulkCreateQuestionsFromCSV, bulkCreateQuestionsFromExcel, bulkCreateQuestionsFromJSON } from '../services/question.service';
+import { uploadQuestionImage, bulkCreateQuestionsFromCSV, bulkCreateQuestionsFromExcel, bulkCreateQuestionsFromJSON, bulkCreateGroupsFromJSON } from '../services/question.service';
 import { upload } from '../lib/upload';
 
 const router = Router();
@@ -209,6 +209,20 @@ router.post('/bulk-upload-json', authenticate, authorize('ADMIN'), async (req: R
     res.status(201).json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to process JSON questions' });
+  }
+});
+
+router.post('/bulk-upload-groups-json', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const { groups, defaults } = req.body;
+    if (!Array.isArray(groups) || groups.length === 0) {
+      return res.status(400).json({ success: false, message: 'Groups array is required' });
+    }
+
+    const result = await bulkCreateGroupsFromJSON(groups, defaults);
+    res.status(201).json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to process grouped JSON questions' });
   }
 });
 

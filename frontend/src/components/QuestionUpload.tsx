@@ -46,7 +46,9 @@ export default function QuestionUpload({ onUploaded }: QuestionUploadProps) {
     topic: '',
   });
   const [questionsJsonText, setQuestionsJsonText] = useState('');
+  const [groupsJsonText, setGroupsJsonText] = useState('');
   const [uploadingQuestionsJson, setUploadingQuestionsJson] = useState(false);
+  const [uploadingGroupsJson, setUploadingGroupsJson] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [filterExamType, setFilterExamType] = useState('');
   const [showManualForm, setShowManualForm] = useState(false);
@@ -193,6 +195,31 @@ export default function QuestionUpload({ onUploaded }: QuestionUploadProps) {
       showError(error.message || 'Failed to upload JSON questions');
     } finally {
       setUploadingQuestionsJson(false);
+    }
+  }
+
+  async function handleGroupsJsonUpload() {
+    if (!groupsJsonText.trim()) return;
+    setUploadingGroupsJson(true);
+    setBulkResult(null);
+    try {
+      const parsed = JSON.parse(groupsJsonText);
+      const groups = Array.isArray(parsed) ? parsed : [parsed];
+      const response = await api.uploadGroupsJson(groups, {
+        subject: defaults.subject || undefined,
+        examType: defaults.examType || undefined,
+        institution: defaults.institution || undefined,
+        year: defaults.year || undefined,
+        topic: defaults.topic || undefined,
+      });
+      setBulkResult(response.data);
+      setGroupsJsonText('');
+      await fetchQuestions();
+      onUploaded?.();
+    } catch (error: any) {
+      showError(error.message || 'Failed to upload grouped JSON');
+    } finally {
+      setUploadingGroupsJson(false);
     }
   }
 
@@ -477,6 +504,80 @@ export default function QuestionUpload({ onUploaded }: QuestionUploadProps) {
             )}
           </button>
           <p className="text-xs text-gray-500 mt-2">Supported fields: text, options, correctOption, explanation, imageUrl, subject, examType, year, groupType, groupId, groupOrder.</p>
+        </div>
+
+        {/* Grouped JSON Upload */}
+        <div className="bg-white rounded-xl border p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary-600" />
+            Upload Question Groups via JSON
+          </h3>
+          <p className="text-xs text-gray-500 mb-2">Create comprehension/cloze groups in one upload. Each item can contain a <code className="bg-gray-100 px-1 rounded">group</code> block plus its <code className="bg-gray-100 px-1 rounded">questions</code> array.</p>
+          <textarea
+            value={groupsJsonText}
+            onChange={(e) => setGroupsJsonText(e.target.value)}
+            rows={14}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 mb-3 font-mono text-xs"
+            placeholder={`Paste grouped JSON here, for example:\n[\n  {\n    "group": {\n      "subject": "English Language",\n      "examType": "JAMB",\n      "groupType": "COMPREHENSION",\n      "title": "Reading Passage 1",\n      "instructions": "Read the passage and answer the questions below.",\n      "passage": "The passage text here..."\n    },\n    "questions": [\n      {\n        "text": "What is the main idea?",\n        "options": ["A", "B", "C", "D"],\n        "correctOption": 1,\n        "explanation": "Because..."\n      }\n    ]\n  }\n]`}
+          />
+          <div className="flex items-center gap-2 mb-3">
+            <button
+              type="button"
+              onClick={() => {
+                const sample = [
+                  {
+                    group: {
+                      subject: 'English Language',
+                      examType: 'JAMB',
+                      groupType: 'COMPREHENSION',
+                      title: 'Reading Passage 1',
+                      instructions: 'Read the passage and answer the questions below.',
+                      passage: 'This is the comprehension passage text. It provides context for the following questions.',
+                    },
+                    questions: [
+                      {
+                        text: 'What is the main idea of the passage?',
+                        options: ['A', 'B', 'C', 'D'],
+                        correctOption: 1,
+                        explanation: 'Option B best summarizes the passage.',
+                      },
+                      {
+                        text: 'According to the passage, ...',
+                        options: ['A', 'B', 'C', 'D'],
+                        correctOption: 2,
+                        explanation: 'The passage states this explicitly.',
+                      },
+                    ],
+                  },
+                ];
+                setGroupsJsonText(JSON.stringify(sample, null, 2));
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-white border border-gray-200 rounded-lg hover:bg-primary-50"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Load Sample Group JSON
+            </button>
+            <span className="text-xs text-gray-500">Click to load a sample group into the textarea.</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleGroupsJsonUpload}
+            disabled={uploadingGroupsJson || !groupsJsonText.trim()}
+            className="w-full btn-primary disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {uploadingGroupsJson ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Uploading Groups...
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4" />
+                Upload Groups JSON
+              </>
+            )}
+          </button>
+          <p className="text-xs text-gray-500 mt-2">Supported group fields: subject, examType, groupType, title, instructions, passage, imageUrl. Questions support the same fields as regular questions.</p>
         </div>
       </div>
 
