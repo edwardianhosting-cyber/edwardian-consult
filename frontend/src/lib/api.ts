@@ -1,4 +1,4 @@
-export const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000')
+export const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://10.76.232.172:5000')
   .replace(/\/api$/, '')
   .replace(/\/+$/, '') + '/api';
 

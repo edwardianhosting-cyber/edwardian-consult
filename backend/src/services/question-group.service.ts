@@ -336,14 +336,22 @@ export async function getGroupedExamQuestionsForEnglish(params: {
     }
   }
 
-  const shuffledBlocks = shuffleArray([...blocks]);
+  const shuffledComprehension = shuffleArray([...blocks.filter(b => b.type === 'COMPREHENSION')]);
+  const shuffledCloze = shuffleArray([...blocks.filter(b => b.type === 'CLOZE')]);
+  const shuffledStandalone = shuffleArray([...blocks.filter(b => b.type === 'STANDALONE')]);
 
-  const questions = shuffledBlocks.flatMap(block => block.questions);
+  const orderedBlocks = [
+    ...shuffledComprehension,
+    ...shuffledCloze,
+    ...shuffledStandalone,
+  ];
+
+  const questions = orderedBlocks.flatMap(block => block.questions);
 
   return {
     questions,
     selectedGroupIds: [...selectedGroupIds],
-    blocks: shuffledBlocks.map(block => ({
+    blocks: orderedBlocks.map(block => ({
       type: block.type,
       groupId: block.groupId,
       questionCount: block.questions.length,

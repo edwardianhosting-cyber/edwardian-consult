@@ -60,7 +60,7 @@ DATABASE_URL="postgresql://user:password@host:5432/edwardian?sslmode=require"
 JWT_SECRET="your-secret-key"
 PORT=5000
 NODE_ENV=development
-FRONTEND_URL="http://localhost:3000"
+FRONTEND_URL="http://10.76.232.172:3000"
 PHP_MAILER_URL="https://edwardianeducationalconsult.com.ng/mailer/send.php"
 PHP_MAILER_KEY="your-mailer-key"
 FROM_EMAIL="registrar@edwardianeducationalconsult.com.ng"
@@ -70,8 +70,8 @@ TERMII_SENDER_ID="EdwardIan"
 
 **Frontend** (`frontend/.env.local`):
 ```env
-NEXT_PUBLIC_API_URL="http://localhost:5000"
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
+NEXT_PUBLIC_API_URL="http://10.76.232.172:5000"
+NEXT_PUBLIC_APP_URL="http://10.76.232.172:3000"
 ```
 
 ### 3. Initialize Database
@@ -96,8 +96,8 @@ npm run dev
 ```
 
 Access the application:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:5000/api
+- Frontend: http://10.76.232.172:3000
+- Backend API: http://10.76.232.172:5000/api
 
 ---
 

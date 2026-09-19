@@ -116,7 +116,7 @@ export default function AdminQuestionsPage() {
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/question-groups?${params.toString()}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://10.76.232.172:5000'}/api/question-groups?${params.toString()}`, {
         headers,
       });
       if (res.ok) {

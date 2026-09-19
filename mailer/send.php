@@ -33,7 +33,7 @@ if ($smtpPass === '' || $apiKey === 'CHANGE_ME_MAILER_API_KEY') {
 }
 
 // Only allow requests from the backend origin
-$allowedOrigin = getenv('MAILER_ALLOWED_ORIGIN') ?: 'http://localhost:5000';
+$allowedOrigin = getenv('MAILER_ALLOWED_ORIGIN') ?: 'http://10.76.232.172:5000';
 $requestOrigin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
 if ($requestOrigin !== $allowedOrigin) {
     http_response_code(403);

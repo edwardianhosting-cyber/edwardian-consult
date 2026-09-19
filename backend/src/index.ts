@@ -80,7 +80,7 @@ app.use(
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:', 'https:'],
-        connectSrc: ["'self'", process.env.FRONTEND_URL || 'http://localhost:3000'],
+        connectSrc: ["'self'", process.env.FRONTEND_URL || 'http://10.76.232.172:3000'],
         fontSrc: ["'self'", 'data:'],
         objectSrc: ["'none'"],
         frameAncestors: ["'none'"],
@@ -105,6 +105,7 @@ app.use(
 // instead.
 const allowedOrigins = [
   process.env.FRONTEND_URL,
+  'http://10.76.232.172:3000',
   'http://localhost:3000',
   'http://localhost:3001',
   'https://edwardian-consult.vercel.app',
