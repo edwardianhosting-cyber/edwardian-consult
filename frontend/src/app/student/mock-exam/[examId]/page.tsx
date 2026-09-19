@@ -29,6 +29,7 @@ interface MockExamData {
   duration: number;
   totalMarks: number;
   questionCount: number;
+  questionsPerSubject?: number;
   questions: MockQuestion[];
 }
 
@@ -89,6 +90,49 @@ export default function MockExamPage() {
     };
   }, [phase, showSubmitModal]);
 
+  useEffect(() => {
+    if (phase !== 'exam' || !cbtData || showSubmitModal) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      const target = event.target as HTMLElement;
+      const tagName = target.tagName;
+      const isInput = tagName === 'INPUT' || tagName === 'TEXTAREA' || target.isContentEditable;
+
+      if (isInput) return;
+
+      const key = event.key.toLowerCase();
+
+      if (key === 'n' || key === 'arrowright') {
+        event.preventDefault();
+        setCurrentQuestion(prev => Math.min(subjectQuestions.length - 1, prev + 1));
+        return;
+      }
+
+      if (key === 'p' || key === 'arrowleft') {
+        event.preventDefault();
+        setCurrentQuestion(prev => Math.max(0, prev - 1));
+        return;
+      }
+
+      const optionMap: Record<string, number> = {
+        a: 0,
+        b: 1,
+        c: 2,
+        d: 3,
+      };
+
+      const optionIndex = optionMap[key];
+      if (optionIndex !== undefined && subjectQuestions[currentQuestion]?.options?.[optionIndex]) {
+        event.preventDefault();
+        const currentQ = subjectQuestions[currentQuestion];
+        selectAnswer(currentQ.id, optionIndex);
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [phase, cbtData, showSubmitModal, subjectQuestions, currentQuestion, answers]);
+
   function formatTime(seconds: number) {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -117,6 +161,29 @@ export default function MockExamPage() {
       setSubjects(subjectList);
       if (subjectList.length > 0) {
         setSelectedSubject(subjectList[0]);
+      }
+
+      try {
+        const profileRes = await api.getProfile();
+        const profile = (profileRes as any).data || profileRes;
+        const jambSubjects = (profile?.jambSubjects as string[]) || [];
+        const olevelResults = (profile?.olevelResults as string[]) || [];
+        const userExamTypes = (profile?.examTypes as string[]) || [];
+        const primaryExamType = userExamTypes[0]?.toUpperCase();
+
+        let registeredSubjects: string[] = [];
+        if (primaryExamType === 'WAEC' || primaryExamType === 'NECO') {
+          registeredSubjects = olevelResults;
+        } else {
+          registeredSubjects = jambSubjects;
+        }
+
+        if (registeredSubjects.length > 0) {
+          setSubjects(registeredSubjects);
+          setSelectedSubject(registeredSubjects[0]);
+        }
+      } catch (profileError) {
+        console.error('Failed to load student profile for subjects:', profileError);
       }
     } catch (error) {
       console.error('Failed to load exam:', error);
@@ -241,14 +308,6 @@ export default function MockExamPage() {
     setCalcDisplay(prev => prev === '0' && !isNaN(Number(value)) ? value : prev + value);
   }
 
-  function handleCalcFunction(fn: string) {
-    setCalcDisplay(prev => prev === '0' ? `${fn}(` : `${prev}${fn}(`);
-  }
-
-  function handleCalcConstant(value: string) {
-    setCalcDisplay(prev => prev === '0' ? value : `${prev}${value}`);
-  }
-
   function handleCalcOperator(nextOp: string) {
     setCalcDisplay(prev => `${prev}${nextOp}`);
   }
@@ -265,19 +324,10 @@ export default function MockExamPage() {
     let expression = calcDisplay
       .replace(/×/g, '*')
       .replace(/÷/g, '/')
-      .replace(/π/g, 'Math.PI')
-      .replace(/e(?![A-Za-z])/g, 'Math.E')
       .replace(/\^/g, '**');
 
-    expression = expression.replace(/\bsin\(([^)]+)\)/g, (_, args) => `Math.sin((${args})*Math.PI/180)`);
-    expression = expression.replace(/\bcos\(([^)]+)\)/g, (_, args) => `Math.cos((${args})*Math.PI/180)`);
-    expression = expression.replace(/\btan\(([^)]+)\)/g, (_, args) => `Math.tan((${args})*Math.PI/180)`);
-    expression = expression.replace(/\bsqrt\(/g, 'Math.sqrt(');
-    expression = expression.replace(/\blog\(/g, 'Math.log10(');
-    expression = expression.replace(/\bln\(/g, 'Math.log(');
-
     try {
-      const sanitized = expression.replace(/[^0-9+\-*/().%MathsincostqrtlgtenPI\s]/g, '');
+      const sanitized = expression.replace(/[^0-9+\-*/().%\s]/g, '');
       const result = Function(`"use strict"; return (${sanitized})`)();
       if (!Number.isFinite(result)) {
         setCalcDisplay('Error');
@@ -291,6 +341,11 @@ export default function MockExamPage() {
 
   // Phase: Instructions
   if (phase === 'instructions' && cbtData) {
+    const totalQuestions = cbtData.questionsPerSubject && subjects.length > 0
+      ? cbtData.questionsPerSubject * subjects.length
+      : cbtData.questionCount;
+    const duration = cbtData.duration;
+
     return (
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-2xl border border-gray-100 p-8">
@@ -306,8 +361,8 @@ export default function MockExamPage() {
             <div className="bg-blue-50 rounded-xl p-4">
               <h3 className="font-semibold text-blue-900 mb-2">📋 Exam Details</h3>
               <ul className="space-y-1 text-sm text-blue-800">
-                <li>• Total Questions: <strong>{cbtData.questionCount}</strong></li>
-                <li>• Duration: <strong>{cbtData.duration} minutes</strong></li>
+                <li>• Total Questions: <strong>{totalQuestions}</strong></li>
+                <li>• Duration: <strong>{duration} minutes</strong></li>
                 <li>• Subjects: <strong>{subjects.join(', ')}</strong></li>
                 <li>• Type: <strong>MOCK EXAM</strong></li>
               </ul>
@@ -333,6 +388,7 @@ export default function MockExamPage() {
                 <li>• Review your answers before submitting</li>
                 <li>• Switch between subjects to manage your time</li>
                 <li>• Flag questions you want to review later</li>
+                <li>• Keyboard shortcuts: N = Next, P = Previous, A/B/C/D = Select option</li>
               </ul>
             </div>
           </div>
@@ -540,17 +596,9 @@ export default function MockExamPage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-5 gap-2 mb-2">
-                  <button onClick={() => handleCalcFunction('sin')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">sin</button>
-                  <button onClick={() => handleCalcFunction('cos')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">cos</button>
-                  <button onClick={() => handleCalcFunction('tan')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">tan</button>
-                  <button onClick={() => handleCalcOperator('^')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">x^y</button>
-                  <button onClick={() => handleCalcFunction('sqrt')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">√</button>
-                  <button onClick={() => handleCalcFunction('log')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">log</button>
-                  <button onClick={() => handleCalcFunction('ln')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">ln</button>
-                  <button onClick={() => handleCalcConstant('Math.PI')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">π</button>
-                  <button onClick={() => handleCalcConstant('Math.E')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">e</button>
                   <button onClick={() => handleCalcInput('(')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">(</button>
                   <button onClick={() => handleCalcInput(')')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">)</button>
+                  <button onClick={() => handleCalcOperator('^')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">x^y</button>
                   <button onClick={handleCalcBackspace} className="p-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-xs font-medium">⌫</button>
                 </div>
                 <div className="grid grid-cols-4 gap-2">

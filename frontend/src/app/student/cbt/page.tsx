@@ -169,6 +169,50 @@ export default function CBTPracticePage() {
     };
   }, [phase, showResult]);
 
+  useEffect(() => {
+    if (phase !== 'exam' || !cbtData || showResult) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (!cbtData) return;
+      const target = event.target as HTMLElement;
+      const tagName = target.tagName;
+      const isInput = tagName === 'INPUT' || tagName === 'TEXTAREA' || target.isContentEditable;
+
+      if (isInput) return;
+
+      const key = event.key.toLowerCase();
+
+      if (key === 'n' || key === 'arrowright') {
+        event.preventDefault();
+        setCurrentQuestion(prev => Math.min(cbtData.questions.length - 1, prev + 1));
+        return;
+      }
+
+      if (key === 'p' || key === 'arrowleft') {
+        event.preventDefault();
+        setCurrentQuestion(prev => Math.max(0, prev - 1));
+        return;
+      }
+
+      const optionMap: Record<string, number> = {
+        a: 0,
+        b: 1,
+        c: 2,
+        d: 3,
+      };
+
+      const optionIndex = optionMap[key];
+      if (optionIndex !== undefined && cbtData.questions[currentQuestion]?.options?.[optionIndex]) {
+        event.preventDefault();
+        const currentQ = cbtData.questions[currentQuestion];
+        selectAnswer(currentQ.id, optionIndex);
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [phase, cbtData, showResult, currentQuestion, answers]);
+
   function formatTime(seconds: number) {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -213,15 +257,11 @@ export default function CBTPracticePage() {
 
   async function startCBT(subject: string) {
     setSelectedSubject(subject);
-    setPhase('instructions');
-  }
-
-  async function beginExam() {
     setLoading(true);
     try {
       const questionCount = examType === 'PRACTICE' ? 50 : 50;
       const res = await api.generateCBT({
-        subject: selectedSubject!,
+        subject: selectedSubject || subject,
         examType: selectedExamCategory,
         questionCount,
       });
@@ -229,14 +269,19 @@ export default function CBTPracticePage() {
       const data = res as any;
       setCbtData(data.data || data);
       setTimeLeft((data.data || data).duration * 60 || 3600);
-      setExamStarted(true);
-      setPhase('exam');
+      setPhase('instructions');
     } catch (error) {
-      console.error('Failed to start CBT:', error);
-      showError('Failed to start CBT. Please try again.');
+      console.error('Failed to prepare CBT:', error);
+      showError('Failed to prepare CBT. Please try again.');
     } finally {
       setLoading(false);
     }
+  }
+
+  async function beginExam() {
+    if (!cbtData) return;
+    setExamStarted(true);
+    setPhase('exam');
   }
 
   async function handleSubmitCBT() {
@@ -357,14 +402,6 @@ export default function CBTPracticePage() {
     setCalcDisplay(prev => prev === '0' && !isNaN(Number(value)) ? value : prev + value);
   }
 
-  function handleCalcFunction(fn: string) {
-    setCalcDisplay(prev => prev === '0' ? `${fn}(` : `${prev}${fn}(`);
-  }
-
-  function handleCalcConstant(value: string) {
-    setCalcDisplay(prev => prev === '0' ? value : `${prev}${value}`);
-  }
-
   function handleCalcOperator(nextOp: string) {
     setCalcDisplay(prev => `${prev}${nextOp}`);
   }
@@ -384,19 +421,10 @@ export default function CBTPracticePage() {
     let expression = calcDisplay
       .replace(/×/g, '*')
       .replace(/÷/g, '/')
-      .replace(/π/g, 'Math.PI')
-      .replace(/e(?![A-Za-z])/g, 'Math.E')
       .replace(/\^/g, '**');
 
-    expression = expression.replace(/\bsin\(([^)]+)\)/g, (_, args) => `Math.sin((${args})*Math.PI/180)`);
-    expression = expression.replace(/\bcos\(([^)]+)\)/g, (_, args) => `Math.cos((${args})*Math.PI/180)`);
-    expression = expression.replace(/\btan\(([^)]+)\)/g, (_, args) => `Math.tan((${args})*Math.PI/180)`);
-    expression = expression.replace(/\bsqrt\(/g, 'Math.sqrt(');
-    expression = expression.replace(/\blog\(/g, 'Math.log10(');
-    expression = expression.replace(/\bln\(/g, 'Math.log(');
-
     try {
-      const sanitized = expression.replace(/[^0-9+\-*/().%MathsincostqrtlgtenPI\s]/g, '');
+      const sanitized = expression.replace(/[^0-9+\-*/().%\s]/g, '');
       const result = Function(`"use strict"; return (${sanitized})`)();
       if (!Number.isFinite(result)) {
         setCalcDisplay('Error');
@@ -511,7 +539,7 @@ export default function CBTPracticePage() {
   }
 
   // Phase: Instructions
-  if (phase === 'instructions' && selectedSubject) {
+  if (phase === 'instructions' && selectedSubject && cbtData) {
     return (
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-2xl border border-gray-100 p-8">
@@ -527,8 +555,8 @@ export default function CBTPracticePage() {
             <div className="bg-blue-50 rounded-xl p-4">
               <h3 className="font-semibold text-blue-900 mb-2">📋 Exam Details</h3>
               <ul className="space-y-1 text-sm text-blue-800">
-                <li>• Total Questions: <strong>50</strong></li>
-                <li>• Duration: <strong>60 minutes</strong></li>
+                <li>• Total Questions: <strong>{cbtData.questionCount}</strong></li>
+                <li>• Duration: <strong>{cbtData.duration} minutes</strong></li>
                 <li>• Subject: <strong>{selectedSubject}</strong></li>
                 <li>• Type: <strong>{examType}</strong></li>
               </ul>
@@ -553,13 +581,14 @@ export default function CBTPracticePage() {
                 <li>• Use the calculator if needed (available during exam)</li>
                 <li>• Review your answers before submitting</li>
                 <li>• Flag questions you want to review later</li>
+                <li>• Keyboard shortcuts: N = Next, P = Previous, A/B/C/D = Select option</li>
               </ul>
             </div>
           </div>
 
           <div className="flex gap-3">
             <button
-              onClick={() => { setPhase('subjects'); setSelectedSubject(null); }}
+              onClick={() => { setPhase('subjects'); setSelectedSubject(null); setCbtData(null); }}
               className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200"
             >
               Back
@@ -743,17 +772,9 @@ export default function CBTPracticePage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-5 gap-2 mb-2">
-                  <button onClick={() => handleCalcFunction('sin')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">sin</button>
-                  <button onClick={() => handleCalcFunction('cos')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">cos</button>
-                  <button onClick={() => handleCalcFunction('tan')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">tan</button>
-                  <button onClick={() => handleCalcFunction('sqrt')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">√</button>
-                  <button onClick={() => handleCalcOperator('^')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">x^y</button>
-                  <button onClick={() => handleCalcFunction('log')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">log</button>
-                  <button onClick={() => handleCalcFunction('ln')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">ln</button>
-                  <button onClick={() => handleCalcConstant('Math.PI')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">π</button>
-                  <button onClick={() => handleCalcConstant('Math.E')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">e</button>
                   <button onClick={() => handleCalcInput('(')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">(</button>
                   <button onClick={() => handleCalcInput(')')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">)</button>
+                  <button onClick={() => handleCalcOperator('^')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">x^y</button>
                   <button onClick={handleCalcBackspace} className="p-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-xs font-medium">⌫</button>
                 </div>
                 <div className="grid grid-cols-4 gap-2">
