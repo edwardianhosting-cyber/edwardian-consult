@@ -12,15 +12,7 @@ export default function HomeRedirect() {
     if (loading) return;
 
     if (user) {
-      if (user.role === 'ADMIN') {
-        router.push('/admin/dashboard');
-      } else if (user.role === 'TEACHER' || user.role === 'TUTOR') {
-        router.push('/teacher/dashboard');
-      } else if (user.role === 'PARENT_VIEW') {
-        router.push('/parent/dashboard');
-      } else {
-        router.push('/student/dashboard');
-      }
+      router.push('/dashboard');
     }
   }, [user, loading, router]);
 

@@ -1,4 +1,4 @@
-export const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://10.76.232.172:5000')
+export const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000')
   .replace(/\/api$/, '')
   .replace(/\/+$/, '') + '/api';
 
@@ -99,7 +99,7 @@ export const api = {
   },
   generateCBT: (data: any) => fetchAPI('/cbt/generate', { method: 'POST', body: JSON.stringify(data) }),
   startMockExamAttempt: (examId: string) => fetchAPI(`/cbt/mock-exams/${examId}/start`, { method: 'POST' }),
-  submitCBT: (examId: string, answers: any, type = 'PRACTICE') => fetchAPI(`/cbt/submit/${examId}`, { method: 'POST', body: JSON.stringify({ answers, type }) }),
+  submitCBT: (examId: string, answers: any, type = 'PRACTICE', templateExamId?: string) => fetchAPI(`/cbt/submit/${examId}`, { method: 'POST', body: JSON.stringify({ answers, type, templateExamId }) }),
   getExamById: (examId: string) => fetchAPI(`/cbt/exams/${examId}`),
   getCBTResults: (page = 1, type?: string) => {
     const query = type ? `?page=${page}&type=${type}` : `?page=${page}`;
@@ -178,10 +178,14 @@ export const api = {
   getMockExams: () => fetchAPI('/cbt/mock-exams'),
   startMockExam: (examId: string) => fetchAPI(`/cbt/mock-exams/${examId}/start`, { method: 'POST' }),
   getAllMockExams: () => fetchAPI('/cbt/mock-exams/admin/all'),
+  getMockRetakeStatus: (examId: string) => fetchAPI(`/cbt/mock-exams/${examId}/retake-status`),
+  requestMockRetake: (examId: string) => fetchAPI(`/cbt/mock-exams/${examId}/request-retake`, { method: 'POST' }),
+  approveMockRetake: (examId: string, userId: string) => fetchAPI(`/cbt/admin/mock-exams/${examId}/approve-retake`, { method: 'POST', body: JSON.stringify({ userId }) }),
   
   // Admin - CBT
   adminGetAllMockExams: () => fetchAPI('/cbt/admin/mock-exams'),
   adminGetCBTStats: () => fetchAPI('/cbt/admin/stats'),
+  adminGetMockRetakeRequests: (examId: string) => fetchAPI(`/cbt/admin/mock-exams/${examId}/retake-requests`),
   adminGetAllCBTResults: (page = 1, limit = 20) => {
     const query = `?page=${page}&limit=${limit}`;
     return fetchAPI(`/cbt/admin/results${query}`);
@@ -196,6 +200,9 @@ export const api = {
     const qs = query.toString();
     return fetchAPI(`/cbt/admin/results/filtered${qs ? `?${qs}` : ''}`);
   },
+  adminGetResultReview: (resultId: string) => fetchAPI(`/cbt/admin/results/${resultId}/review`),
+  adminRecalculateResult: (resultId: string) => fetchAPI(`/cbt/admin/results/${resultId}/recalculate`, { method: 'POST' }),
+  adminUpdateExamQuestion: (examId: string, questionId: string, data: any) => fetchAPI(`/cbt/admin/exams/${examId}/questions/${questionId}`, { method: 'PATCH', body: JSON.stringify(data) }),
   
   // Study Planner
   getStudyPlans: () => fetchAPI('/study/plans'),
@@ -470,6 +477,7 @@ export const api = {
     fetchAPI(`/question-groups/${groupId}/reorder`, { method: 'POST', body: JSON.stringify({ questionIds }) }),
   sendMockResultEmail: (resultId: string) =>
     fetchAPI(`/cbt/admin/mock-results/${resultId}/send-email`, { method: 'POST' }),
+  calculateJAMBAggregate: () => fetchAPI('/cbt/jamb/aggregate'),
   
   // Teacher Dashboard
   getTeacherStats: () => fetchAPI('/users/teacher-stats'),

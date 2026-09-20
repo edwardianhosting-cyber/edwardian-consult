@@ -27,6 +27,11 @@ import {
   startMockExamAttempt,
   getFilteredCBTResultsForAdmin,
   getAdminFilteredResults,
+  getMockExamRetakeRequests,
+  updateExamQuestion,
+  recalculateCbtResult,
+  getResultReviewData,
+  calculateJAMBAggregate,
 } from '../services/cbt.service';
 import { sendMockResultEmail } from '../lib/email';
 import prisma from '../lib/prisma';
@@ -86,6 +91,37 @@ router.get('/exams/:examId', authenticate, async (req: Request, res: Response) =
 router.post('/submit/:examId', authenticate, async (req: Request, res: Response) => {
   try {
     const result = await submitCBT(req.user!.userId, req.params.examId, req.body.answers, req.body.type);
+
+    if (result.type === 'MOCK') {
+      const templateExamId = req.body.templateExamId || req.params.examId;
+      const existingAttempt = await prisma.mockExamAttempt.findFirst({
+        where: {
+          userId: req.user!.userId,
+          examId: templateExamId,
+          isCompleted: false,
+        },
+      });
+
+      if (existingAttempt) {
+        await prisma.mockExamAttempt.update({
+          where: { id: existingAttempt.id },
+          data: {
+            isCompleted: true,
+            completedAt: new Date(),
+          },
+        });
+      } else {
+        await prisma.mockExamAttempt.create({
+          data: {
+            userId: req.user!.userId,
+            examId: templateExamId,
+            isCompleted: true,
+            completedAt: new Date(),
+          },
+        });
+      }
+    }
+
     res.json({ success: true, data: result });
   } catch (error: any) {
     res.status(400).json({ success: false, message: error.message });
@@ -141,6 +177,15 @@ router.get('/mock-exams', authenticate, async (req: Request, res: Response) => {
 router.post('/mock-exams/:examId/start', authenticate, async (req: Request, res: Response) => {
   try {
     const exam = await startMockExamAttempt(req.user!.userId, req.params.examId);
+
+    await prisma.mockExamAttempt.create({
+      data: {
+        userId: req.user!.userId,
+        examId: req.params.examId,
+        isCompleted: false,
+      },
+    });
+
     res.json({ success: true, data: exam });
   } catch (error: any) {
     res.status(400).json({ success: false, message: error.message });
@@ -258,6 +303,16 @@ router.delete('/mock-exams/:id', authenticate, authorize('ADMIN', 'TEACHER', 'TU
   }
 });
 
+// Mock Exams - Admin: get retake requests
+router.get('/admin/mock-exams/:examId/retake-requests', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const requests = await getMockExamRetakeRequests(req.params.examId);
+    res.json({ success: true, data: requests });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch retake requests' });
+  }
+});
+
 // Admin: get all mock exams
 router.get('/admin/mock-exams', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
@@ -329,13 +384,14 @@ router.post('/admin/mock-results/:resultId/send-email', authenticate, authorize(
       return res.status(404).json({ success: false, message: 'Mock exam not found' });
     }
 
-    if (!result.email) {
+    const recipientEmail = result.studentEmail || result.email;
+    if (!recipientEmail) {
       return res.status(400).json({ success: false, message: 'Student email not found' });
     }
 
     const corrections = resultData.corrections || [];
     const success = await sendMockResultEmail(
-      result.email,
+      recipientEmail,
       result.studentName || 'Student',
       exam.title,
       exam.examType,
@@ -354,6 +410,186 @@ router.post('/admin/mock-results/:resultId/send-email', authenticate, authorize(
     }
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to send email' });
+  }
+});
+
+// Mock Exams - Student: request retake
+router.post('/mock-exams/:examId/request-retake', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { examId } = req.params;
+    const userId = (req.user as any)?.id;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const exam = await prisma.exam.findUnique({
+      where: { id: examId },
+    });
+
+    if (!exam || exam.examType !== 'MOCK') {
+      return res.status(404).json({ success: false, message: 'Mock exam not found' });
+    }
+
+    const existingAttempt = await prisma.mockExamAttempt.findFirst({
+      where: {
+        userId,
+        examId,
+        isCompleted: true,
+      },
+    });
+
+    if (!existingAttempt) {
+      return res.status(400).json({ success: false, message: 'You have not completed this mock exam yet' });
+    }
+
+    if (existingAttempt.retakeApproved) {
+      return res.status(400).json({ success: false, message: 'Retake has already been approved for this exam' });
+    }
+
+    await prisma.mockExamAttempt.update({
+      where: { id: existingAttempt.id },
+      data: {
+        retakeRequested: true,
+        updatedAt: new Date(),
+      },
+    });
+
+    return res.json({ success: true, message: 'Retake request submitted. Awaiting admin approval.' });
+  } catch (error) {
+    console.error('Request retake error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to submit retake request' });
+  }
+});
+
+// Mock Exams - Student: get retake status
+router.get('/mock-exams/:examId/retake-status', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { examId } = req.params;
+    const userId = (req.user as any)?.id;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const attempt = await prisma.mockExamAttempt.findFirst({
+      where: {
+        userId,
+        examId,
+      },
+    });
+
+    if (!attempt) {
+      return res.json({ success: true, data: { canRetake: true, retakeRequested: false, retakeApproved: false } });
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        canRetake: attempt.isCompleted ? attempt.retakeApproved : true,
+        retakeRequested: attempt.retakeRequested,
+        retakeApproved: attempt.retakeApproved,
+      },
+    });
+  } catch (error) {
+    console.error('Get retake status error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to get retake status' });
+  }
+});
+
+// Mock Exams - Admin: approve retake
+router.post('/admin/mock-exams/:examId/approve-retake', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const { examId } = req.params;
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'userId is required' });
+    }
+
+    const attempt = await prisma.mockExamAttempt.findFirst({
+      where: {
+        userId,
+        examId,
+      },
+    });
+
+    if (!attempt) {
+      return res.status(404).json({ success: false, message: 'Mock exam attempt not found' });
+    }
+
+    if (!attempt.retakeRequested) {
+      return res.status(400).json({ success: false, message: 'Retake has not been requested for this exam' });
+    }
+
+    await prisma.mockExamAttempt.update({
+      where: { id: attempt.id },
+      data: {
+        retakeApproved: true,
+        updatedAt: new Date(),
+      },
+    });
+
+    return res.json({ success: true, message: 'Retake approved successfully' });
+  } catch (error) {
+    console.error('Approve retake error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to approve retake' });
+  }
+});
+
+// Admin: get result review data
+router.get('/admin/results/:resultId/review', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const data = await getResultReviewData(req.params.resultId);
+    if (!data) {
+      return res.status(404).json({ success: false, message: 'Result not found' });
+    }
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch review data' });
+  }
+});
+
+// Admin: recalculate CBT result after question edits
+router.post('/admin/results/:resultId/recalculate', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const data = await recalculateCbtResult(req.params.resultId);
+    res.json({ success: true, data });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message || 'Failed to recalculate result' });
+  }
+});
+
+// Admin: update exam question
+router.patch('/admin/exams/:examId/questions/:questionId', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const { examId, questionId } = req.params;
+    const { text, options, correctOption, explanation } = req.body;
+
+    if (!text && !options && correctOption === undefined && !explanation) {
+      return res.status(400).json({ success: false, message: 'No update data provided' });
+    }
+
+    const updated = await updateExamQuestion(examId, questionId, {
+      text,
+      options,
+      correctOption,
+      explanation,
+    });
+
+    res.json({ success: true, data: updated });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message || 'Failed to update question' });
+  }
+});
+
+// Student: get JAMB aggregate score
+router.get('/jamb/aggregate', authenticate, async (req: Request, res: Response) => {
+  try {
+    const data = await calculateJAMBAggregate(req.user!.userId);
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to calculate JAMB aggregate' });
   }
 });
 

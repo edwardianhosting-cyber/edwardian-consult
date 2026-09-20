@@ -74,7 +74,13 @@ export async function generateCBT(userId: string, params: {
     throw new Error(`You are not registered for ${params.examType}. Your registered exam types are: ${userExamTypes.join(', ')}`);
   }
 
-  const questionCount = params.questionCount || 20;
+  const isJAMB = normalizedRequested === 'JAMB';
+  const isEnglish = params.subject === 'English Language';
+
+  let questionCount = params.questionCount || 20;
+  if (isJAMB) {
+    questionCount = isEnglish ? 60 : 40;
+  }
 
   let selectedQuestions: any[] = [];
   let selectedGroupIds: string[] = [];
@@ -118,7 +124,7 @@ export async function generateCBT(userId: string, params: {
       examType: normalizedRequested,
       subject: params.subject,
       duration: selectedQuestions.length * 2,
-      totalMarks: selectedQuestions.length * 5,
+      totalMarks: isJAMB ? 100 : selectedQuestions.length * 5,
       questions: {
         create: selectedQuestions.map((q, index) => {
           const originalOptions = q.options as string[];
@@ -356,20 +362,43 @@ export async function getMockExamsForUser(userId: string) {
     },
   });
 
+  const mockAttempts = await prisma.mockExamAttempt.findMany({
+    where: {
+      userId,
+    },
+    select: {
+      examId: true,
+      isCompleted: true,
+      retakeRequested: true,
+      retakeApproved: true,
+    },
+  });
+
   const resultMap = new Map(
     mockResults.filter(r => r.examId !== null).map(r => [r.examId!, { score: r.score, completedAt: r.completedAt }])
   );
 
+  const attemptMap = new Map(
+    mockAttempts.map(a => [a.examId, a])
+  );
+
   return exams.map(exam => {
     const result = resultMap.get(exam.id);
+    const attempt = attemptMap.get(exam.id);
+    const isCompleted = attempt?.isCompleted || !!result;
+    const retakeApproved = attempt?.retakeApproved || false;
+
     return {
       ...exam,
       totalQuestions: (exam as any).questionsPerSubject
         ? (exam as any).questionsPerSubject * Math.max(userSubjects.length, 1)
         : exam.questions.length,
-      status: result ? 'completed' : 'available',
+      status: isCompleted ? 'completed' : 'available',
       score: result?.score,
       completedAt: result?.completedAt?.toISOString(),
+      canRetake: isCompleted ? retakeApproved : true,
+      retakeRequested: attempt?.retakeRequested || false,
+      retakeApproved,
     };
   });
 }
@@ -403,6 +432,43 @@ export async function getAllMockExamsForAdmin() {
     },
     orderBy: { createdAt: 'desc' },
   });
+}
+
+export async function getMockExamRetakeRequests(examId: string) {
+  const attempts = await prisma.mockExamAttempt.findMany({
+    where: {
+      examId,
+      retakeRequested: true,
+    },
+    select: {
+      id: true,
+      userId: true,
+      completedAt: true,
+      retakeRequested: true,
+      retakeApproved: true,
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+        },
+      },
+    } as any,
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  return attempts.map((attempt: any) => ({
+    id: attempt.id,
+    userId: attempt.userId,
+    studentName: attempt.user.fullName,
+    email: attempt.user.email,
+    retakeRequested: attempt.retakeRequested,
+    retakeApproved: attempt.retakeApproved,
+    startedAt: attempt.startedAt,
+    completedAt: attempt.completedAt,
+  }));
 }
 
 export async function getAdminCBTStats() {
@@ -526,7 +592,7 @@ export async function getAdminFilteredResults(options: {
       orderBy,
       include: {
         user: {
-          select: { fullName: true, email: true },
+          select: { fullName: true, email: true, studentEmail: true },
         },
         exam: {
           include: {
@@ -1194,7 +1260,7 @@ export async function getCBTResultByIdForAdmin(resultId: string) {
     where: { id: resultId },
     include: {
       user: {
-        select: { fullName: true, email: true },
+        select: { fullName: true, email: true, studentEmail: true },
       },
       exam: {
         include: {
@@ -1233,6 +1299,7 @@ export async function getCBTResultByIdForAdmin(resultId: string) {
       id: result.id,
       studentName: result.user?.fullName || result.user?.email || 'Unknown',
       email: result.user?.email || '',
+      studentEmail: result.user?.studentEmail || '',
       subject: result.subject,
       type: result.type,
       score: result.score,
@@ -1247,6 +1314,246 @@ export async function getCBTResultByIdForAdmin(resultId: string) {
       examId: result.examId,
     },
     corrections,
+  };
+}
+
+export async function updateExamQuestion(examId: string, questionId: string, data: {
+  text?: string;
+  options?: string[];
+  correctOption?: number;
+  explanation?: string;
+}) {
+  const examQuestion = await prisma.examQuestion.findUnique({
+    where: {
+      examId_questionId: {
+        examId,
+        questionId,
+      },
+    },
+    include: {
+      question: true,
+    },
+  });
+
+  if (!examQuestion) {
+    throw new Error('Exam question not found');
+  }
+
+  const questionUpdate: any = {};
+  if (data.text !== undefined) questionUpdate.text = data.text;
+  if (data.explanation !== undefined) questionUpdate.explanation = data.explanation;
+
+  const examQuestionUpdate: any = {};
+  if (data.options !== undefined) examQuestionUpdate.options = data.options;
+  if (data.correctOption !== undefined) examQuestionUpdate.correctOption = data.correctOption;
+
+  if (Object.keys(questionUpdate).length > 0) {
+    await prisma.question.update({
+      where: { id: questionId },
+      data: questionUpdate,
+    });
+  }
+
+  if (Object.keys(examQuestionUpdate).length > 0) {
+    await prisma.examQuestion.update({
+      where: {
+        examId_questionId: {
+          examId,
+          questionId,
+        },
+      },
+      data: examQuestionUpdate,
+    });
+  }
+
+  return prisma.examQuestion.findUnique({
+    where: {
+      examId_questionId: {
+        examId,
+        questionId,
+      },
+    },
+    include: {
+      question: true,
+    },
+  });
+}
+
+export async function recalculateCbtResult(resultId: string) {
+  const result = await prisma.cbtResult.findFirst({
+    where: { id: resultId },
+    include: {
+      user: true,
+      exam: {
+        include: {
+          questions: {
+            include: { question: true },
+            orderBy: { order: 'asc' },
+          },
+        },
+      },
+    },
+  });
+
+  if (!result || !result.exam) {
+    throw new Error('Result not found');
+  }
+
+  const userAnswers = (result.userAnswers as Record<string, { selected: number; correct: boolean }>) || {};
+  let correctAnswers = 0;
+  let wrongAnswers = 0;
+  let skippedAnswers = 0;
+  const updatedUserAnswers: Record<string, { selected: number; correct: boolean }> = {};
+
+  for (const eq of result.exam.questions) {
+    const userAnswer = userAnswers[eq.question.id];
+    const correctAnswer = eq.correctOption ?? eq.question.correctOption;
+    const isCorrect = userAnswer?.selected === correctAnswer;
+
+    if (userAnswer?.selected === undefined || userAnswer?.selected === -1) {
+      skippedAnswers++;
+      updatedUserAnswers[eq.question.id] = { selected: -1, correct: false };
+    } else if (isCorrect) {
+      correctAnswers++;
+      updatedUserAnswers[eq.question.id] = { selected: userAnswer.selected, correct: true };
+    } else {
+      wrongAnswers++;
+      updatedUserAnswers[eq.question.id] = { selected: userAnswer.selected, correct: false };
+    }
+  }
+
+  const totalQuestions = result.exam.questions.length;
+  const score = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+
+  const updatedResult = await prisma.cbtResult.update({
+    where: { id: resultId },
+    data: {
+      score,
+      correctAnswers,
+      wrongAnswers,
+      skippedAnswers,
+      totalQuestions,
+      userAnswers: updatedUserAnswers,
+    },
+  });
+
+  return {
+    result: updatedResult,
+    corrections: result.exam.questions.map((eq, index) => {
+      const answer = updatedUserAnswers[eq.question.id];
+      return {
+        questionNumber: index + 1,
+        question: eq.question.text,
+        options: (eq.options as string[]) || (eq.question.options as string[]),
+        correctOption: eq.correctOption ?? eq.question.correctOption,
+        userAnswer: answer?.selected ?? -1,
+        isCorrect: answer?.correct ?? false,
+        explanation: eq.question.explanation,
+        topic: eq.question.topic,
+        subject: eq.question.subject,
+        groupType: eq.questionGroupType,
+        groupId: eq.questionGroupId,
+      };
+    }),
+  };
+}
+
+export async function getResultReviewData(resultId: string) {
+  const result = await prisma.cbtResult.findFirst({
+    where: { id: resultId },
+    include: {
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          studentEmail: true,
+        },
+      },
+      exam: {
+        include: {
+          questions: {
+            include: { question: true },
+            orderBy: { order: 'asc' },
+          },
+        },
+      },
+    },
+  });
+
+  if (!result || !result.exam) {
+    return null;
+  }
+
+  const userAnswers = (result.userAnswers as Record<string, { selected: number; correct: boolean }>) || {};
+
+  return {
+    result: {
+      id: result.id,
+      studentName: result.user?.fullName || result.user?.email || 'Unknown',
+      email: result.user?.email || '',
+      studentEmail: result.user?.studentEmail || '',
+      subject: result.subject,
+      type: result.type,
+      score: result.score,
+      totalQuestions: result.totalQuestions,
+      correctAnswers: result.correctAnswers,
+      wrongAnswers: result.wrongAnswers,
+      skippedAnswers: result.skippedAnswers,
+      durationUsed: result.durationUsed,
+      completedAt: result.completedAt,
+      examTitle: result.exam?.title || result.subject,
+      examId: result.examId,
+    },
+    questions: result.exam.questions.map((eq, index) => {
+      const answer = userAnswers[eq.question.id];
+      return {
+        questionNumber: index + 1,
+        questionId: eq.questionId,
+        text: eq.question.text,
+        options: (eq.options as string[]) || (eq.question.options as string[]),
+        correctOption: eq.correctOption ?? eq.question.correctOption,
+        userAnswer: answer?.selected ?? -1,
+        isCorrect: answer?.correct ?? false,
+        explanation: eq.question.explanation,
+        topic: eq.question.topic,
+        subject: eq.question.subject,
+        groupType: eq.questionGroupType,
+        groupId: eq.questionGroupId,
+      };
+    }),
+  };
+}
+
+export async function calculateJAMBAggregate(userId: string) {
+  const results = await prisma.cbtResult.findMany({
+    where: {
+      userId,
+      type: 'JAMB',
+    },
+    include: {
+      exam: {
+        select: {
+          subject: true,
+          examType: true,
+        },
+      },
+    },
+  });
+
+  const subjectScores: Record<string, number> = {};
+  for (const result of results) {
+    if (result.exam) {
+      subjectScores[result.exam.subject] = result.score;
+    }
+  }
+
+  const aggregate = Object.values(subjectScores).reduce((sum, score) => sum + score, 0);
+
+  return {
+    subjectScores,
+    aggregate: Math.round(aggregate),
+    subjectCount: Object.keys(subjectScores).length,
   };
 }
 

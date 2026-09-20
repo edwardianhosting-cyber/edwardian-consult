@@ -1,9 +1,9 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, FileText, Clock, Trash2, Edit, Eye, BookOpen, Upload } from 'lucide-react';
+import { Plus, FileText, Clock, Trash2, Edit, Eye, BookOpen, Upload, UserCheck } from 'lucide-react';
 import api from '@/lib/api';
-import { showError } from '@/lib/toast';
+import { showError, showSuccess } from '@/lib/toast';
 
 interface MockExam {
   id: string;
@@ -19,6 +19,17 @@ interface MockExam {
   questions?: any[];
 }
 
+interface RetakeRequest {
+  id: string;
+  userId: string;
+  studentName: string;
+  email: string;
+  retakeRequested: boolean;
+  retakeApproved: boolean;
+  startedAt: string;
+  completedAt?: string;
+}
+
 export default function AdminMockExamPage() {
   const [exams, setExams] = useState<MockExam[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +37,10 @@ export default function AdminMockExamPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingExam, setEditingExam] = useState<MockExam | null>(null);
   const [viewingExam, setViewingExam] = useState<MockExam | null>(null);
+  const [retakeRequests, setRetakeRequests] = useState<RetakeRequest[]>([]);
+  const [showRetakeModal, setShowRetakeModal] = useState(false);
+  const [retakeLoading, setRetakeLoading] = useState(false);
+  const [retakeExamId, setRetakeExamId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     subject: '',
@@ -109,6 +124,32 @@ export default function AdminMockExamPage() {
     }
   }
 
+  async function fetchRetakeRequests(examId: string) {
+    try {
+      setRetakeLoading(true);
+      const res = await api.adminGetMockRetakeRequests(examId);
+      setRetakeRequests(res.data || []);
+    } catch (err: any) {
+      showError(err.message || 'Failed to fetch retake requests');
+    } finally {
+      setRetakeLoading(false);
+    }
+  }
+
+  async function handleApproveRetake(examId: string, userId: string) {
+    try {
+      setRetakeLoading(true);
+      await api.approveMockRetake(examId, userId);
+      showSuccess('Retake approved successfully');
+      await fetchRetakeRequests(examId);
+      fetchExams();
+    } catch (err: any) {
+      showError(err.message || 'Failed to approve retake');
+    } finally {
+      setRetakeLoading(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -181,37 +222,48 @@ export default function AdminMockExamPage() {
                  <span>{exam.totalQuestions || 0} questions</span>
                  <span>100 marks</span>
                </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setViewingExam(exam)}
-                  className="flex-1 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-1 text-sm"
-                >
-                  <Eye className="w-4 h-4" />
-                  View
-                </button>
-                <button
-                  onClick={() => openEditModal(exam)}
-                  className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleDelete(exam.id)}
-                  className="p-2 border border-gray-200 rounded-lg hover:bg-red-50 text-red-600"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handlePublish(exam.id, exam.isPublished)}
-                  className={`p-2 border rounded-lg ${
-                    exam.isPublished
-                      ? 'border-yellow-200 text-yellow-600 hover:bg-yellow-50'
-                      : 'border-green-200 text-green-600 hover:bg-green-50'
-                  }`}
-                >
-                  {exam.isPublished ? 'Unpublish' : 'Publish'}
-                </button>
-              </div>
+               <div className="flex items-center gap-2">
+                 <button
+                   onClick={() => setViewingExam(exam)}
+                   className="flex-1 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-1 text-sm"
+                 >
+                   <Eye className="w-4 h-4" />
+                   View
+                 </button>
+                 <button
+                   onClick={() => openEditModal(exam)}
+                   className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50"
+                 >
+                   <Edit className="w-4 h-4" />
+                 </button>
+                 <button
+                   onClick={() => handleDelete(exam.id)}
+                   className="p-2 border border-gray-200 rounded-lg hover:bg-red-50 text-red-600"
+                 >
+                   <Trash2 className="w-4 h-4" />
+                 </button>
+                 <button
+                   onClick={() => handlePublish(exam.id, exam.isPublished)}
+                   className={`p-2 border rounded-lg ${
+                     exam.isPublished
+                       ? 'border-yellow-200 text-yellow-600 hover:bg-yellow-50'
+                       : 'border-green-200 text-green-600 hover:bg-green-50'
+                   }`}
+                 >
+                   {exam.isPublished ? 'Unpublish' : 'Publish'}
+                 </button>
+                 <button
+                   onClick={() => {
+                     setRetakeExamId(exam.id);
+                     fetchRetakeRequests(exam.id);
+                     setShowRetakeModal(true);
+                   }}
+                   className="p-2 border border-gray-200 rounded-lg hover:bg-blue-50 text-blue-600"
+                   title="Retake Requests"
+                 >
+                   <UserCheck className="w-4 h-4" />
+                 </button>
+               </div>
             </div>
           ))}
         </div>
@@ -295,14 +347,14 @@ export default function AdminMockExamPage() {
                 ✕
               </button>
             </div>
-              <div className="space-y-2">
-                <p className="text-sm text-gray-600">Subject: {viewingExam.subject}</p>
-                <p className="text-sm text-gray-600">Duration: {viewingExam.duration} minutes</p>
-                <p className="text-sm text-gray-600">Questions Per Subject: {viewingExam.questionsPerSubject || 0}</p>
-                <p className="text-sm text-gray-600">Total Marks: {viewingExam.totalMarks || 100}</p>
-                <p className="text-sm text-gray-600">Questions: {viewingExam.totalQuestions || 0}</p>
-                <p className="text-sm text-gray-600">Status: {viewingExam.isPublished ? 'Published' : 'Draft'}</p>
-              </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600">Subject: {viewingExam.subject}</p>
+                  <p className="text-sm text-gray-600">Duration: {viewingExam.duration} minutes</p>
+                  <p className="text-sm text-gray-600">Questions Per Subject: {viewingExam.questionsPerSubject || 0}</p>
+                  <p className="text-sm text-gray-600">Total Marks: {viewingExam.totalMarks || 100}</p>
+                  <p className="text-sm text-gray-600">Questions: {viewingExam.totalQuestions || 0}</p>
+                  <p className="text-sm text-gray-600">Status: {viewingExam.isPublished ? 'Published' : 'Draft'}</p>
+                </div>
             <div className="mt-6">
               <h3 className="font-semibold text-gray-900 mb-3">Questions</h3>
               {viewingExam.questions && viewingExam.questions.length > 0 ? (
@@ -324,6 +376,54 @@ export default function AdminMockExamPage() {
                 <p className="text-gray-500 text-sm">No questions added yet. Teachers can add questions to this exam.</p>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Retake Requests Modal */}
+      {showRetakeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full p-6 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Retake Requests</h2>
+              <button onClick={() => setShowRetakeModal(false)} className="text-gray-400 hover:text-gray-600">
+                ✕
+              </button>
+            </div>
+            {retakeLoading ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+              </div>
+            ) : retakeRequests.length === 0 ? (
+              <p className="text-gray-500 text-sm">No retake requests yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {retakeRequests.map((request) => (
+                  <div key={request.id} className="p-4 bg-gray-50 rounded-lg flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900">{request.studentName}</p>
+                      <p className="text-sm text-gray-500">{request.email}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Requested: {new Date(request.startedAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {request.retakeApproved ? (
+                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700">Approved</span>
+                      ) : (
+                        <button
+                          onClick={() => retakeExamId && handleApproveRetake(retakeExamId, request.userId)}
+                          disabled={retakeLoading}
+                          className="px-3 py-1.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm disabled:opacity-50"
+                        >
+                          Approve
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

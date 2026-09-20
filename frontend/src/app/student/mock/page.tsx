@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { FileText, Clock, Play, CheckCircle, XCircle } from 'lucide-react';
 import api from '@/lib/api';
-import { showError } from '@/lib/toast';
+import { showError, showSuccess } from '@/lib/toast';
 
 interface MockExam {
   id: string;
@@ -15,6 +15,9 @@ interface MockExam {
   status: 'available' | 'in_progress' | 'completed';
   score?: number;
   completedAt?: string;
+  canRetake?: boolean;
+  retakeRequested?: boolean;
+  retakeApproved?: boolean;
 }
 
 export default function MockPage() {
@@ -42,9 +45,30 @@ export default function MockPage() {
   async function startExam(examId: string) {
     try {
       setLoading(true);
+      const statusRes = await api.getMockRetakeStatus(examId);
+      const status = (statusRes as any).data || statusRes;
+
+      if (status && !status.canRetake) {
+        showError('You have already taken this mock exam. Retake requires admin approval.');
+        return;
+      }
+
       window.location.href = `/student/mock-exam/${examId}`;
     } catch (err: any) {
       showError(err.message || 'Failed to start exam');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function requestRetake(examId: string) {
+    try {
+      setLoading(true);
+      await api.requestMockRetake(examId);
+      showSuccess('Retake request submitted. Awaiting admin approval.');
+      await fetchExams();
+    } catch (err: any) {
+      showError(err.message || 'Failed to submit retake request');
     } finally {
       setLoading(false);
     }
@@ -150,6 +174,30 @@ export default function MockPage() {
                   <Play className="w-4 h-4" />
                   Start Exam
                 </button>
+              )}
+              {exam.status === 'completed' && exam.canRetake && (
+                <button
+                  onClick={() => startExam(exam.id)}
+                  className="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
+                >
+                  <Play className="w-4 h-4" />
+                  Retake Exam
+                </button>
+              )}
+              {exam.status === 'completed' && !exam.canRetake && !exam.retakeRequested && (
+                <button
+                  onClick={() => requestRetake(exam.id)}
+                  disabled={loading}
+                  className="w-full py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  Request Retake
+                </button>
+              )}
+              {exam.status === 'completed' && !exam.canRetake && exam.retakeRequested && (
+                <div className="w-full py-2 bg-gray-100 text-gray-700 rounded-lg flex items-center justify-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  Retake Pending Approval
+                </div>
               )}
             </div>
           ))}

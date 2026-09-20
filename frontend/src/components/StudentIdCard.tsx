@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useImperativeHandle, useState, forwardRef } from 'react';
 import { Download, RefreshCw, Shield, Printer } from 'lucide-react';
 import { API_BASE } from '@/lib/api';
 
@@ -46,14 +46,23 @@ interface IdCardData {
   };
 }
 
+export interface StudentIdCardRef {
+  refreshIdCard: () => Promise<void>;
+}
+
 interface StudentIdCardProps {
   data?: IdCardData | null;
 }
 
-export default function StudentIdCard({ data: propData }: StudentIdCardProps) {
+const StudentIdCard = forwardRef<StudentIdCardRef, StudentIdCardProps>(({ data: propData }, ref) => {
   const [idCard, setIdCard] = useState<IdCardData | null>(propData || null);
   const [loading, setLoading] = useState(!propData);
   const [showBack, setShowBack] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    refreshIdCard,
+  }));
 
   useEffect(() => {
     if (propData) {
@@ -80,6 +89,12 @@ export default function StudentIdCard({ data: propData }: StudentIdCardProps) {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function refreshIdCard() {
+    setRefreshing(true);
+    await fetchIdCard();
+    setRefreshing(false);
   }
 
   function handleDownload() {
@@ -119,6 +134,14 @@ export default function StudentIdCard({ data: propData }: StudentIdCardProps) {
             className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
           >
             {showBack ? 'Show Front' : 'Show Back'}
+          </button>
+          <button
+            onClick={refreshIdCard}
+            disabled={refreshing}
+            className="px-4 py-2 text-sm bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh ID Card
           </button>
           <button
             onClick={handleDownload}
@@ -347,4 +370,6 @@ export default function StudentIdCard({ data: propData }: StudentIdCardProps) {
       `}</style>
     </div>
   );
-}
+});
+
+export default StudentIdCard;

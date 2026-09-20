@@ -76,6 +76,7 @@ model User {
   certificates      Certificate[]
   assignmentAttempts AssignmentAttempt[]
   studySchedules    StudySchedule[]
+  mockExamAttempts  MockExamAttempt[]
 
   @@index([email])
   @@index([portalId])
@@ -194,6 +195,23 @@ model CbtResult {
   @@index([userId])
   @@index([examId])
   @@index([type])
+}
+
+model MockExamAttempt {
+  id              String    @id @default(uuid())
+  userId          String
+  examId          String
+  isCompleted     Boolean   @default(false)
+  retakeRequested Boolean   @default(false)
+  retakeApproved  Boolean   @default(false)
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([examId])
+  @@index([retakeApproved])
 }
 
 model ParentFeedback {

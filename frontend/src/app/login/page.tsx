@@ -54,15 +54,15 @@ export default function LoginPage() {
       console.log('[login] login success', { token: !!token, user });
       login(token, user);
 
-      if (user.role === 'ADMIN') {
-        router.push('/admin/dashboard');
-      } else if (user.role === 'TEACHER' || user.role === 'TUTOR') {
-        router.push('/teacher/dashboard');
-      } else if (user.role === 'PARENT_VIEW') {
-        router.push('/parent/dashboard');
-      } else {
-        router.push('/student/dashboard');
+      try {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+      } catch (err) {
+        console.warn('Fullscreen request failed:', err);
       }
+
+      router.push('/dashboard');
     } catch (err: any) {
       console.error('[login] submit error', err);
       showError(err.response?.data?.message || 'Login failed. Please check your credentials and try again.');

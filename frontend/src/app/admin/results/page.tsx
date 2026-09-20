@@ -1,7 +1,8 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
-import { ClipboardList, BookOpen, BarChart3, CheckCircle, XCircle, Clock, Eye, EyeOff, Trash2, Search, Printer, ChevronRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ClipboardList, BookOpen, BarChart3, CheckCircle, XCircle, Clock, Eye, EyeOff, Trash2, Search, Printer, ChevronRight, FileText } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface MockExam {
@@ -68,6 +69,7 @@ export default function AdminResultsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
   const [orgName, setOrgName] = useState('Edwardian Educational Consult');
+  const router = useRouter();
 
   const examTypes = ['ALL', 'JAMB', 'WAEC', 'NECO', 'POST-UTME', 'MOCK', 'PRACTICE'];
 
@@ -459,42 +461,52 @@ export default function AdminResultsPage() {
                   <>
                     <div className="overflow-x-auto">
                       <table className="w-full">
-                        <thead>
-                          <tr className="bg-gray-50 border-b">
-                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Student</th>
-                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Exam</th>
-                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Subject</th>
-                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Type</th>
-                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Score</th>
-                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Date</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredResults.map((result) => (
-                            <tr key={result.id} className="border-b last:border-0 hover:bg-gray-50">
-                              <td className="px-4 py-3 text-sm text-gray-900">
-                                {result.user?.fullName || result.user?.email || 'Unknown'}
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-600">{result.exam?.title || '-'}</td>
-                              <td className="px-4 py-3 text-sm text-gray-600">{result.subject}</td>
-                              <td className="px-4 py-3 text-sm text-gray-600">
-                                <span className="capitalize">{result.type.toLowerCase()}</span>
-                              </td>
-                              <td className="px-4 py-3">
-                                <span className={`text-sm font-medium px-2 py-1 rounded ${
-                                  result.score >= 70 ? 'bg-green-100 text-green-700' :
-                                  result.score >= 50 ? 'bg-yellow-100 text-yellow-700' :
-                                  'bg-red-100 text-red-700'
-                                }`}>
-                                  {Math.round(result.score)}%
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-500">
-                                {new Date(result.completedAt).toLocaleDateString()}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
+                         <thead>
+                           <tr className="bg-gray-50 border-b">
+                             <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Student</th>
+                             <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Exam</th>
+                             <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Subject</th>
+                             <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Type</th>
+                             <th className="text-center px-4 py-3 text-sm font-semibold text-gray-600">Score</th>
+                             <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Date</th>
+                             <th className="text-right px-4 py-3 text-sm font-semibold text-gray-600">Actions</th>
+                           </tr>
+                         </thead>
+                         <tbody>
+                           {filteredResults.map((result) => (
+                             <tr key={result.id} className="border-b last:border-0 hover:bg-gray-50">
+                               <td className="px-4 py-3 text-sm text-gray-900">
+                                 {result.user?.fullName || result.user?.email || 'Unknown'}
+                               </td>
+                               <td className="px-4 py-3 text-sm text-gray-600">{result.exam?.title || '-'}</td>
+                               <td className="px-4 py-3 text-sm text-gray-600">{result.subject}</td>
+                               <td className="px-4 py-3 text-sm text-gray-600">
+                                 <span className="capitalize">{result.type.toLowerCase()}</span>
+                               </td>
+                               <td className="px-4 py-3 text-center">
+                                 <span className={`text-sm font-medium px-2 py-1 rounded ${
+                                   result.score >= 70 ? 'bg-green-100 text-green-700' :
+                                   result.score >= 50 ? 'bg-yellow-100 text-yellow-700' :
+                                   'bg-red-100 text-red-700'
+                                 }`}>
+                                   {Math.round(result.score)}%
+                                 </span>
+                               </td>
+                               <td className="px-4 py-3 text-sm text-gray-500">
+                                 {new Date(result.completedAt).toLocaleDateString()}
+                               </td>
+                               <td className="px-4 py-3 text-right">
+                                 <button
+                                   onClick={() => router.push(`/admin/results/review/${result.id}`)}
+                                   className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded"
+                                   title="Review Attempt"
+                                 >
+                                   <FileText className="w-4 h-4" />
+                                 </button>
+                               </td>
+                             </tr>
+                           ))}
+                         </tbody>
                       </table>
                     </div>
                     {totalPages > 1 && (

@@ -5,6 +5,7 @@ import { User, Mail, Phone, MapPin, School, Calendar, Camera, Loader2, Lock, Gra
 import api from '@/lib/api';
 import { JAMB_SUBJECTS, WAEC_NECO_SUBJECTS } from '@/lib/subjects';
 import { useAuth } from '@/lib/auth';
+import StudentIdCard, { StudentIdCardRef } from '@/components/StudentIdCard';
 
 interface ProfileData {
   id: string;
@@ -41,6 +42,7 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const idCardRef = useRef<StudentIdCardRef>(null);
 
   useEffect(() => {
     fetchProfile();
@@ -108,6 +110,8 @@ export default function ProfilePage() {
           avatar: newAvatar,
         });
       }
+
+      idCardRef.current?.refreshIdCard();
     } catch (err: any) {
       setError(err.message || 'Failed to upload avatar');
     } finally {

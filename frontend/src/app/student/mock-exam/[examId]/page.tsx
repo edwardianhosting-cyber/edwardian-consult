@@ -56,16 +56,120 @@ export default function MockExamPage() {
   const [result, setResult] = useState<any>(null);
   const [examStarted, setExamStarted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hasSubmitted = useRef(false);
   const router = useRouter();
+
+  const getDraftKey = () => `mock-exam-draft-${examId}`;
+
+  function saveDraft() {
+    if (!cbtData || phase !== 'exam' || hasSubmitted.current) return;
+    try {
+      const draft = {
+        answers,
+        timeLeft,
+        currentQuestion,
+        selectedSubject,
+        phase: 'exam',
+        examStarted: true,
+        cbtData,
+        savedAt: Date.now(),
+      };
+      localStorage.setItem(getDraftKey(), JSON.stringify(draft));
+    } catch (err) {
+      console.error('Failed to save exam draft:', err);
+    }
+  }
+
+  function clearDraft() {
+    try {
+      localStorage.removeItem(getDraftKey());
+    } catch (err) {
+      console.error('Failed to clear exam draft:', err);
+    }
+  }
+
+  function loadDraft() {
+    try {
+      const raw = localStorage.getItem(getDraftKey());
+      if (!raw) return null;
+      return JSON.parse(raw) as any;
+    } catch (err) {
+      console.error('Failed to load exam draft:', err);
+      return null;
+    }
+  }
+
+  async function resumeFromDraft() {
+    const draft = loadDraft();
+    if (!draft || !draft.cbtData) {
+      showError('No saved progress found');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const statusRes = await api.getMockRetakeStatus(examId);
+      const status = (statusRes as any).data || statusRes;
+      if (status && !status.canRetake) {
+        showError('You have already taken this mock exam. Retake requires admin approval.');
+        clearDraft();
+        return;
+      }
+
+      setAnswers(draft.answers || {});
+      setTimeLeft(typeof draft.timeLeft === 'number' ? draft.timeLeft : 3600);
+      setCurrentQuestion(typeof draft.currentQuestion === 'number' ? draft.currentQuestion : 0);
+      setSelectedSubject(draft.selectedSubject || null);
+      setCbtData(draft.cbtData as MockExamData);
+      setExamStarted(true);
+      setPhase('exam');
+      hasSubmitted.current = false;
+      setShowResumePrompt(false);
+    } catch (err: any) {
+      showError(err.message || 'Failed to resume exam');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (examId) {
       loadExam(examId);
     }
   }, [examId]);
+
+  useEffect(() => {
+    const draft = loadDraft();
+    if (draft && draft.cbtData && draft.phase === 'exam') {
+      setShowResumePrompt(true);
+    }
+  }, [examId]);
+
+  useEffect(() => {
+    if (phase !== 'exam' || !cbtData || showSubmitModal) return;
+
+    const interval = setInterval(() => {
+      saveDraft();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [phase, cbtData, showSubmitModal]);
+
+  useEffect(() => {
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      if (phase === 'exam' && !hasSubmitted.current) {
+        saveDraft();
+        event.preventDefault();
+        event.returnValue = 'Your exam progress is saved. You can resume later.';
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [phase, answers, timeLeft, currentQuestion, selectedSubject, cbtData]);
 
   useEffect(() => {
     return () => {
@@ -150,17 +254,25 @@ export default function MockExamPage() {
     if (examStarted) return;
     setLoading(true);
     try {
-      const res = await api.getExamById(examId);
-      const examData = res.data as MockExamData;
+      const [examRes, statusRes] = await Promise.all([
+        api.getExamById(examId),
+        api.getMockRetakeStatus(examId),
+      ]);
+      const examData = (examRes as any).data || examRes;
       setCbtData(examData);
       setTimeLeft(examData.duration * 60 || 3600);
 
       const subjectSet = new Set<string>();
-      examData.questions.forEach(q => subjectSet.add(q.subject));
+      examData.questions.forEach((q: any) => subjectSet.add(q.subject));
       const subjectList = Array.from(subjectSet);
       setSubjects(subjectList);
       if (subjectList.length > 0) {
         setSelectedSubject(subjectList[0]);
+      }
+
+      const retakeStatus = (statusRes as any).data || statusRes;
+      if (retakeStatus && !retakeStatus.canRetake) {
+        showError('You have already taken this mock exam. Retake requires admin approval.');
       }
 
       try {
@@ -224,6 +336,14 @@ export default function MockExamPage() {
   async function beginExam() {
     setLoading(true);
     try {
+      const statusRes = await api.getMockRetakeStatus(examId);
+      const status = (statusRes as any).data || statusRes;
+
+      if (status && !status.canRetake) {
+        showError('You have already taken this mock exam. Retake requires admin approval.');
+        return;
+      }
+
       const res = await api.startMockExamAttempt(examId);
       const attemptData = (res as any).data || res;
       setCbtData(attemptData as MockExamData);
@@ -262,11 +382,12 @@ export default function MockExamPage() {
 
     setLoading(true);
     try {
-      const res = await api.submitCBT(cbtData.examId, answers, 'MOCK');
+      const res = await api.submitCBT(cbtData.examId, answers, 'MOCK', examId);
       const data = (res as any)?.data || res || {};
       setResult(data);
       setShowSubmitModal(false);
       setPhase('result');
+      clearDraft();
       showSuccess('Mock exam submitted successfully');
     } catch (error) {
       console.error('Failed to submit exam:', error);
@@ -301,6 +422,7 @@ export default function MockExamPage() {
     setSubjectQuestions([]);
     setSubmitError(null);
     hasSubmitted.current = false;
+    clearDraft();
   }
 
   // Calculator functions
@@ -757,6 +879,42 @@ export default function MockExamPage() {
               className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
             >
               Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showResumePrompt) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-8 h-8 text-blue-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Resume Exam?</h3>
+            <p className="text-gray-600">
+              We found an unfinished exam session. Would you like to resume from where you left off?
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                clearDraft();
+                setShowResumePrompt(false);
+              }}
+              className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-medium"
+            >
+              Start Over
+            </button>
+            <button
+              onClick={resumeFromDraft}
+              disabled={loading}
+              className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 font-medium"
+            >
+              {loading ? 'Loading...' : 'Resume Exam'}
             </button>
           </div>
         </div>

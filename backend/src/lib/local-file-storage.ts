@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
-const BASE_URL = (process.env.BACKEND_URL || 'http://10.76.232.172:5000').replace(/\/$/, '');
+const BASE_URL = (process.env.BACKEND_URL || 'http://localhost:5000').replace(/\/$/, '');
 
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg']);
 const ALLOWED_VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime']);

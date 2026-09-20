@@ -1,17 +1,12 @@
 import prisma from './prisma';
 
-// ─── Config ──────────────────────────────────────────────────────────────────
-// All emails are sent via the PHP mailer hosted on Whogohost.
-// The PHP script handles SMTP internally — no SMTP ports needed from Render.
-
-const PHP_MAILER_URL = process.env.PHP_MAILER_URL;
-const PHP_MAILER_KEY = process.env.PHP_MAILER_KEY;
-const FRONTEND_URL   = process.env.FRONTEND_URL;
-const FROM_EMAIL     = process.env.FROM_EMAIL;
-
-if (!PHP_MAILER_URL || !PHP_MAILER_KEY || !FROM_EMAIL) {
-  throw new Error('PHP_MAILER_URL, PHP_MAILER_KEY, and FROM_EMAIL are required');
-}
+const SMTP_HOST = process.env.SMTP_HOST || 'mail.edwardianeducationalconsult.com.ng';
+const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587', 10);
+const SMTP_USER = process.env.SMTP_USER || 'registrar@edwardianeducationalconsult.com.ng';
+const SMTP_PASS = process.env.SMTP_PASS || '';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'registrar@edwardianeducationalconsult.com.ng';
+const FROM_NAME = process.env.MAILER_FROM_NAME || 'Edwardian Educational Consult';
+const FRONTEND_URL = process.env.FRONTEND_URL;
 
 export type EmailPurpose = 'REGISTRAR' | 'SECURITY' | 'NOTIFICATION';
 
@@ -20,50 +15,9 @@ export interface EmailRecipient {
   name?: string;
 }
 
-// ─── Core send function ───────────────────────────────────────────────────────
-
-export async function sendEmail(params: {
-  to: string;
-  subject: string;
-  html: string;
-  name?: string;
-  purpose?: EmailPurpose;
-}): Promise<boolean> {
-  const { to, subject, html, purpose = 'NOTIFICATION' } = params;
-
-  if (!PHP_MAILER_URL) {
-    console.warn('[email] PHP_MAILER_URL not set — skipping email send');
-    return false;
-  }
-
-  try {
-    const response = await fetch(PHP_MAILER_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${PHP_MAILER_KEY}`,
-      },
-      body: JSON.stringify({ to, subject, html }),
-    });
-
-    const data = await response.json() as { success: boolean; message?: string };
-
-    if (!data.success) {
-      throw new Error(data.message || 'PHP mailer returned failure');
-    }
-
-    console.log(`[email] Sent "${subject}" to ${to}`);
-    await logEmail(to, subject, purpose, 'SENT');
-    return true;
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[email] Failed to send to ${to}:`, msg);
-    await logEmail(to, subject, purpose, 'FAILED', msg);
-    return false;
-  }
+function validateEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
-
-// ─── Email log ────────────────────────────────────────────────────────────────
 
 async function logEmail(
   recipient: string,
@@ -85,6 +39,58 @@ async function logEmail(
     });
   } catch (e) {
     console.error('[email] Failed to log email:', e);
+  }
+}
+
+export async function sendEmail(params: {
+  to: string;
+  subject: string;
+  html: string;
+  name?: string;
+  purpose?: EmailPurpose;
+}): Promise<boolean> {
+  const { to, subject, html, purpose = 'NOTIFICATION' } = params;
+
+  if (!SMTP_PASS) {
+    console.warn('[email] SMTP_PASS not set — skipping email send');
+    await logEmail(to, subject, purpose || 'NOTIFICATION', 'FAILED', 'SMTP_PASS not configured');
+    return false;
+  }
+
+  if (!validateEmail(to)) {
+    console.warn(`[email] Invalid email address: ${to}`);
+    await logEmail(to, subject, purpose || 'NOTIFICATION', 'FAILED', 'Invalid email address');
+    return false;
+  }
+
+  try {
+    const nodemailer = await import('nodemailer');
+    const transporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_PORT === 465,
+      auth: {
+        user: SMTP_USER,
+        pass: SMTP_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      to,
+      subject,
+      html,
+      text: html.replace(/<[^>]*>/g, '').trim(),
+    });
+
+    console.log(`[email] Sent "${subject}" to ${to}`);
+    await logEmail(to, subject, purpose || 'NOTIFICATION', 'SENT');
+    return true;
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[email] Failed to send to ${to}:`, msg);
+    await logEmail(to, subject, purpose || 'NOTIFICATION', 'FAILED', msg);
+    return false;
   }
 }
 
@@ -446,15 +452,6 @@ export async function sendMockResultEmail(
   return success;
 }
 
-function escapeHtml(value: string): string {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
 // ─── Payment receipt email ────────────────────────────────────────────────────
 
 export async function sendPaymentReceiptEmail(
@@ -477,15 +474,9 @@ export async function sendPaymentReceiptEmail(
         <div style="background:#f3f4f6;padding:20px;border-radius:8px;">
           <p><strong>Amount:</strong> ₦${amount.toLocaleString()}</p>
           <p><strong>Reference:</strong> ${reference}</p>
-          <p><strong>Description:</strong> ${description || 'Payment'}</p>
-          <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+          ${description ? `<p><strong>Description:</strong> ${description}</p>` : ''}
         </div>
-        <div style="text-align:center;margin:20px 0;">
-          <a href="${FRONTEND_URL}/student/wallet"
-             style="display:inline-block;background:#6B003B;color:white;padding:12px 30px;text-decoration:none;border-radius:8px;">
-            View Receipt
-          </a>
-        </div>
+        <p style="margin-top:20px;">Thank you for your payment.</p>
       </div>
     </div>
   `;
@@ -495,37 +486,93 @@ export async function sendPaymentReceiptEmail(
   return success;
 }
 
+// ─── Admission status email ───────────────────────────────────────────────────
+
+export async function sendAdmissionStatusEmail(
+  email: string,
+  name: string,
+  applicationId: string,
+  status: string,
+  programme?: string
+): Promise<boolean> {
+  const subject = `Admission Application ${status}`;
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+      <div style="background:#6B003B;padding:20px;text-align:center;">
+        <h1 style="color:white;margin:0;">Admission Update</h1>
+      </div>
+      <div style="padding:30px;background:#ffffff;">
+        <h2>Hello ${name},</h2>
+        <p>Your admission application <strong>${applicationId}</strong> status has been updated to: <strong>${status}</strong></p>
+        ${programme ? `<p><strong>Programme:</strong> ${programme}</p>` : ''}
+        <p>Please log in to your portal for more details.</p>
+        <div style="text-align:center;margin:20px 0;">
+          <a href="${FRONTEND_URL}/login"
+             style="display:inline-block;background:#6B003B;color:white;padding:12px 30px;text-decoration:none;border-radius:8px;">
+            Login to Portal
+          </a>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const success = await sendEmail({ to: email, name, subject, html, purpose: 'NOTIFICATION' });
+  await logEmail(email, subject, 'ADMISSION_STATUS', success ? 'SENT' : 'FAILED');
+  return success;
+}
+
+// ─── Certificate email ────────────────────────────────────────────────────────
+
+export async function sendCertificateEmail(
+  email: string,
+  name: string,
+  certificateId: string,
+  certificateUrl: string
+): Promise<boolean> {
+  const subject = 'Your Certificate is Ready';
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+      <div style="background:#6B003B;padding:20px;text-align:center;">
+        <h1 style="color:white;margin:0;">Certificate Ready</h1>
+      </div>
+      <div style="padding:30px;background:#ffffff;">
+        <h2>Hello ${name},</h2>
+        <p>Your certificate <strong>${certificateId}</strong> is now ready.</p>
+        <div style="text-align:center;margin:20px 0;">
+          <a href="${certificateUrl}"
+             style="display:inline-block;background:#6B003B;color:white;padding:12px 30px;text-decoration:none;border-radius:8px;">
+            Download Certificate
+          </a>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const success = await sendEmail({ to: email, name, subject, html, purpose: 'NOTIFICATION' });
+  await logEmail(email, subject, 'CERTIFICATE', success ? 'SENT' : 'FAILED');
+  return success;
+}
+
 // ─── Notification email ───────────────────────────────────────────────────────
 
 export async function sendNotificationEmail(
   email: string,
   name: string,
   title: string,
-  message: string,
-  actionUrl?: string,
-  actionText?: string
+  message: string
 ): Promise<boolean> {
   const subject = title;
 
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
       <div style="background:#6B003B;padding:20px;text-align:center;">
-        <h1 style="color:white;margin:0;">Edwardian Educational Consult</h1>
+        <h1 style="color:white;margin:0;">${escapeHtml(title)}</h1>
       </div>
       <div style="padding:30px;background:#ffffff;">
-        <h2>Hello ${name},</h2>
-        <p style="font-size:16px;color:#333;">${message}</p>
-        ${actionUrl ? `
-        <div style="text-align:center;margin:20px 0;">
-          <a href="${actionUrl}"
-             style="display:inline-block;background:#6B003B;color:white;padding:12px 30px;text-decoration:none;border-radius:8px;">
-            ${actionText || 'View Details'}
-          </a>
-        </div>
-        ` : ''}
-      </div>
-      <div style="background:#f8f9fa;padding:20px;text-align:center;border-top:1px solid #eee;">
-        <p style="color:#999;font-size:12px;margin:0;">&copy; ${new Date().getFullYear()} Edwardian Educational Consult. All rights reserved.</p>
+        <h2 style="color:#333;">Hello ${name},</h2>
+        <p>${escapeHtml(message)}</p>
       </div>
     </div>
   `;
@@ -535,36 +582,42 @@ export async function sendNotificationEmail(
   return success;
 }
 
-// ─── Broadcast email ──────────────────────────────────────────────────────────
-
 export async function sendBroadcastEmail(
-  recipients: EmailRecipient[],
+  recipients: Array<{ email: string; name?: string }>,
   subject: string,
   html: string
 ): Promise<boolean> {
-  let success = true;
+  let allSent = true;
+
   for (const recipient of recipients) {
-    const result = await sendEmail({
+    const success = await sendEmail({
       to: recipient.email,
-      name: recipient.name,
       subject,
       html,
+      name: recipient.name,
       purpose: 'NOTIFICATION',
     });
-    if (!result) success = false;
+
+    if (!success) {
+      allSent = false;
+    }
   }
-  return success;
+
+  return allSent;
 }
 
-// ─── Template processor ───────────────────────────────────────────────────────
+export function processEmailTemplate(template: string, data: Record<string, any>): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
+    return data[key] !== undefined ? String(data[key]) : '';
+  });
+}
 
-export async function processEmailTemplate(
-  template: string,
-  variables: Record<string, string>
-): Promise<string> {
-  let processed = template;
-  for (const [key, value] of Object.entries(variables)) {
-    processed = processed.replace(new RegExp(`{{${key}}}`, 'g'), value);
-  }
-  return processed;
+
+function escapeHtml(value: string): string {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
