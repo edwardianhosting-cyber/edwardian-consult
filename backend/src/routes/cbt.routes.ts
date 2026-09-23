@@ -178,8 +178,20 @@ router.post('/mock-exams/:examId/start', authenticate, async (req: Request, res:
   try {
     const exam = await startMockExamAttempt(req.user!.userId, req.params.examId);
 
-    await prisma.mockExamAttempt.create({
-      data: {
+    await prisma.mockExamAttempt.upsert({
+      where: {
+        userId_examId: {
+          userId: req.user!.userId,
+          examId: req.params.examId,
+        },
+      },
+      update: {
+        isCompleted: false,
+        retakeRequested: false,
+        retakeApproved: false,
+        updatedAt: new Date(),
+      },
+      create: {
         userId: req.user!.userId,
         examId: req.params.examId,
         isCompleted: false,
@@ -417,7 +429,7 @@ router.post('/admin/mock-results/:resultId/send-email', authenticate, authorize(
 router.post('/mock-exams/:examId/request-retake', authenticate, async (req: Request, res: Response) => {
   try {
     const { examId } = req.params;
-    const userId = (req.user as any)?.id;
+    const userId = req.user!.userId;
 
     if (!userId) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
@@ -466,7 +478,7 @@ router.post('/mock-exams/:examId/request-retake', authenticate, async (req: Requ
 router.get('/mock-exams/:examId/retake-status', authenticate, async (req: Request, res: Response) => {
   try {
     const { examId } = req.params;
-    const userId = (req.user as any)?.id;
+    const userId = req.user!.userId;
 
     if (!userId) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });

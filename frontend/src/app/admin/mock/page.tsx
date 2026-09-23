@@ -219,8 +219,8 @@ export default function AdminMockExamPage() {
                    <Clock className="w-4 h-4" />
                    {exam.duration} mins
                  </span>
-                 <span>{exam.totalQuestions || 0} questions</span>
-                 <span>100 marks</span>
+                  <span>{exam.totalQuestions || 0} questions</span>
+                  <span>400 marks</span>
                </div>
                <div className="flex items-center gap-2">
                  <button
@@ -351,7 +351,7 @@ export default function AdminMockExamPage() {
                   <p className="text-sm text-gray-600">Subject: {viewingExam.subject}</p>
                   <p className="text-sm text-gray-600">Duration: {viewingExam.duration} minutes</p>
                   <p className="text-sm text-gray-600">Questions Per Subject: {viewingExam.questionsPerSubject || 0}</p>
-                  <p className="text-sm text-gray-600">Total Marks: {viewingExam.totalMarks || 100}</p>
+                  <p className="text-sm text-gray-600">Total Marks: {viewingExam.totalMarks || 400}</p>
                   <p className="text-sm text-gray-600">Questions: {viewingExam.totalQuestions || 0}</p>
                   <p className="text-sm text-gray-600">Status: {viewingExam.isPublished ? 'Published' : 'Draft'}</p>
                 </div>

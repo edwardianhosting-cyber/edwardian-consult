@@ -223,7 +223,7 @@ export default function AdminCBTPage() {
 
           {/* Practice/Mock Results View */}
           {(view === 'practice' || view === 'mock') && (
-            <div className="space-y-4">
+            <div className="printable-area space-y-4">
               <div className="bg-white rounded-xl border border-gray-100 p-4">
                 <div className="flex flex-col sm:flex-row gap-4">
                   <div className="flex-1">
@@ -427,6 +427,33 @@ export default function AdminCBTPage() {
           )}
         </>
       )}
+
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          .printable-area,
+          .printable-area *,
+          .printable-area * * {
+            visibility: visible !important;
+          }
+          .printable-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            display: block !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+          @page {
+            size: auto;
+            margin: 15mm;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -482,7 +482,7 @@ function AdminPrintResultsInner() {
                       {escapeHtml(subject)}
                     </th>
                   ))}
-                  <th className="aggregate">AGG/100</th>
+                  <th className="aggregate">TOTAL</th>
                 </tr>
               </thead>
               <tbody>

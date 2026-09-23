@@ -673,7 +673,7 @@ export async function createMockExam(teacherId: string, data: {
       examType: 'MOCK',
       subject: data.subject,
       duration: data.duration,
-      totalMarks: 100,
+      totalMarks: 400,
       questionsPerSubject: data.questionsPerSubject,
       isPublished: false,
     },
@@ -696,6 +696,19 @@ export async function startMockExamAttempt(userId: string, examId: string) {
   if (!exam) throw new Error('Mock exam not found');
   if (exam.examType !== 'MOCK') throw new Error('Invalid exam type');
   if (!exam.isPublished) throw new Error('Mock exam is not published');
+
+  const existingAttempt = await prisma.mockExamAttempt.findFirst({
+    where: {
+      userId,
+      examId,
+      isCompleted: true,
+    },
+    orderBy: { id: 'desc' },
+  });
+
+  if (existingAttempt && !existingAttempt.retakeApproved) {
+    throw new Error('You have already completed this mock exam. Your retake request is pending admin approval.');
+  }
 
   const questionsPerSubject = exam.questionsPerSubject || 10;
 
@@ -771,7 +784,7 @@ export async function startMockExamAttempt(userId: string, examId: string) {
       examType: 'MOCK',
       subject: userSubjects[0] || exam.subject,
       duration: exam.duration,
-      totalMarks: 100,
+      totalMarks: 400,
       questions: {
         create: finalShuffled.map((q, index) => ({
           questionId: q.id,
@@ -892,7 +905,7 @@ export async function updateMockExam(id: string, data: {
       title: data.title,
       subject: data.subject,
       duration: data.duration,
-      totalMarks: 100,
+      totalMarks: 400,
       questionsPerSubject: data.questionsPerSubject,
     },
   });

@@ -81,6 +81,20 @@ export async function verifyStudent(portalId: string) {
       isActive: true,
       programme: true,
       role: true,
+      gender: true,
+      state: true,
+      classLevel: true,
+      dateOfBirth: true,
+      avatar: true,
+      passportUrl: true,
+      admissionYear: true,
+      phone: true,
+      email: true,
+      studentEmail: true,
+      address: true,
+      lga: true,
+      targetCourse: true,
+      targetInstitution: true,
     },
   });
 
@@ -88,12 +102,25 @@ export async function verifyStudent(portalId: string) {
     return { isValid: false, message: 'Student not found' };
   }
 
+  const photo = user.avatar || user.passportUrl || null;
+
   return {
     isValid: user.isActive,
     studentName: user.fullName,
     studentId: user.portalId,
     status: user.isActive ? 'Active' : 'Inactive',
     programme: user.programme || 'N/A',
+    gender: user.gender || 'N/A',
+    state: user.state || 'N/A',
+    classLevel: user.classLevel || 'N/A',
+    dateOfBirth: user.dateOfBirth ? formatDate(user.dateOfBirth) : 'N/A',
+    admissionYear: user.admissionYear || 'N/A',
+    phone: user.phone || 'N/A',
+    email: user.studentEmail || user.email || 'N/A',
+    address: [user.address, user.lga, user.state].filter(Boolean).join(', ') || 'N/A',
+    targetCourse: user.targetCourse || 'N/A',
+    targetInstitution: user.targetInstitution || 'N/A',
+    photo,
   };
 }
 

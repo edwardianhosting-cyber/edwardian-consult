@@ -325,6 +325,24 @@ export default function MockExamPage() {
     return 'unanswered';
   }
 
+  function getQuestionSectionLabel(question: MockQuestion): string {
+    if (question.groupType === 'COMPREHENSION') return 'Comprehension';
+    if (question.groupType === 'CLOZE') return 'Cloze Test';
+    return 'Questions';
+  }
+
+  function isFirstInSection(index: number): boolean {
+    if (index === 0) return true;
+    const current = subjectQuestions[index];
+    const previous = subjectQuestions[index - 1];
+    if (!current || !previous) return true;
+    if (current.groupType !== previous.groupType) return true;
+    if (current.groupType === 'COMPREHENSION' || current.groupType === 'CLOZE') {
+      return current.groupId !== previous.groupId;
+    }
+    return false;
+  }
+
   function getQuestionColor(status: string) {
     switch (status) {
       case 'current': return 'bg-primary-600 text-white ring-2 ring-primary-300';
@@ -623,17 +641,26 @@ export default function MockExamPage() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl border border-gray-100 p-4 sticky top-4">
               <h3 className="font-semibold text-gray-900 mb-3 text-sm">Questions - {selectedSubject}</h3>
-              <div className="grid grid-cols-5 gap-2">
+              <div className="space-y-3">
                 {subjectQuestions.map((q, index) => {
+                  const showSectionHeader = isFirstInSection(index);
+                  const sectionLabel = getQuestionSectionLabel(q);
                   const status = getQuestionStatus(q.id, index);
+
                   return (
-                    <button
-                      key={q.id}
-                      onClick={() => setCurrentQuestion(index)}
-                      className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${getQuestionColor(status)}`}
-                    >
-                      {index + 1}
-                    </button>
+                    <div key={q.id}>
+                      {showSectionHeader && (
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                          {sectionLabel}
+                        </div>
+                      )}
+                      <button
+                        onClick={() => setCurrentQuestion(index)}
+                        className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${getQuestionColor(status)}`}
+                      >
+                        {index + 1}
+                      </button>
+                    </div>
                   );
                 })}
               </div>
@@ -664,6 +691,11 @@ export default function MockExamPage() {
                 {question.topic && (
                   <span className="ml-2 text-xs bg-primary-50 text-primary-700 px-2 py-1 rounded">
                     {question.topic}
+                  </span>
+                )}
+                {isFirstInSection(currentQuestion) && (
+                  <span className="ml-2 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                    {getQuestionSectionLabel(question)}
                   </span>
                 )}
               </div>

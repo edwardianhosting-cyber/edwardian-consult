@@ -351,7 +351,7 @@ export default function AdminResultsPage() {
                             {mockSubjects.length > 0 && mockSubjects.map(subject => (
                               <th key={subject} className="text-center px-2 py-3 text-sm font-semibold text-gray-600">{subject.toUpperCase()}</th>
                             ))}
-                            <th className="text-center px-4 py-3 text-sm font-semibold text-gray-600">AGG/100</th>
+                            <th className="text-center px-4 py-3 text-sm font-semibold text-gray-600">TOTAL</th>
                           </tr>
                         </thead>
                         <tbody>

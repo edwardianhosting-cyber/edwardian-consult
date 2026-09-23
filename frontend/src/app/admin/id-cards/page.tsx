@@ -285,6 +285,33 @@ export default function AdminIDCardsPage() {
           </div>
         </div>
       )}
+
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          #id-card-print,
+          #id-card-print *,
+          #id-card-print * * {
+            visibility: visible !important;
+          }
+          #id-card-print {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            display: block !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+          @page {
+            size: auto;
+            margin: 15mm;
+          }
+        }
+      `}</style>
     </div>
   );
 }

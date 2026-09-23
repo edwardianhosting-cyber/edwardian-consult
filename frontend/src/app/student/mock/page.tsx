@@ -153,7 +153,7 @@ export default function MockPage() {
                   {exam.duration} mins
                 </span>
                 <span>{exam.totalQuestions} questions</span>
-                <span>100 marks</span>
+                  <span>400 marks</span>
               </div>
               {exam.status === 'completed' && exam.score !== undefined && (
                 <div className="mb-4">
