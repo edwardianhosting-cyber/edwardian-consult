@@ -19,6 +19,9 @@ interface ReviewQuestion {
   subject: string;
   groupType?: string;
   groupId?: string;
+  passage?: string;
+  groupTitle?: string;
+  groupInstructions?: string;
 }
 
 interface ReviewData {

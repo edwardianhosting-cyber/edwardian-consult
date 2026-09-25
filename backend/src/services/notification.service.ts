@@ -476,20 +476,6 @@ export async function notifyTimetableUpdate(userId: string, classTitle: string) 
   });
 }
 
-export async function notifyNewMessage(userId: string, senderName: string, messageId: string) {
-  return createNotification({
-    userId,
-    title: `New message from ${senderName}`,
-    message: `You have received a new message from ${senderName}.`,
-    type: 'MESSAGE',
-    priority: 'NORMAL',
-    link: `/student/messages/${messageId}`,
-    entityType: 'MESSAGE',
-    entityId: messageId,
-    channels: ['DASHBOARD'],
-  });
-}
-
 export async function notifyExamDeadlineReminder(userId: string, examTitle: string, deadline: string, examId: string) {
   return createNotification({
     userId,

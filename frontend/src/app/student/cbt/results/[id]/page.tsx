@@ -30,6 +30,11 @@ interface CBTResultDetail {
     explanation?: string;
     topic?: string;
     difficulty?: string;
+    groupType?: string;
+    groupId?: string;
+    passage?: string;
+    groupTitle?: string;
+    groupInstructions?: string;
   }[];
 }
 
@@ -151,13 +156,28 @@ export default function CBTResultDetailPage() {
           Corrections
         </h2>
         <div className="space-y-4">
-          {data.corrections.map((correction, index) => (
+          {data.corrections.map((correction, index) => {
+            const prevCorrection = index > 0 ? data.corrections[index - 1] : null;
+            const isNewGroup = correction.groupId && (!prevCorrection || prevCorrection.groupId !== correction.groupId);
+
+            return (
             <div
               key={index}
               className={`p-4 rounded-xl border-2 ${
                 correction.isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
               }`}
             >
+              {isNewGroup && correction.passage && (
+                <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  {correction.groupTitle && (
+                    <h3 className="text-sm font-semibold text-yellow-900 mb-2">{correction.groupTitle}</h3>
+                  )}
+                  {correction.groupInstructions && (
+                    <p className="text-xs text-yellow-800 mb-2">{correction.groupInstructions}</p>
+                  )}
+                  <div className="text-sm text-yellow-900 whitespace-pre-wrap leading-relaxed">{correction.passage}</div>
+                </div>
+              )}
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-1">
                   {correction.isCorrect ? (
@@ -214,7 +234,7 @@ export default function CBTResultDetailPage() {
                 </div>
               </div>
             </div>
-          ))}
+          );})}
         </div>
       </div>
     </div>

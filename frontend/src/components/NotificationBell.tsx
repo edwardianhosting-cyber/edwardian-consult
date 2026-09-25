@@ -141,8 +141,6 @@ export default function NotificationBell() {
         return '⏰';
       case 'PROFILE':
         return '👤';
-      case 'MESSAGE':
-        return '✉️';
       default:
         return '🔔';
     }

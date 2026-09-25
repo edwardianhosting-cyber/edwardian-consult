@@ -345,9 +345,6 @@ export const api = {
   getTranscript: () => fetchAPI('/transcripts/'),
   generateTranscript: () => fetchAPI('/transcripts/generate', { method: 'POST' }),
 
-  // Messages
-  getMessages: () => fetchAPI('/email/messages'),
-
   // Referrals
   getReferrals: () => fetchAPI('/referrals'),
   getReferralStats: () => fetchAPI('/referrals/stats'),

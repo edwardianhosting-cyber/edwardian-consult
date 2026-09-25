@@ -21,7 +21,6 @@ import {
   ClipboardList,
   Trophy,
   Calendar,
-  MessageSquare,
   Search,
   CreditCard as CreditCardIcon,
   Wallet,
@@ -95,7 +94,6 @@ const sidebarSections = [
     title: 'COMMUNICATION',
     items: [
       { name: 'Notifications', href: '/student/notifications', icon: Bell },
-      { name: 'Messages', href: '/student/messages', icon: MessageSquare },
     ],
   },
   {

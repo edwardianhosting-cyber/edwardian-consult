@@ -77,9 +77,9 @@ export async function generateCBT(userId: string, params: {
   const isJAMB = normalizedRequested === 'JAMB';
   const isEnglish = params.subject === 'English Language';
 
-  let questionCount = params.questionCount || 20;
-  if (isJAMB) {
-    questionCount = isEnglish ? 60 : 40;
+  let questionCount = 40;
+  if (isEnglish) {
+    questionCount = 60;
   }
 
   let selectedQuestions: any[] = [];
@@ -144,13 +144,19 @@ export async function generateCBT(userId: string, params: {
     },
     include: {
       questions: {
-        include: { question: true },
+        include: {
+          question: {
+            include: { questionGroup: true },
+          },
+        },
         orderBy: { order: 'asc' },
       },
     },
   });
 
-  const questionsWithRandomizedOptions = exam.questions.map(eq => ({
+  const questionsWithRandomizedOptions = exam.questions.map(eq => {
+    const group = eq.question?.questionGroup;
+    return {
     id: eq.question.id,
     text: eq.question.text,
     imageUrl: eq.question.imageUrl,
@@ -159,7 +165,10 @@ export async function generateCBT(userId: string, params: {
     explanation: eq.question.explanation,
     groupType: eq.questionGroupType,
     groupId: eq.questionGroupId,
-  }));
+    passage: group?.passage || undefined,
+    groupTitle: group?.title || undefined,
+    groupInstructions: group?.instructions || undefined,
+  };});
 
   return {
     examId: exam.id,
@@ -176,7 +185,7 @@ export async function generateCBT(userId: string, params: {
 export async function submitCBT(userId: string, examId: string, answers: Record<string, number>, type: string = 'PRACTICE') {
   const exam = await prisma.exam.findUnique({
     where: { id: examId },
-    include: { questions: { include: { question: true } } },
+    include: { questions: { include: { question: { include: { questionGroup: true } } } } },
   });
 
   if (!exam) throw new Error('Exam not found');
@@ -212,7 +221,9 @@ export async function submitCBT(userId: string, examId: string, answers: Record<
   }
 
   const totalQuestions = exam.questions.length;
-  const score = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+  const percentage = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+  const totalMarks = exam.totalMarks || 100;
+  const score = totalMarks > 0 ? (percentage / 100) * totalMarks : percentage;
   const durationUsed = exam.duration;
 
   const result = await prisma.cbtResult.create({
@@ -294,7 +305,7 @@ export async function getExamById(examId: string) {
     where: { id: examId },
     include: {
       questions: {
-        include: { question: true },
+        include: { question: { include: { questionGroup: true } } },
         orderBy: { order: 'asc' },
       },
     },
@@ -312,6 +323,9 @@ export async function getExamById(examId: string) {
     subject: eq.question.subject,
     groupType: eq.questionGroupType,
     groupId: eq.questionGroupId,
+    passage: eq.question?.questionGroup?.passage || undefined,
+    groupTitle: eq.question?.questionGroup?.title || undefined,
+    groupInstructions: eq.question?.questionGroup?.instructions || undefined,
   }));
 
   return {
@@ -342,7 +356,7 @@ export async function getMockExamsForUser(userId: string) {
     },
     include: {
       questions: {
-        include: { question: true },
+        include: { question: { include: { questionGroup: true } } },
         orderBy: { order: 'asc' },
       },
     },
@@ -411,7 +425,7 @@ export async function getAllMockExamsForTeacher(userId: string) {
     },
     include: {
       questions: {
-        include: { question: true },
+        include: { question: { include: { questionGroup: true } } },
         orderBy: { order: 'asc' },
       },
     },
@@ -426,7 +440,7 @@ export async function getAllMockExamsForAdmin() {
     },
     include: {
       questions: {
-        include: { question: true },
+        include: { question: { include: { questionGroup: true } } },
         orderBy: { order: 'asc' },
       },
     },
@@ -597,7 +611,7 @@ export async function getAdminFilteredResults(options: {
         exam: {
           include: {
             questions: {
-              include: { question: true },
+              include: { question: { include: { questionGroup: true } } },
             },
           },
         },
@@ -679,7 +693,7 @@ export async function createMockExam(teacherId: string, data: {
     },
     include: {
       questions: {
-        include: { question: true },
+        include: { question: { include: { questionGroup: true } } },
         orderBy: { order: 'asc' },
       },
     },
@@ -742,10 +756,12 @@ export async function startMockExamAttempt(userId: string, examId: string) {
   const allSelectedGroupIds: string[] = [];
 
   for (const subject of userSubjects) {
+    const subjectQuestionCount = subject === 'English Language' ? 60 : 40;
+
     if (subject === 'English Language') {
       const groupedResult = await getGroupedExamQuestionsForEnglish({
         examType: primaryExamType,
-        totalQuestions: questionsPerSubject,
+        totalQuestions: subjectQuestionCount,
       });
 
       allSelectedQuestions.push(...groupedResult.questions);
@@ -759,7 +775,7 @@ export async function startMockExamAttempt(userId: string, examId: string) {
 
       const subjectQuestions = await prisma.question.findMany({ where });
       const shuffled = shuffleArray([...subjectQuestions]);
-      const selected = shuffled.slice(0, questionsPerSubject);
+      const selected = shuffled.slice(0, subjectQuestionCount);
 
       allSelectedQuestions.push(...selected.map(q => ({ ...q, subject })));
     }
@@ -796,7 +812,7 @@ export async function startMockExamAttempt(userId: string, examId: string) {
     },
     include: {
       questions: {
-        include: { question: true },
+        include: { question: { include: { questionGroup: true } } },
         orderBy: { order: 'asc' },
       },
     },
@@ -840,7 +856,11 @@ export async function startMockExamAttempt(userId: string, examId: string) {
     where: { id: attemptExam.id },
     include: {
       questions: {
-        include: { question: true },
+        include: {
+          question: {
+            include: { questionGroup: true },
+          },
+        },
         orderBy: { order: 'asc' },
       },
     },
@@ -852,6 +872,7 @@ export async function startMockExamAttempt(userId: string, examId: string) {
 
     const shuffledOptions = (eq.options as string[]) || shuffleArray([...originalOptions]);
     const newCorrectIndex = eq.correctOption ?? shuffledOptions.indexOf(correctAnswer);
+    const group = eq.question?.questionGroup;
 
     return {
       id: eq.question.id,
@@ -864,6 +885,9 @@ export async function startMockExamAttempt(userId: string, examId: string) {
       subject: eq.question.subject,
       groupType: eq.questionGroupType,
       groupId: eq.questionGroupId,
+      passage: group?.passage || undefined,
+      groupTitle: group?.title || undefined,
+      groupInstructions: group?.instructions || undefined,
     };
   });
 
@@ -918,7 +942,7 @@ export async function updateMockExam(id: string, data: {
     where: { id },
     include: {
       questions: {
-        include: { question: true },
+        include: { question: { include: { questionGroup: true } } },
         orderBy: { order: 'asc' },
       },
     },
@@ -936,7 +960,11 @@ export async function getMockExamQuestions(examId: string) {
     where: { id: examId },
     include: {
       questions: {
-        include: { question: true },
+        include: {
+          question: {
+            include: { questionGroup: true },
+          },
+        },
         orderBy: { order: 'asc' },
       },
     },
@@ -944,7 +972,9 @@ export async function getMockExamQuestions(examId: string) {
 
   if (!exam) return null;
 
-  return exam.questions.map((eq) => ({
+  return exam.questions.map((eq) => {
+    const group = eq.question?.questionGroup;
+    return {
     id: eq.question.id,
     text: eq.question.text,
     imageUrl: eq.question.imageUrl,
@@ -953,14 +983,20 @@ export async function getMockExamQuestions(examId: string) {
     topic: eq.question.topic,
     explanation: eq.question.explanation,
     order: eq.order,
-  }));
+    passage: group?.passage || undefined,
+    groupTitle: group?.title || undefined,
+    groupInstructions: group?.instructions || undefined,
+  };});
 }
 
 export async function addQuestionsToMockExam(examId: string, questionIds: string[]) {
   const exam = await prisma.exam.findUnique({
     where: { id: examId },
     include: {
-      questions: { include: { question: true }, orderBy: { order: 'asc' } },
+      questions: {
+        include: { question: { include: { questionGroup: true } } },
+        orderBy: { order: 'asc' },
+      },
     },
   });
 
@@ -970,7 +1006,9 @@ export async function addQuestionsToMockExam(examId: string, questionIds: string
   const newQuestionIds = questionIds.filter((id) => !existingQuestionIds.has(id));
 
   if (newQuestionIds.length === 0) {
-    return exam.questions.map((eq) => ({
+    return exam.questions.map((eq) => {
+      const group = eq.question?.questionGroup;
+      return {
       id: eq.question.id,
       text: eq.question.text,
       imageUrl: eq.question.imageUrl,
@@ -979,7 +1017,10 @@ export async function addQuestionsToMockExam(examId: string, questionIds: string
       topic: eq.question.topic,
       explanation: eq.question.explanation,
       order: eq.order,
-    }));
+      passage: group?.passage || undefined,
+      groupTitle: group?.title || undefined,
+      groupInstructions: group?.instructions || undefined,
+    };});
   }
 
   const maxOrder = exam.questions.length > 0 ? Math.max(...exam.questions.map((eq) => eq.order)) : 0;
@@ -996,7 +1037,7 @@ export async function addQuestionsToMockExam(examId: string, questionIds: string
     where: { id: examId },
     include: {
       questions: {
-        include: { question: true },
+        include: { question: { include: { questionGroup: true } } },
         orderBy: { order: 'asc' },
       },
     },
@@ -1026,7 +1067,7 @@ export async function uploadQuestionsToMockExam(examId: string, questions: Array
   const exam = await prisma.exam.findUnique({
     where: { id: examId },
     include: {
-      questions: { include: { question: true }, orderBy: { order: 'asc' } },
+      questions: { include: { question: { include: { questionGroup: true } } }, orderBy: { order: 'asc' } },
     },
   });
 
@@ -1069,7 +1110,7 @@ export async function uploadQuestionsToMockExam(examId: string, questions: Array
     where: { id: examId },
     include: {
       questions: {
-        include: { question: true },
+        include: { question: { include: { questionGroup: true } } },
         orderBy: { order: 'asc' },
       },
     },
@@ -1101,7 +1142,7 @@ export async function removeQuestionFromMockExam(examId: string, questionId: str
     where: { id: examId },
     include: {
       questions: {
-        include: { question: true },
+        include: { question: { include: { questionGroup: true } } },
         orderBy: { order: 'asc' },
       },
     },
@@ -1221,7 +1262,7 @@ export async function getCBTResultById(userId: string, resultId: string) {
       exam: {
         include: {
           questions: {
-            include: { question: true },
+            include: { question: { include: { questionGroup: true } } },
             orderBy: { order: 'asc' },
           },
         },
@@ -1247,6 +1288,9 @@ export async function getCBTResultById(userId: string, resultId: string) {
       subject: eq.question.subject,
       groupType: eq.questionGroupType,
       groupId: eq.questionGroupId,
+      passage: eq.question?.questionGroup?.passage || undefined,
+      groupTitle: eq.question?.questionGroup?.title || undefined,
+      groupInstructions: eq.question?.questionGroup?.instructions || undefined,
     };
   });
 
@@ -1278,7 +1322,7 @@ export async function getCBTResultByIdForAdmin(resultId: string) {
       exam: {
         include: {
           questions: {
-            include: { question: true },
+            include: { question: { include: { questionGroup: true } } },
             orderBy: { order: 'asc' },
           },
         },
@@ -1304,6 +1348,9 @@ export async function getCBTResultByIdForAdmin(resultId: string) {
       subject: eq.question.subject,
       groupType: eq.questionGroupType,
       groupId: eq.questionGroupId,
+      passage: eq.question?.questionGroup?.passage || undefined,
+      groupTitle: eq.question?.questionGroup?.title || undefined,
+      groupInstructions: eq.question?.questionGroup?.instructions || undefined,
     };
   });
 
@@ -1400,7 +1447,7 @@ export async function recalculateCbtResult(resultId: string) {
       exam: {
         include: {
           questions: {
-            include: { question: true },
+            include: { question: { include: { questionGroup: true } } },
             orderBy: { order: 'asc' },
           },
         },
@@ -1436,7 +1483,9 @@ export async function recalculateCbtResult(resultId: string) {
   }
 
   const totalQuestions = result.exam.questions.length;
-  const score = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+  const percentage = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+  const totalMarks = result.exam.totalMarks || 100;
+  const score = totalMarks > 0 ? (percentage / 100) * totalMarks : percentage;
 
   const updatedResult = await prisma.cbtResult.update({
     where: { id: resultId },
@@ -1466,6 +1515,9 @@ export async function recalculateCbtResult(resultId: string) {
         subject: eq.question.subject,
         groupType: eq.questionGroupType,
         groupId: eq.questionGroupId,
+        passage: eq.question?.questionGroup?.passage || undefined,
+        groupTitle: eq.question?.questionGroup?.title || undefined,
+        groupInstructions: eq.question?.questionGroup?.instructions || undefined,
       };
     }),
   };
@@ -1486,7 +1538,7 @@ export async function getResultReviewData(resultId: string) {
       exam: {
         include: {
           questions: {
-            include: { question: true },
+            include: { question: { include: { questionGroup: true } } },
             orderBy: { order: 'asc' },
           },
         },
@@ -1533,6 +1585,9 @@ export async function getResultReviewData(resultId: string) {
         subject: eq.question.subject,
         groupType: eq.questionGroupType,
         groupId: eq.questionGroupId,
+        passage: eq.question?.questionGroup?.passage || undefined,
+        groupTitle: eq.question?.questionGroup?.title || undefined,
+        groupInstructions: eq.question?.questionGroup?.instructions || undefined,
       };
     }),
   };

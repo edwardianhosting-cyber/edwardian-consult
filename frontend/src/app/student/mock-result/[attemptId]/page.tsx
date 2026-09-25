@@ -30,6 +30,11 @@ interface MockResultData {
     explanation?: string;
     topic?: string;
     subject: string;
+    groupType?: string;
+    groupId?: string;
+    passage?: string;
+    groupTitle?: string;
+    groupInstructions?: string;
   }[];
 }
 
@@ -174,16 +179,17 @@ export default function MockResultPage() {
 
       <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center mb-6">
         <div className={`w-24 h-24 mx-auto rounded-full flex items-center justify-center mb-6 ${
-          result.result.score >= 70 ? 'bg-green-100' : result.result.score >= 50 ? 'bg-yellow-100' : 'bg-red-100'
+          result.result.score >= 280 ? 'bg-green-100' : result.result.score >= 200 ? 'bg-yellow-100' : 'bg-red-100'
         }`}>
           <span className={`text-4xl font-bold ${
-            result.result.score >= 70 ? 'text-green-600' : result.result.score >= 50 ? 'text-yellow-600' : 'text-red-600'
+            result.result.score >= 280 ? 'text-green-600' : result.result.score >= 200 ? 'text-yellow-600' : 'text-red-600'
           }`}>
-            {Math.round(result.result.score)}%
+            {Math.round(result.result.score)}
           </span>
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Mock Exam Complete!</h2>
-        <p className="text-gray-600 mb-6">{result.result.subject}</p>
+        <p className="text-gray-600 mb-1">{result.result.subject}</p>
+        <p className="text-sm text-gray-500 mb-6">Score: {Math.round(result.result.score)} / 400</p>
 
         <div className="grid grid-cols-3 gap-4 mb-8">
           <div className="bg-green-50 rounded-xl p-4">
@@ -247,6 +253,8 @@ export default function MockResultPage() {
             {result.corrections.map((correction, index) => {
               const isCorrect = correction.isCorrect;
               const isUnanswered = correction.userAnswer === -1;
+              const prevCorrection = index > 0 ? result.corrections[index - 1] : null;
+              const isNewGroup = correction.groupId && (!prevCorrection || prevCorrection.groupId !== correction.groupId);
 
               return (
                 <div
@@ -255,6 +263,17 @@ export default function MockResultPage() {
                     isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
                   }`}
                 >
+                  {isNewGroup && correction.passage && (
+                    <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      {correction.groupTitle && (
+                        <h3 className="text-sm font-semibold text-yellow-900 mb-2">{correction.groupTitle}</h3>
+                      )}
+                      {correction.groupInstructions && (
+                        <p className="text-xs text-yellow-800 mb-2">{correction.groupInstructions}</p>
+                      )}
+                      <div className="text-sm text-yellow-900 whitespace-pre-wrap leading-relaxed">{correction.passage}</div>
+                    </div>
+                  )}
                   <p className="font-medium text-gray-900 mb-2">
                     Q{correction.questionNumber}: {correction.question}
                   </p>

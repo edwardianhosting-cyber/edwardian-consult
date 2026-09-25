@@ -577,7 +577,7 @@ export default function MockExamPage() {
     }
 
     return (
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6">
           <div className="flex items-center justify-between">
@@ -636,113 +636,66 @@ export default function MockExamPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Question Palette */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl border border-gray-100 p-4 sticky top-4">
-              <h3 className="font-semibold text-gray-900 mb-3 text-sm">Questions - {selectedSubject}</h3>
-              <div className="space-y-3">
-                {subjectQuestions.map((q, index) => {
-                  const showSectionHeader = isFirstInSection(index);
-                  const sectionLabel = getQuestionSectionLabel(q);
-                  const status = getQuestionStatus(q.id, index);
-
-                  return (
-                    <div key={q.id}>
-                      {showSectionHeader && (
-                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
-                          {sectionLabel}
-                        </div>
-                      )}
-                      <button
-                        onClick={() => setCurrentQuestion(index)}
-                        className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${getQuestionColor(status)}`}
-                      >
-                        {index + 1}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="mt-4 space-y-2 text-xs">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-primary-600 rounded"></div>
-                  <span>Current</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
-                  <span>Answered</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-gray-100 border border-gray-200 rounded"></div>
-                  <span>Unanswered</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Question Area */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl border border-gray-100 p-6">
-              <div className="mb-4">
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Question {currentQuestion + 1} of {subjectQuestions.length}
+        {/* Question Area */}
+        <div className="bg-white rounded-xl border border-gray-100 p-6 mb-6">
+            <div className="mb-4">
+              <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Question {currentQuestion + 1} of {subjectQuestions.length}
+              </span>
+              {question.topic && (
+                <span className="ml-2 text-xs bg-primary-50 text-primary-700 px-2 py-1 rounded">
+                  {question.topic}
                 </span>
-                {question.topic && (
-                  <span className="ml-2 text-xs bg-primary-50 text-primary-700 px-2 py-1 rounded">
-                    {question.topic}
-                  </span>
-                )}
-                {isFirstInSection(currentQuestion) && (
-                  <span className="ml-2 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                    {getQuestionSectionLabel(question)}
-                  </span>
-                )}
-              </div>
-
-              {(question.groupType === 'COMPREHENSION' || question.groupType === 'CLOZE') && question.passage && (
-                <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  {question.groupTitle && (
-                    <h3 className="text-sm font-semibold text-yellow-900 mb-2">{question.groupTitle}</h3>
-                  )}
-                  {question.groupInstructions && (
-                    <p className="text-xs text-yellow-800 mb-2">{question.groupInstructions}</p>
-                  )}
-                  <div className="text-sm text-yellow-900 whitespace-pre-wrap leading-relaxed">{question.passage}</div>
-                </div>
               )}
-
-              <p className="text-lg text-gray-900 mb-6 leading-relaxed">{question.text}</p>
-
-              {question.imageUrl && (
-                <img src={question.imageUrl} alt="Question" className="mb-6 rounded-lg max-h-64 object-contain" />
+              {isFirstInSection(currentQuestion) && (
+                <span className="ml-2 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                  {getQuestionSectionLabel(question)}
+                </span>
               )}
+            </div>
 
-              <div className="space-y-3">
-                {question.options.map((option: string, index: number) => (
-                  <button
-                    key={index}
-                    onClick={() => selectAnswer(question.id, index)}
-                    className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                      answers[question.id] === index
-                        ? 'border-primary-500 bg-primary-50'
-                        : 'border-gray-100 hover:border-gray-200'
-                    }`}
-                  >
-                    <span className="font-bold text-gray-600 mr-3">
-                      {String.fromCharCode(65 + index)}.
-                    </span>
-                    <span className="text-gray-900">{option}</span>
-                  </button>
-                ))}
+            {(question.groupType === 'COMPREHENSION' || question.groupType === 'CLOZE') && question.passage && (
+              <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                {question.groupTitle && (
+                  <h3 className="text-sm font-semibold text-yellow-900 mb-2">{question.groupTitle}</h3>
+                )}
+                {question.groupInstructions && (
+                  <p className="text-xs text-yellow-800 mb-2">{question.groupInstructions}</p>
+                )}
+                <div className="text-sm text-yellow-900 whitespace-pre-wrap leading-relaxed">{question.passage}</div>
               </div>
+            )}
+
+            <p className="text-lg text-gray-900 mb-6 leading-relaxed">{question.text}</p>
+
+            {question.imageUrl && (
+              <img src={question.imageUrl} alt="Question" className="mb-6 rounded-lg max-h-64 object-contain" />
+            )}
+
+            <div className="space-y-3">
+              {question.options.map((option: string, index: number) => (
+                <button
+                  key={index}
+                  onClick={() => selectAnswer(question.id, index)}
+                  className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                    answers[question.id] === index
+                      ? 'border-primary-500 bg-primary-50'
+                      : 'border-gray-100 hover:border-gray-200'
+                  }`}
+                >
+                  <span className="font-bold text-gray-600 mr-3">
+                    {String.fromCharCode(65 + index)}.
+                  </span>
+                  <span className="text-gray-900">{option}</span>
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Calculator */}
-          {calculatorOpen && (
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-xl border border-gray-100 p-4 sticky top-4">
+        {/* Calculator */}
+        {calculatorOpen && (
+            <div className="mb-6">
+              <div className="bg-white rounded-xl border border-gray-100 p-4">
                 <h3 className="font-semibold text-gray-900 mb-3 text-sm">Calculator</h3>
                 <div className="bg-gray-50 rounded-lg p-3 mb-3">
                   <div className="text-right text-xl font-mono font-bold text-gray-900 break-all">
@@ -776,7 +729,39 @@ export default function MockExamPage() {
                 </div>
               </div>
             </div>
-          )}
+        )}
+
+        {/* Question Palette */}
+        <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6">
+          <h3 className="font-semibold text-gray-900 text-sm mb-3">Questions - {selectedSubject}</h3>
+          <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+            {subjectQuestions.map((q, index) => {
+              const status = getQuestionStatus(q.id, index);
+              return (
+                <button
+                  key={q.id}
+                  onClick={() => setCurrentQuestion(index)}
+                  className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${getQuestionColor(status)}`}
+                >
+                  {index + 1}
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-4 space-y-2 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-primary-600 rounded"></div>
+              <span>Current</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
+              <span>Answered</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-gray-100 border border-gray-200 rounded"></div>
+              <span>Unanswered</span>
+            </div>
+          </div>
         </div>
 
         {/* Navigation */}

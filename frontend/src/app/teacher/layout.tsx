@@ -20,7 +20,6 @@ import {
   Award,
   BarChart3,
   Upload,
-  MessageSquare,
 } from 'lucide-react';
 
 interface TeacherLayoutProps {
@@ -61,7 +60,6 @@ const sidebarSections = [
     title: 'COMMUNICATION',
     items: [
       { name: 'Announcements', href: '/teacher/announcements', icon: Bell },
-      { name: 'Messages', href: '/teacher/messages', icon: MessageSquare },
     ],
   },
   {

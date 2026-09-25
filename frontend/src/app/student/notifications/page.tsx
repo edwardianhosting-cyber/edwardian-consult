@@ -30,7 +30,6 @@ const notificationTypes = [
   { value: 'REMINDER', label: 'Reminders', icon: '⏰' },
   { value: 'CERTIFICATE', label: 'Certificates', icon: '🏆' },
   { value: 'ID_CARD', label: 'ID Card', icon: '🪪' },
-  { value: 'MESSAGE', label: 'Messages', icon: '✉️' },
   { value: 'PROFILE', label: 'Profile', icon: '👤' },
 ];
 
@@ -399,8 +398,6 @@ function getActionLabel(type: string): string {
       return 'View ID Card';
     case 'REMINDER':
       return 'View Details';
-    case 'MESSAGE':
-      return 'Read Message';
     case 'PROFILE':
       return 'Complete Profile';
     default:
