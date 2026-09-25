@@ -5,6 +5,56 @@ import { useRouter } from 'next/navigation';
 import { ClipboardList, BookOpen, BarChart3, CheckCircle, XCircle, Clock, Eye, EyeOff, Trash2, Search, Printer, ChevronRight, FileText } from 'lucide-react';
 import { api } from '@/lib/api';
 
+function getSubjectAbbreviation(subject: string): string {
+  const abbreviations: Record<string, string> = {
+    'Physics': 'PHY',
+    'English Language': 'ENG',
+    'English': 'ENG',
+    'Mathematics': 'MAT',
+    'General Mathematics': 'MAT',
+    'Further Mathematics': 'FUR',
+    'Biology': 'BIO',
+    'Chemistry': 'CHE',
+    'Economics': 'ECO',
+    'Government': 'GOV',
+    'Literature': 'LIT',
+    'Literature in English': 'LIT',
+    'Geography': 'GEO',
+    'Accounting': 'ACC',
+    'Financial Accounting': 'ACC',
+    'Commerce': 'COM',
+    'Agricultural Science': 'AGR',
+    'Agriculture': 'AGR',
+    'Christian Religious Studies': 'CRS',
+    'Islamic Religious Studies': 'IRS',
+    'Civic Education': 'CIV',
+    'History': 'HIS',
+    'French': 'FRE',
+    'Yoruba': 'YOR',
+    'Igbo': 'IGB',
+    'Hausa': 'HAU',
+    'Computer Studies': 'CST',
+    'Data Processing': 'DTP',
+    'Technical Drawing': 'TDR',
+    'Building Construction': 'BCN',
+    'Woodwork': 'WWD',
+    'Metalwork': 'MWK',
+    'Auto Mechanics': 'AMC',
+    'Electrical Installation': 'ELI',
+    'Electronics': 'ELC',
+    'Food and Nutrition': 'FDN',
+    'Home Management': 'HMG',
+    'Clothing and Textiles': 'CLT',
+    'Visual Art': 'ART',
+    'Music': 'MUS',
+    'Physical Education': 'PHE',
+    'Health Education': 'HED',
+  };
+
+  const normalized = subject.trim();
+  return abbreviations[normalized] || normalized.toUpperCase().slice(0, 3);
+}
+
 interface MockExam {
   id: string;
   title: string;
@@ -283,7 +333,7 @@ export default function AdminResultsPage() {
           )}
 
           {/* Results View */}
-          {view === 'results' && (
+{view === 'results' && (
             <div className="space-y-4">
               <div className="bg-white rounded-xl border border-gray-100 p-4">
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -343,44 +393,52 @@ export default function AdminResultsPage() {
                 ) : (
                   <>
                     <div className="overflow-x-auto">
-                      <table className="w-full">
+                      <table className="w-full min-w-[800px]">
                         <thead>
                           <tr className="bg-gray-50 border-b">
-                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">S/N</th>
-                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Student Name</th>
-                            {mockSubjects.length > 0 && mockSubjects.map(subject => (
-                              <th key={subject} className="text-center px-2 py-3 text-sm font-semibold text-gray-600">{subject.toUpperCase()}</th>
-                            ))}
-                            <th className="text-center px-4 py-3 text-sm font-semibold text-gray-600">TOTAL</th>
+                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 whitespace-nowrap">#</th>
+                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 whitespace-nowrap min-w-[200px]">STUDENT</th>
+                            {(() => {
+                              const firstResult = results[0];
+                              const subjects = firstResult?.subjectEntries?.map(e => e.subject) || [];
+                              return subjects.map((subject, idx) => (
+                                <th key={subject} className="text-center px-3 py-3 text-sm font-semibold text-gray-600 whitespace-nowrap min-w-[90px]">
+                                  {idx === 0 ? 'SUBJECT' : '100'}
+                                </th>
+                              ));
+                            })()}
+                            <th className="text-center px-4 py-3 text-sm font-semibold text-gray-600 whitespace-nowrap min-w-[80px]">TOTAL</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {results.map((result, index) => (
-                            <tr key={result.id} className="border-b last:border-0 hover:bg-gray-50">
-                              <td className="px-4 py-3 text-sm text-gray-900">{index + 1 + (currentPage - 1) * 50}</td>
-                              <td className="px-4 py-3 text-sm text-gray-900 font-medium">{result.studentName}</td>
-                              {mockSubjects.length > 0 && mockSubjects.map(subject => {
-                                const subjectScore = result.subjectScores[subject];
-                                const score = subjectScore ? Math.round((subjectScore.correct / subjectScore.total) * 100) : 0;
-                                return (
-                                  <td key={subject} className="px-2 py-3 text-sm text-center">
-                                    <span className={`font-medium ${
-                                      score >= 70 ? 'text-green-600' : score >= 50 ? 'text-yellow-600' : 'text-red-600'
+                          {results.map((result, index) => {
+                            const subjectEntries = result.subjectEntries || [];
+                            const sortedEntries = [...subjectEntries].sort((a, b) => a.subject.localeCompare(b.subject));
+                            return (
+                              <tr key={result.id} className="border-b last:border-0 hover:bg-gray-50">
+                                <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">{index + 1 + (currentPage - 1) * 50}</td>
+                                <td className="px-4 py-3 text-sm text-gray-900 font-medium min-w-[200px] max-w-[300px] truncate" title={result.studentName}>
+                                  {result.studentName}
+                                </td>
+                                {sortedEntries.map((entry, idx) => (
+                                  <td key={`${result.id}-${entry.subject}`} className="px-3 py-3 text-sm text-center min-w-[90px]">
+                                    <span className={`font-medium inline-flex items-center justify-center gap-1 whitespace-nowrap ${
+                                      entry.score >= 70 ? 'text-green-600' : entry.score >= 50 ? 'text-yellow-600' : 'text-red-600'
                                     }`}>
-                                      {score}
+                                      {getSubjectAbbreviation(entry.subject)} {entry.score}
                                     </span>
                                   </td>
-                                );
-                              })}
-                              <td className="px-4 py-3 text-center">
-                                <span className={`text-sm font-bold ${
-                                  result.aggregate >= 70 ? 'text-green-600' : result.aggregate >= 50 ? 'text-yellow-600' : 'text-red-600'
-                                }`}>
-                                  {result.aggregate}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
+                                ))}
+                                <td className="px-4 py-3 text-center min-w-[80px]">
+                                  <span className={`text-sm font-bold ${
+                                    result.aggregate >= 70 ? 'text-green-600' : result.aggregate >= 50 ? 'text-yellow-600' : 'text-red-600'
+                                  }`}>
+                                    {result.aggregate}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -400,8 +458,8 @@ export default function AdminResultsPage() {
                           className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
                         >
                           Next
-                      </button>
-                    </div>
+                        </button>
+                      </div>
                     )}
                   </>
                 )}
