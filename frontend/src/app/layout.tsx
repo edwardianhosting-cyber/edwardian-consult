@@ -4,6 +4,7 @@ import Script from 'next/script';
 import { Toaster } from 'react-hot-toast';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth';
+import { ThemeProvider } from '@/lib/theme';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -65,7 +66,9 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body className="font-sans antialiased">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <ThemeProvider>{children}</ThemeProvider>
+        </AuthProvider>
         <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
         <Script src="/app.js" defer />
       </body>

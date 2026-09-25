@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { api, API_BASE } from '@/lib/api';
 import { showError, showSuccess } from '@/lib/toast';
-import { Play, Clock, Award, ChevronRight, CheckCircle, XCircle, Trophy, TrendingUp, Calculator, X, AlertTriangle, BookOpen, Globe } from 'lucide-react';
+import { Play, Clock, Award, ChevronRight, CheckCircle, XCircle, Trophy, TrendingUp, Calculator, X, AlertTriangle, BookOpen, Globe, Sun, Moon } from 'lucide-react';
+import { useTheme } from '@/lib/theme';
 
 interface MockQuestion {
   id: string;
@@ -61,7 +62,6 @@ export default function MockExamPage() {
   const [result, setResult] = useState<any>(null);
   const [examStarted, setExamStarted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [showResumePrompt, setShowResumePrompt] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hasSubmitted = useRef(false);
@@ -282,6 +282,8 @@ export default function MockExamPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [phase, cbtData, showSubmitModal, subjectQuestions, currentQuestion, answers]);
 
+  const { theme, toggleTheme } = useTheme();
+
   function formatTime(seconds: number) {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -290,9 +292,9 @@ export default function MockExamPage() {
   }
 
   function getTimerColor() {
-    if (timeLeft > 1800) return 'text-green-600';
-    if (timeLeft > 600) return 'text-yellow-600';
-    return 'text-red-600';
+    if (timeLeft > 1800) return 'text-green-600 dark:text-green-400';
+    if (timeLeft > 600) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-red-600 dark:text-red-400';
   }
 
   async function loadExam(examId: string) {
@@ -391,8 +393,8 @@ export default function MockExamPage() {
   function getQuestionColor(status: string) {
     switch (status) {
       case 'current': return 'bg-primary-600 text-white ring-2 ring-primary-300';
-      case 'answered': return 'bg-green-100 text-green-700 border border-green-300';
-      default: return 'bg-gray-100 text-gray-600 border border-gray-200';
+      case 'answered': return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700';
+      default: return 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600';
     }
   }
 
@@ -536,19 +538,19 @@ export default function MockExamPage() {
 
     return (
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl border border-gray-100 p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-primary-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <BookOpen className="w-8 h-8 text-primary-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">{cbtData.title}</h2>
-            <p className="text-gray-600">Read the instructions carefully before starting</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">{cbtData.title}</h2>
+            <p className="text-gray-600 dark:text-gray-300">Read the instructions carefully before starting</p>
           </div>
 
           <div className="space-y-4 mb-8">
-            <div className="bg-blue-50 rounded-xl p-4">
-              <h3 className="font-semibold text-blue-900 mb-2">📋 Exam Details</h3>
-              <ul className="space-y-1 text-sm text-blue-800">
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
+              <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">📋 Exam Details</h3>
+              <ul className="space-y-1 text-sm text-blue-800 dark:text-blue-200">
                 <li>• Total Questions: <strong>{totalQuestions}</strong></li>
                 <li>• Duration: <strong>{duration} minutes</strong></li>
                 <li>• Subjects: <strong>{subjects.join(', ')}</strong></li>
@@ -557,8 +559,8 @@ export default function MockExamPage() {
             </div>
 
             <div className="bg-yellow-50 rounded-xl p-4">
-              <h3 className="font-semibold text-yellow-900 mb-2">⚠️ Important Rules</h3>
-              <ul className="space-y-1 text-sm text-yellow-800">
+              <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">⚠️ Important Rules</h3>
+              <ul className="space-y-1 text-sm text-yellow-800 dark:text-yellow-200">
                 <li>• This exam runs in <strong>full-screen mode</strong> — you cannot exit full-screen during the exam</li>
                 <li>• <strong>Do not switch tabs or windows</strong> — switching tabs will trigger a warning and may auto-submit your exam</li>
                 <li>• <strong>Do not refresh or close the page</strong> — refreshing will automatically submit your exam</li>
@@ -571,9 +573,9 @@ export default function MockExamPage() {
               </ul>
             </div>
 
-            <div className="bg-green-50 rounded-xl p-4">
-              <h3 className="font-semibold text-green-900 mb-2">💡 Tips</h3>
-              <ul className="space-y-1 text-sm text-green-800">
+            <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4">
+              <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">💡 Tips</h3>
+              <ul className="space-y-1 text-sm text-green-800 dark:text-green-200">
                 <li>• Use the calculator if needed (available during exam)</li>
                 <li>• Review your answers before submitting</li>
                 <li>• Switch between subjects to manage your time</li>
@@ -585,8 +587,15 @@ export default function MockExamPage() {
 
           <div className="flex gap-3">
             <button
+              onClick={toggleTheme}
+              className="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center"
+              title="Toggle dark/light mode"
+            >
+              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+            <button
               onClick={() => router.push('/student/mock')}
-              className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200"
+              className="flex-1 px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600"
             >
               Back
             </button>
@@ -629,20 +638,27 @@ export default function MockExamPage() {
     return (
       <div className="max-w-3xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-bold text-gray-900">{cbtData.title}</h2>
-              <p className="text-sm text-gray-500">{selectedSubject}</p>
+              <h2 className="font-bold text-gray-900 dark:text-gray-100">{cbtData.title}</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{selectedSubject}</p>
             </div>
             <div className="flex items-center gap-4">
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                title="Toggle dark mode"
+              >
+                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
               <div className={`flex items-center gap-2 font-mono text-lg font-bold ${getTimerColor()}`}>
                 <Clock className="w-5 h-5" />
                 {formatTime(timeLeft)}
               </div>
               <button
                 onClick={() => setCalculatorOpen(!calculatorOpen)}
-                className={`p-2 rounded-lg ${calculatorOpen ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                className={`p-2 rounded-lg ${calculatorOpen ? 'bg-primary-100 dark:bg-gray-700 text-primary-700' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
                 title="Calculator"
               >
                 <Calculator className="w-5 h-5" />
@@ -665,7 +681,7 @@ export default function MockExamPage() {
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   selectedSubject === subject
                     ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
                 {subject}
@@ -674,22 +690,22 @@ export default function MockExamPage() {
           </div>
 
           <div className="mt-3 flex items-center gap-4">
-            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary-600 transition-all"
                 style={{ width: `${((currentQuestion + 1) / subjectQuestions.length) * 100}%` }}
               />
             </div>
-            <span className="text-sm text-gray-500 whitespace-nowrap">
+            <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
               {currentQuestion + 1}/{subjectQuestions.length} answered
             </span>
           </div>
         </div>
 
         {/* Question Area */}
-        <div className="bg-white rounded-xl border border-gray-100 p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 mb-6">
             <div className="mb-4">
-              <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Question {currentQuestion + 1} of {subjectQuestions.length}
               </span>
               {question.topic && (
@@ -698,25 +714,25 @@ export default function MockExamPage() {
                 </span>
               )}
               {isFirstInSection(currentQuestion) && (
-                <span className="ml-2 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                <span className="ml-2 text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 px-2 py-1 rounded">
                   {getQuestionSectionLabel(question)}
                 </span>
               )}
             </div>
 
             {(question.groupType === 'COMPREHENSION' || question.groupType === 'CLOZE') && question.passage && (
-              <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                 {question.groupTitle && (
-                  <h3 className="text-sm font-semibold text-yellow-900 mb-2">{question.groupTitle}</h3>
+                  <h3 className="text-sm font-semibold text-yellow-900 dark:text-yellow-100 mb-2">{question.groupTitle}</h3>
                 )}
                 {question.groupInstructions && (
-                  <p className="text-xs text-yellow-800 mb-2">{question.groupInstructions}</p>
+                  <p className="text-xs text-yellow-800 dark:text-yellow-200 mb-2">{question.groupInstructions}</p>
                 )}
-                <div className="text-sm text-yellow-900 whitespace-pre-wrap leading-relaxed">{question.passage}</div>
+                <div className="text-sm text-yellow-900 dark:text-yellow-100 whitespace-pre-wrap leading-relaxed">{question.passage}</div>
               </div>
             )}
 
-            <p className="text-lg text-gray-900 mb-6 leading-relaxed">{question.text}</p>
+            <p className="text-lg text-gray-900 dark:text-gray-100 mb-6 leading-relaxed">{question.text}</p>
 
             {question.imageUrl && (
               <img src={question.imageUrl} alt="Question" className="mb-6 rounded-lg max-h-64 object-contain" />
@@ -729,14 +745,14 @@ export default function MockExamPage() {
                   onClick={() => selectAnswer(question.id, index)}
                   className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                     answers[question.id] === index
-                      ? 'border-primary-500 bg-primary-50'
-                      : 'border-gray-100 hover:border-gray-200'
+                      ? 'border-primary-500 bg-primary-50 dark:bg-gray-700'
+                      : 'border-gray-100 dark:border-gray-600 hover:border-gray-200 dark:hover:border-gray-500 dark:border-gray-600'
                   }`}
                 >
-                  <span className="font-bold text-gray-600 mr-3">
+                  <span className="font-bold text-gray-600 dark:text-gray-300 mr-3">
                     {String.fromCharCode(65 + index)}.
                   </span>
-                  <span className="text-gray-900">{option}</span>
+                  <span className="text-gray-900 dark:text-gray-100">{option}</span>
                 </button>
               ))}
             </div>
@@ -745,45 +761,45 @@ export default function MockExamPage() {
         {/* Calculator */}
         {calculatorOpen && (
             <div className="mb-6">
-              <div className="bg-white rounded-xl border border-gray-100 p-4">
-                <h3 className="font-semibold text-gray-900 mb-3 text-sm">Calculator</h3>
-                <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                  <div className="text-right text-xl font-mono font-bold text-gray-900 break-all">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-sm">Calculator</h3>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 mb-3">
+                  <div className="text-right text-xl font-mono font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 break-all">
                     {calcDisplay}
                   </div>
                 </div>
                 <div className="grid grid-cols-5 gap-2 mb-2">
-                  <button onClick={() => handleCalcInput('(')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">(</button>
-                  <button onClick={() => handleCalcInput(')')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">)</button>
-                  <button onClick={() => handleCalcOperator('^')} className="p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-xs font-medium">x^y</button>
-                  <button onClick={handleCalcBackspace} className="p-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-xs font-medium">⌫</button>
+                  <button onClick={() => handleCalcInput('(')} className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 dark:text-indigo-300 rounded hover:bg-indigo-100 text-xs font-medium">(</button>
+                  <button onClick={() => handleCalcInput(')')} className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 dark:text-indigo-300 rounded hover:bg-indigo-100 text-xs font-medium">)</button>
+                  <button onClick={() => handleCalcOperator('^')} className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 dark:text-indigo-300 rounded hover:bg-indigo-100 text-xs font-medium">x^y</button>
+                  <button onClick={handleCalcBackspace} className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-xs font-medium">⌫</button>
                 </div>
                 <div className="grid grid-cols-4 gap-2">
-                  <button onClick={handleCalcClear} className="col-span-2 p-2 bg-red-100 text-red-700 rounded hover:bg-red-200 text-sm font-medium">C</button>
-                  <button onClick={() => handleCalcOperator('/')} className="p-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm font-medium">÷</button>
-                  <button onClick={() => handleCalcOperator('*')} className="p-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm font-medium">×</button>
-                  <button onClick={() => handleCalcInput('7')} className="p-2 bg-white border rounded hover:bg-gray-50 text-sm font-medium">7</button>
-                  <button onClick={() => handleCalcInput('8')} className="p-2 bg-white border rounded hover:bg-gray-50 text-sm font-medium">8</button>
-                  <button onClick={() => handleCalcInput('9')} className="p-2 bg-white border rounded hover:bg-gray-50 text-sm font-medium">9</button>
-                  <button onClick={() => handleCalcOperator('-')} className="p-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm font-medium">−</button>
-                  <button onClick={() => handleCalcInput('4')} className="p-2 bg-white border rounded hover:bg-gray-50 text-sm font-medium">4</button>
-                  <button onClick={() => handleCalcInput('5')} className="p-2 bg-white border rounded hover:bg-gray-50 text-sm font-medium">5</button>
-                  <button onClick={() => handleCalcInput('6')} className="p-2 bg-white border rounded hover:bg-gray-50 text-sm font-medium">6</button>
-                  <button onClick={() => handleCalcOperator('+')} className="p-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm font-medium">+</button>
-                  <button onClick={() => handleCalcInput('1')} className="p-2 bg-white border rounded hover:bg-gray-50 text-sm font-medium">1</button>
-                  <button onClick={() => handleCalcInput('2')} className="p-2 bg-white border rounded hover:bg-gray-50 text-sm font-medium">2</button>
-                  <button onClick={() => handleCalcInput('3')} className="p-2 bg-white border rounded hover:bg-gray-50 text-sm font-medium">3</button>
+                  <button onClick={handleCalcClear} className="col-span-2 p-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 text-sm font-medium">C</button>
+                  <button onClick={() => handleCalcOperator('/')} className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium">÷</button>
+                  <button onClick={() => handleCalcOperator('*')} className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium">×</button>
+                  <button onClick={() => handleCalcInput('7')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">7</button>
+                  <button onClick={() => handleCalcInput('8')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">8</button>
+                  <button onClick={() => handleCalcInput('9')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">9</button>
+                  <button onClick={() => handleCalcOperator('-')} className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium">−</button>
+                  <button onClick={() => handleCalcInput('4')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">4</button>
+                  <button onClick={() => handleCalcInput('5')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">5</button>
+                  <button onClick={() => handleCalcInput('6')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">6</button>
+                  <button onClick={() => handleCalcOperator('+')} className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium">+</button>
+                  <button onClick={() => handleCalcInput('1')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">1</button>
+                  <button onClick={() => handleCalcInput('2')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">2</button>
+                  <button onClick={() => handleCalcInput('3')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">3</button>
                   <button onClick={handleCalcEquals} className="row-span-2 p-2 bg-primary-600 text-white rounded hover:bg-primary-700 text-sm font-medium">=</button>
-                  <button onClick={() => handleCalcInput('0')} className="col-span-2 p-2 bg-white border rounded hover:bg-gray-50 text-sm font-medium">0</button>
-                  <button onClick={() => handleCalcInput('.')} className="p-2 bg-white border rounded hover:bg-gray-50 text-sm font-medium">.</button>
+                  <button onClick={() => handleCalcInput('0')} className="col-span-2 p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">0</button>
+                  <button onClick={() => handleCalcInput('.')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">.</button>
                 </div>
               </div>
             </div>
         )}
 
         {/* Question Palette */}
-        <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6">
-          <h3 className="font-semibold text-gray-900 text-sm mb-3">Questions - {selectedSubject}</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 mb-6">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm mb-3">Questions - {selectedSubject}</h3>
           <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
             {subjectQuestions.map((q, index) => {
               const status = getQuestionStatus(q.id, index);
@@ -804,11 +820,11 @@ export default function MockExamPage() {
               <span>Current</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
+              <div className="w-4 h-4 bg-green-100 dark:bg-green-900/30 border border-green-300 rounded"></div>
               <span>Answered</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-gray-100 border border-gray-200 rounded"></div>
+              <div className="w-4 h-4 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded"></div>
               <span>Unanswered</span>
             </div>
           </div>
@@ -819,7 +835,7 @@ export default function MockExamPage() {
           <button
             onClick={() => setCurrentQuestion(prev => Math.max(0, prev - 1))}
             disabled={currentQuestion === 0}
-            className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 disabled:opacity-50 font-medium"
+            className="px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 font-medium"
           >
             Previous
           </button>
@@ -844,30 +860,30 @@ export default function MockExamPage() {
         {/* Submit Modal */}
         {showSubmitModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full">
               <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                   <AlertTriangle className="w-8 h-8 text-yellow-600" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Submit Mock Exam?</h3>
-                <p className="text-gray-600">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">Submit Mock Exam?</h3>
+                <p className="text-gray-600 dark:text-gray-300">
                   You are about to submit your mock exam. This action cannot be undone.
                 </p>
-                <div className="mt-4 bg-gray-50 rounded-lg p-4">
+                <div className="mt-4 bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Answered:</span>
-                    <span className="font-bold text-gray-900">{answeredCount}</span>
+                    <span className="text-gray-600 dark:text-gray-300">Answered:</span>
+                    <span className="font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">{answeredCount}</span>
                   </div>
                   <div className="flex justify-between text-sm mt-2">
-                    <span className="text-gray-600">Unanswered:</span>
-                    <span className="font-bold text-gray-900">{subjectQuestions.length - answeredCount}</span>
+                    <span className="text-gray-600 dark:text-gray-300">Unanswered:</span>
+                    <span className="font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">{subjectQuestions.length - answeredCount}</span>
                   </div>
                 </div>
               </div>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowSubmitModal(false)}
-                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-medium"
+                  className="flex-1 px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 font-medium"
                 >
                   Continue Exam
                 </button>
@@ -890,20 +906,20 @@ export default function MockExamPage() {
   if (showTabSwitchWarning) {
     return (
       <div className="fixed inset-0 bg-red-50/95 flex items-center justify-center z-50 p-4" style={{ zIndex: 9999 }}>
-        <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center border-2 border-red-200">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <AlertTriangle className="w-8 h-8 text-red-600" />
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full text-center border-2 border-red-200">
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">⚠️ Tab Switch Detected</h3>
-          <p className="text-gray-600 mb-4">
-            You have switched tabs <span className="font-bold text-red-600">{tabSwitchCount}</span> time{tabSwitchCount > 1 ? 's' : ''}.
+          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">⚠️ Tab Switch Detected</h3>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">
+            You have switched tabs <span className="font-bold text-red-600 dark:text-red-400">{tabSwitchCount}</span> time{tabSwitchCount > 1 ? 's' : ''}.
           </p>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 dark:text-gray-300 mb-6">
             Switching tabs during the exam is not allowed. Return to this tab immediately.
           </p>
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-sm">
-            <p className="font-semibold text-red-900 mb-1">Security Notice:</p>
-            <p className="text-red-700">Continuing to switch tabs may result in your exam being automatically submitted.</p>
+            <p className="font-semibold text-red-900 dark:text-red-100 mb-1">Security Notice:</p>
+            <p className="text-red-700 dark:text-red-300">Continuing to switch tabs may result in your exam being automatically submitted.</p>
           </div>
           <button
             onClick={() => setShowTabSwitchWarning(false)}
@@ -920,21 +936,21 @@ export default function MockExamPage() {
   if (showFullscreenPrompt) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full">
           <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
               <Globe className="w-8 h-8 text-orange-600" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Full-Screen Required</h3>
-            <p className="text-gray-600">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">Full-Screen Required</h3>
+            <p className="text-gray-600 dark:text-gray-300">
               This exam requires full-screen mode. Your browser blocked the full-screen request.
             </p>
           </div>
-          <div className="space-y-3 text-sm text-gray-700 mb-6">
+          <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300 mb-6">
             <p>Please enable full-screen manually:</p>
             <ul className="list-disc list-inside space-y-1 text-left">
               <li>Click the full-screen icon in your browser's address bar</li>
-              <li>Or press <kbd className="px-2 py-0.5 bg-gray-100 rounded">F11</kbd> (Windows) / <kbd className="px-2 py-0.5 bg-gray-100 rounded">Ctrl+Cmd+F</kbd> (Mac)</li>
+              <li>Or press <kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">F11</kbd> (Windows) / <kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">Ctrl+Cmd+F</kbd> (Mac)</li>
               <li>Then click "Continue Exam" below</li>
             </ul>
           </div>
@@ -947,7 +963,7 @@ export default function MockExamPage() {
             </button>
             <button
               onClick={() => { setShowFullscreenPrompt(false); enterFullscreen(); }}
-              className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-medium"
+              className="flex-1 px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 font-medium"
             >
               Continue Without Full-Screen
             </button>
@@ -961,19 +977,19 @@ export default function MockExamPage() {
   if (showAutoSubmitModal) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full">
           <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-              <AlertTriangle className="w-8 h-8 text-red-600" />
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+              <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Exam Auto-Submitted</h3>
-            <p className="text-gray-600">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">Exam Auto-Submitted</h3>
+            <p className="text-gray-600 dark:text-gray-300">
               Your exam was interrupted by a page refresh or browser close.
             </p>
           </div>
-          <div className="space-y-3 text-sm text-gray-700 mb-6">
+          <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300 mb-6">
             <p className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <span className="font-semibold text-red-900">Security Policy:</span> Refreshing or closing the page during an exam automatically submits your current answers.
+              <span className="font-semibold text-red-900 dark:text-red-100">Security Policy:</span> Refreshing or closing the page during an exam automatically submits your current answers.
             </p>
             <p>Your saved answers will now be submitted automatically.</p>
           </div>
@@ -993,13 +1009,13 @@ export default function MockExamPage() {
   if (phase === 'result') {
     return (
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
-          <div className="w-24 h-24 mx-auto rounded-full flex items-center justify-center mb-6 bg-green-100">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-8 text-center">
+          <div className="w-24 h-24 mx-auto rounded-full flex items-center justify-center mb-6 bg-green-100 dark:bg-green-900/30">
             <CheckCircle className="w-12 h-12 text-green-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Mock Exam Submitted Successfully</h2>
-          <p className="text-gray-600 mb-6">You have successfully completed your mock examination.</p>
-          <p className="text-sm text-gray-500 mb-8">Your submission has been recorded. You can view your results later from the Mock Results page.</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">Mock Exam Submitted Successfully</h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">You have successfully completed your mock examination.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">Your submission has been recorded. You can view your results later from the Mock Results page.</p>
 
           <div className="flex gap-3 justify-center">
             <button
@@ -1010,7 +1026,7 @@ export default function MockExamPage() {
             </button>
             <button
               onClick={() => router.push('/student/mock-results')}
-              className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              className="px-6 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
             >
               View All Mock Results
             </button>
@@ -1031,12 +1047,12 @@ export default function MockExamPage() {
   if (submitError) {
     return (
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <XCircle className="w-8 h-8 text-red-600" />
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-8 text-center">
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <XCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Something went wrong</h2>
-          <p className="text-gray-600 mb-6">{submitError}</p>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">Something went wrong</h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">{submitError}</p>
           <div className="flex gap-3 justify-center">
             <button
               onClick={resetExam}
@@ -1046,7 +1062,7 @@ export default function MockExamPage() {
             </button>
             <button
               onClick={() => window.location.reload()}
-              className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              className="px-6 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
             >
               Try Again
             </button>

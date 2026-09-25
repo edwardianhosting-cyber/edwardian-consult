@@ -12,6 +12,10 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
+  .dark body {
+    @apply bg-gray-900 text-gray-100;
+  }
+
   input, textarea, [contenteditable="true"] {
     -webkit-user-select: text;
     user-select: text;
