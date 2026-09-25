@@ -51,6 +51,11 @@ export default function MockExamPage() {
   const [showEndModal, setShowEndModal] = useState(false);
   const [showLeaveWarning, setShowLeaveWarning] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [showTabSwitchWarning, setShowTabSwitchWarning] = useState(false);
+  const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
+  const [showAutoSubmitModal, setShowAutoSubmitModal] = useState(false);
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [calcDisplay, setCalcDisplay] = useState('0');
   const [result, setResult] = useState<any>(null);
@@ -102,34 +107,52 @@ export default function MockExamPage() {
     }
   }
 
-  async function resumeFromDraft() {
+  function enterFullscreen() {
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {
+        setShowFullscreenPrompt(true);
+      });
+    }
+  }
+
+  function exitFullscreen() {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
+  }
+
+  function handleTabSwitch() {
+    if (phase === 'exam' && !hasSubmitted.current && document.visibilityState === 'hidden') {
+      setShowTabSwitchWarning(true);
+      setTabSwitchCount(prev => prev + 1);
+    }
+  }
+
+  function handleTabReturn() {
+    if (document.visibilityState === 'visible') {
+      setShowTabSwitchWarning(false);
+    }
+  }
+
+  async function autoSubmitFromDraft() {
     const draft = loadDraft();
-    if (!draft || !draft.cbtData) {
-      showError('No saved progress found');
+    if (!draft || !draft.cbtData || !draft.answers) {
+      setShowAutoSubmitModal(false);
       return;
     }
 
     setLoading(true);
+    setShowAutoSubmitModal(false);
     try {
-      const statusRes = await api.getMockRetakeStatus(examId);
-      const status = (statusRes as any).data || statusRes;
-      if (status && !status.canRetake) {
-        showError('You have already taken this mock exam. Retake requires admin approval.');
-        clearDraft();
-        return;
-      }
-
-      setAnswers(draft.answers || {});
-      setTimeLeft(typeof draft.timeLeft === 'number' ? draft.timeLeft : 3600);
-      setCurrentQuestion(typeof draft.currentQuestion === 'number' ? draft.currentQuestion : 0);
-      setSelectedSubject(draft.selectedSubject || null);
-      setCbtData(draft.cbtData as MockExamData);
-      setExamStarted(true);
-      setPhase('exam');
-      hasSubmitted.current = false;
-      setShowResumePrompt(false);
-    } catch (err: any) {
-      showError(err.message || 'Failed to resume exam');
+      const res = await api.submitCBT(draft.cbtData.examId, draft.answers, 'MOCK', examId);
+      const data = (res as any)?.data || res || {};
+      setResult(data);
+      setPhase('result');
+      clearDraft();
+      showSuccess('Exam auto-submitted due to page refresh');
+    } catch (error) {
+      console.error('Failed to auto-submit exam:', error);
+      showError('Failed to auto-submit. Please contact support.');
     } finally {
       setLoading(false);
     }
@@ -144,7 +167,7 @@ export default function MockExamPage() {
   useEffect(() => {
     const draft = loadDraft();
     if (draft && draft.cbtData && draft.phase === 'exam') {
-      setShowResumePrompt(true);
+      setShowAutoSubmitModal(true);
     }
   }, [examId]);
 
@@ -163,7 +186,7 @@ export default function MockExamPage() {
       if (phase === 'exam' && !hasSubmitted.current) {
         saveDraft();
         event.preventDefault();
-        event.returnValue = 'Your exam progress is saved. You can resume later.';
+        event.returnValue = 'Your exam will be automatically submitted if you leave or refresh. Are you sure you want to continue?';
       }
     }
 
@@ -193,6 +216,28 @@ export default function MockExamPage() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [phase, showSubmitModal]);
+
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'hidden') {
+        handleTabSwitch();
+      } else {
+        handleTabReturn();
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [phase]);
+
+  useEffect(() => {
+    function handleFullscreenChange() {
+      setIsFullscreen(!!document.fullscreenElement);
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   useEffect(() => {
     if (phase !== 'exam' || !cbtData || showSubmitModal) return;
@@ -382,6 +427,7 @@ export default function MockExamPage() {
       setExamStarted(true);
       setPhase('exam');
       hasSubmitted.current = false;
+      setTimeout(() => enterFullscreen(), 500);
     } catch (error: any) {
       console.error('Failed to start mock exam:', error);
       const message = error?.message || 'Failed to start mock exam. Please try again.';
@@ -397,6 +443,7 @@ export default function MockExamPage() {
     hasSubmitted.current = true;
     setSubmitError(null);
     if (timerRef.current) clearInterval(timerRef.current);
+    exitFullscreen();
 
     setLoading(true);
     try {
@@ -441,6 +488,7 @@ export default function MockExamPage() {
     setSubmitError(null);
     hasSubmitted.current = false;
     clearDraft();
+    exitFullscreen();
   }
 
   // Calculator functions
@@ -511,7 +559,9 @@ export default function MockExamPage() {
             <div className="bg-yellow-50 rounded-xl p-4">
               <h3 className="font-semibold text-yellow-900 mb-2">⚠️ Important Rules</h3>
               <ul className="space-y-1 text-sm text-yellow-800">
-                <li>• Do not refresh or leave the page during the exam</li>
+                <li>• This exam runs in <strong>full-screen mode</strong> — you cannot exit full-screen during the exam</li>
+                <li>• <strong>Do not switch tabs or windows</strong> — switching tabs will trigger a warning and may auto-submit your exam</li>
+                <li>• <strong>Do not refresh or close the page</strong> — refreshing will automatically submit your exam</li>
                 <li>• The timer cannot be paused once started</li>
                 <li>• Leaving or closing the page will automatically submit your exam</li>
                 <li>• Navigating away requires confirmation and will submit your attempt</li>
@@ -836,6 +886,109 @@ export default function MockExamPage() {
     );
   }
 
+  // Tab Switch Warning Overlay
+  if (showTabSwitchWarning) {
+    return (
+      <div className="fixed inset-0 bg-red-50/95 flex items-center justify-center z-50 p-4" style={{ zIndex: 9999 }}>
+        <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center border-2 border-red-200">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <AlertTriangle className="w-8 h-8 text-red-600" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">⚠️ Tab Switch Detected</h3>
+          <p className="text-gray-600 mb-4">
+            You have switched tabs <span className="font-bold text-red-600">{tabSwitchCount}</span> time{tabSwitchCount > 1 ? 's' : ''}.
+          </p>
+          <p className="text-gray-600 mb-6">
+            Switching tabs during the exam is not allowed. Return to this tab immediately.
+          </p>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-sm">
+            <p className="font-semibold text-red-900 mb-1">Security Notice:</p>
+            <p className="text-red-700">Continuing to switch tabs may result in your exam being automatically submitted.</p>
+          </div>
+          <button
+            onClick={() => setShowTabSwitchWarning(false)}
+            className="px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium w-full"
+          >
+            I Understand — Return to Exam
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Fullscreen Prompt Modal
+  if (showFullscreenPrompt) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Globe className="w-8 h-8 text-orange-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Full-Screen Required</h3>
+            <p className="text-gray-600">
+              This exam requires full-screen mode. Your browser blocked the full-screen request.
+            </p>
+          </div>
+          <div className="space-y-3 text-sm text-gray-700 mb-6">
+            <p>Please enable full-screen manually:</p>
+            <ul className="list-disc list-inside space-y-1 text-left">
+              <li>Click the full-screen icon in your browser's address bar</li>
+              <li>Or press <kbd className="px-2 py-0.5 bg-gray-100 rounded">F11</kbd> (Windows) / <kbd className="px-2 py-0.5 bg-gray-100 rounded">Ctrl+Cmd+F</kbd> (Mac)</li>
+              <li>Then click "Continue Exam" below</li>
+            </ul>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => { setShowFullscreenPrompt(false); enterFullscreen(); }}
+              className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium"
+            >
+              Try Full-Screen Again
+            </button>
+            <button
+              onClick={() => { setShowFullscreenPrompt(false); enterFullscreen(); }}
+              className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-medium"
+            >
+              Continue Without Full-Screen
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Auto-Submit Modal
+  if (showAutoSubmitModal) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+              <AlertTriangle className="w-8 h-8 text-red-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Exam Auto-Submitted</h3>
+            <p className="text-gray-600">
+              Your exam was interrupted by a page refresh or browser close.
+            </p>
+          </div>
+          <div className="space-y-3 text-sm text-gray-700 mb-6">
+            <p className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <span className="font-semibold text-red-900">Security Policy:</span> Refreshing or closing the page during an exam automatically submits your current answers.
+            </p>
+            <p>Your saved answers will now be submitted automatically.</p>
+          </div>
+          <button
+            onClick={autoSubmitFromDraft}
+            disabled={loading}
+            className="w-full px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 font-medium"
+          >
+            {loading ? 'Submitting...' : 'Submit Exam Now'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Phase: Result
   if (phase === 'result') {
     return (
@@ -896,42 +1049,6 @@ export default function MockExamPage() {
               className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
             >
               Try Again
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (showResumePrompt) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="w-8 h-8 text-blue-600" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Resume Exam?</h3>
-            <p className="text-gray-600">
-              We found an unfinished exam session. Would you like to resume from where you left off?
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => {
-                clearDraft();
-                setShowResumePrompt(false);
-              }}
-              className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-medium"
-            >
-              Start Over
-            </button>
-            <button
-              onClick={resumeFromDraft}
-              disabled={loading}
-              className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 font-medium"
-            >
-              {loading ? 'Loading...' : 'Resume Exam'}
             </button>
           </div>
         </div>
