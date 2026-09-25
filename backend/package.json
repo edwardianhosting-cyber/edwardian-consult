@@ -42,6 +42,7 @@
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^9.0.5",
+    "@types/nodemailer": "^6.4.14",
     "pdf-parse": "^1.1.1",
     "qrcode": "^1.5.4",
     "tailwind-merge": "^3.6.0",
@@ -50,7 +51,6 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/nodemailer": "^6.4.14",
     "@types/web-push": "^3.6.4",
     "prisma": "^5.22.0",
     "ts-node": "^10.9.2",
