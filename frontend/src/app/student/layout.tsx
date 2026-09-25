@@ -31,8 +31,11 @@ import {
   FileCheck,
   Users,
   Share2,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
+import { useTheme } from '@/lib/theme';
 
 interface StudentLayoutProps {
   children: React.ReactNode;
@@ -112,6 +115,7 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [avatarDropdownOpen, setAvatarDropdownOpen] = useState(false);
+  const { toggleTheme } = useTheme();
 
   useEffect(() => {
     const checkAuth = () => {
@@ -261,7 +265,15 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
                 />
               </div>
             </div>
-            <div className="flex items-center gap-3">
+             <div className="flex items-center gap-3">
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                title="Toggle dark/light mode"
+              >
+                <Sun className="w-5 h-5 dark:hidden" />
+                <Moon className="w-5 h-5 hidden dark:block" />
+              </button>
               <NotificationBell />
               <div className="relative">
                 <button
