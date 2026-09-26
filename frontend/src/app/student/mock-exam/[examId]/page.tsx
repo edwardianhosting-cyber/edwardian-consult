@@ -46,6 +46,7 @@ export default function MockExamPage() {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [subjectQuestions, setSubjectQuestions] = useState<MockQuestion[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [palettePage, setPalettePage] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(3600);
@@ -359,6 +360,12 @@ export default function MockExamPage() {
       setCurrentQuestion(0);
     }
   }, [selectedSubject, cbtData]);
+
+  useEffect(() => {
+    const questionsPerPage = 10;
+    const page = Math.floor(currentQuestion / questionsPerPage);
+    setPalettePage(page);
+  }, [currentQuestion]);
 
   function selectAnswer(questionId: string, optionIndex: number) {
     setAnswers(prev => ({ ...prev, [questionId]: optionIndex }));
@@ -799,21 +806,67 @@ export default function MockExamPage() {
 
         {/* Question Palette */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 mb-6">
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm mb-3">Questions - {selectedSubject}</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Questions - {selectedSubject}</h3>
+            {subjectQuestions.length > 10 && (
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                Page {palettePage + 1} of {Math.ceil(subjectQuestions.length / 10)}
+              </span>
+            )}
+          </div>
           <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
-            {subjectQuestions.map((q, index) => {
-              const status = getQuestionStatus(q.id, index);
+            {subjectQuestions.slice(palettePage * 10, palettePage * 10 + 10).map((q, index) => {
+              const actualIndex = palettePage * 10 + index;
+              const status = getQuestionStatus(q.id, actualIndex);
               return (
                 <button
                   key={q.id}
-                  onClick={() => setCurrentQuestion(index)}
+                  onClick={() => setCurrentQuestion(actualIndex)}
                   className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${getQuestionColor(status)}`}
                 >
-                  {index + 1}
+                  {actualIndex + 1}
                 </button>
               );
             })}
           </div>
+          {subjectQuestions.length > 10 && (
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <button
+                onClick={() => setPalettePage(prev => Math.max(0, prev - 1))}
+                disabled={palettePage === 0}
+                className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 text-xs font-medium"
+              >
+                Prev
+              </button>
+              {Array.from({ length: Math.min(5, Math.ceil(subjectQuestions.length / 10)) }).map((_, pageNum) => {
+                const totalPages = Math.ceil(subjectQuestions.length / 10);
+                let displayPage = pageNum;
+                const startPage = Math.max(0, Math.min(palettePage - 2, totalPages - 5));
+                displayPage = startPage + pageNum;
+                if (displayPage >= totalPages) return null;
+                return (
+                  <button
+                    key={displayPage}
+                    onClick={() => setPalettePage(displayPage)}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                      displayPage === palettePage
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {displayPage + 1}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => setPalettePage(prev => Math.min(Math.ceil(subjectQuestions.length / 10) - 1, prev + 1))}
+                disabled={palettePage >= Math.ceil(subjectQuestions.length / 10) - 1}
+                className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 text-xs font-medium"
+              >
+                Next
+              </button>
+            </div>
+          )}
           <div className="mt-4 space-y-2 text-xs">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-primary-600 rounded"></div>
