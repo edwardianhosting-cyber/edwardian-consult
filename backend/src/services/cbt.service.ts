@@ -583,8 +583,10 @@ export async function getAdminFilteredResults(options: {
   sortBy?: 'score' | 'date';
   page?: number;
   limit?: number;
+  startDate?: string;
+  endDate?: string;
 }) {
-  const { type, examId, sortBy = 'score', page = 1, limit = 50 } = options;
+  const { type, examId, sortBy = 'score', page = 1, limit = 50, startDate, endDate } = options;
 
   const where: any = {};
   if (type && type !== 'ALL') {
@@ -592,6 +594,12 @@ export async function getAdminFilteredResults(options: {
   }
   if (examId) {
     where.examId = examId;
+  }
+  if (startDate) {
+    where.completedAt = { gte: new Date(startDate) };
+  }
+  if (endDate) {
+    where.completedAt = { ...where.completedAt, lte: new Date(endDate) };
   }
 
   const orderBy: any = sortBy === 'score'

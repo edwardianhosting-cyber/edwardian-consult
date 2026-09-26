@@ -112,26 +112,23 @@ export default function AdminResultsPage() {
   const [results, setResults] = useState<AdminResult[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [resultTypeFilter, setResultTypeFilter] = useState<ResultTypeFilter>('ALL');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [selectedMockExamId, setSelectedMockExamId] = useState<string>('');
-  const [examTypeFilter, setExamTypeFilter] = useState('ALL');
+  const [resultTypeFilter, setResultTypeFilter] = useState<ResultTypeFilter>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
   const [orgName, setOrgName] = useState('Edwardian Educational Consult');
   const router = useRouter();
 
-  const examTypes = ['ALL', 'JAMB', 'WAEC', 'NECO', 'POST-UTME', 'MOCK', 'PRACTICE'];
-
   const filteredResults = results.filter((result) => {
-    if (examTypeFilter === 'ALL') return true;
-    if (examTypeFilter === 'PRACTICE') return result.type !== 'MOCK';
-    return result.type === examTypeFilter || result.exam?.examType === examTypeFilter;
+    return true;
   });
 
   useEffect(() => {
     fetchData();
-  }, [view, resultTypeFilter, selectedMockExamId, currentPage]);
+  }, [view, resultTypeFilter, selectedMockExamId, currentPage, startDate, endDate]);
 
   async function fetchData() {
     setLoading(true);
@@ -150,6 +147,8 @@ export default function AdminResultsPage() {
           sortBy: 'score',
           page: currentPage,
           limit: 50,
+          startDate,
+          endDate,
         });
         const response = data as any;
         setResults(response.data?.results || []);
@@ -159,9 +158,12 @@ export default function AdminResultsPage() {
       if (view === 'mock') {
         const data = await api.adminGetFilteredResults({
           type: 'MOCK',
+          examId: selectedMockExamId || undefined,
           sortBy: 'score',
           page: currentPage,
           limit: 50,
+          startDate,
+          endDate,
         });
         const response = data as any;
         setResults(response.data?.results || []);
@@ -175,6 +177,8 @@ export default function AdminResultsPage() {
           sortBy: 'score',
           page: currentPage,
           limit: 50,
+          startDate,
+          endDate,
         });
         const response = data as any;
         setResults(response.data?.results || []);
@@ -470,36 +474,58 @@ export default function AdminResultsPage() {
           {/* Practice/Mock Management View */}
           {(view === 'practice' || view === 'mock') && (
             <div className="space-y-4">
-              {(view === 'practice' || view === 'mock') && (
-                <div className="bg-white rounded-xl border border-gray-100 p-4">
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Exam Type</label>
+              <div className="bg-white rounded-xl border border-gray-100 p-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  {view === 'mock' && (
+                    <div className="sm:w-64">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Mock Exam</label>
                       <select
-                        value={examTypeFilter}
+                        value={selectedMockExamId}
                         onChange={(e) => {
-                          setExamTypeFilter(e.target.value);
+                          setSelectedMockExamId(e.target.value);
                           setCurrentPage(1);
                         }}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
                       >
-                        {examTypes.map((type) => (
-                          <option key={type} value={type}>{type === 'ALL' ? 'All Types' : type}</option>
+                        <option value="">All Mock Exams</option>
+                        {exams.map(exam => (
+                          <option key={exam.id} value={exam.id}>{exam.title}</option>
                         ))}
                       </select>
                     </div>
-                    <div className="flex items-end">
-                      <button
-                        onClick={handlePrint}
-                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
-                      >
-                        <Printer className="w-4 h-4" />
-                        Print Results
-                      </button>
-                    </div>
+                  )}
+
+                  <div className="sm:w-48">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">From Date</label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+
+                  <div className="sm:w-48">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">To Date</label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+
+                  <div className="flex items-end">
+                    <button
+                      onClick={handlePrint}
+                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
+                    >
+                      <Printer className="w-4 h-4" />
+                      Print Results
+                    </button>
                   </div>
                 </div>
-              )}
+              </div>
 
               {/* Print Header */}
               <div className="hidden print:block mb-6">
@@ -511,7 +537,7 @@ export default function AdminResultsPage() {
               </div>
 
               <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-                {filteredResults.length === 0 ? (
+                {results.length === 0 ? (
                   <div className="text-center py-16">
                     <p className="text-gray-500">No results found</p>
                   </div>
@@ -531,23 +557,25 @@ export default function AdminResultsPage() {
                            </tr>
                          </thead>
                          <tbody>
-                           {filteredResults.map((result) => (
+                           {results.map((result) => {
+                             const primarySubject = result.subjectEntries?.[0]?.subject || result.subject || '-';
+                             return (
                              <tr key={result.id} className="border-b last:border-0 hover:bg-gray-50">
-                               <td className="px-4 py-3 text-sm text-gray-900">
-                                 {result.user?.fullName || result.user?.email || 'Unknown'}
+                               <td className="px-4 py-3 text-sm text-gray-900 font-medium">
+                                 {result.studentName || 'Unknown'}
                                </td>
-                               <td className="px-4 py-3 text-sm text-gray-600">{result.exam?.title || '-'}</td>
-                               <td className="px-4 py-3 text-sm text-gray-600">{result.subject}</td>
+                               <td className="px-4 py-3 text-sm text-gray-600">{result.examTitle || result.exam?.title || '-'}</td>
+                               <td className="px-4 py-3 text-sm text-gray-600">{primarySubject}</td>
                                <td className="px-4 py-3 text-sm text-gray-600">
-                                 <span className="capitalize">{result.type.toLowerCase()}</span>
+                                 <span className="capitalize">{result.type?.toLowerCase() || 'mock'}</span>
                                </td>
                                <td className="px-4 py-3 text-center">
                                  <span className={`text-sm font-medium px-2 py-1 rounded ${
-                                   result.score >= 70 ? 'bg-green-100 text-green-700' :
-                                   result.score >= 50 ? 'bg-yellow-100 text-yellow-700' :
+                                   result.aggregate >= 70 ? 'bg-green-100 text-green-700' :
+                                   result.aggregate >= 50 ? 'bg-yellow-100 text-yellow-700' :
                                    'bg-red-100 text-red-700'
                                  }`}>
-                                   {Math.round(result.score)}%
+                                   {Math.round(result.aggregate)}%
                                  </span>
                                </td>
                                <td className="px-4 py-3 text-sm text-gray-500">
@@ -555,7 +583,13 @@ export default function AdminResultsPage() {
                                </td>
                                <td className="px-4 py-3 text-right">
                                  <button
-                                   onClick={() => router.push(`/admin/results/review/${result.id}`)}
+                                   onClick={() => {
+                                     if (result.type?.toLowerCase() === 'mock') {
+                                       router.push(`/admin/mock-results/${result.id}`);
+                                     } else {
+                                       router.push(`/admin/results/review/${result.id}`);
+                                     }
+                                   }}
                                    className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded"
                                    title="Review Attempt"
                                  >
@@ -563,7 +597,8 @@ export default function AdminResultsPage() {
                                  </button>
                                </td>
                              </tr>
-                           ))}
+                             );
+                           })}
                          </tbody>
                       </table>
                     </div>

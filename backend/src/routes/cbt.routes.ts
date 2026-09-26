@@ -361,11 +361,13 @@ router.get('/admin/results', authenticate, authorize('ADMIN'), async (req: Reque
 // Admin: get filtered results with type, examId, and sorting
 router.get('/admin/results/filtered', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
-    const type = (req.query.type as string) || 'ALL';
+     const type = (req.query.type as string) || 'ALL';
     const examId = (req.query.examId as string) || undefined;
     const sortBy = (req.query.sortBy as string) || 'score';
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 50;
+    const startDate = (req.query.startDate as string) || undefined;
+    const endDate = (req.query.endDate as string) || undefined;
 
     const data = await getAdminFilteredResults({
       type: type === 'ALL' ? undefined : type,
@@ -373,6 +375,8 @@ router.get('/admin/results/filtered', authenticate, authorize('ADMIN'), async (r
       sortBy: sortBy === 'date' ? 'date' : 'score',
       page,
       limit,
+      startDate,
+      endDate,
     });
 
     res.json({ success: true, data });

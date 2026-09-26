@@ -52,10 +52,9 @@ export default function HomePage() {
     <>
       <HomeRedirect />
       <div className="min-h-screen bg-primary-800">
-        {/* Full Width Hero Carousel */}
+         {/* Full Width Hero Carousel */}
         <HeroCarousel />
-
-        {/* Stats Section */}
+{/* Stats Section */}
         <section className="py-16 bg-primary-800 border-b border-primary-700">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
@@ -207,3 +206,5 @@ export default function HomePage() {
     </>
   );
 }
+
+

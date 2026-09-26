@@ -1,17 +1,32 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useCallback, ReactNode, useRef } from 'react';
+import { ArrowRight, ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import FeatureShowcaseCard from './FeatureShowcaseCard';
+import CBTSimulatorCard from './CBTSimulatorCard';
+import DataContainerCard from './DataContainerCard';
 
-const slides = [
+interface Slide {
+  id: number;
+  title: string;
+  subtitle: string;
+  description: string;
+  image?: string;
+  videoSrc?: string;
+  videoMuted?: boolean;
+  card?: ReactNode;
+}
+
+const slides: Slide[] = [
   {
     id: 1,
     title: 'Your Best JAMB Score',
     subtitle: 'STARTS HERE.',
     description: 'Learn from experienced tutors, master past questions and prepare with confidence.',
     image: '/images/student-1.png',
+    card: <FeatureShowcaseCard />,
   },
   {
     id: 2,
@@ -19,6 +34,7 @@ const slides = [
     subtitle: 'EXAMINATIONS.',
     description: 'Access over 50,000 past questions, mock exams, and detailed explanations.',
     image: '/images/student-2.png',
+    card: <CBTSimulatorCard />,
   },
   {
     id: 3,
@@ -26,12 +42,45 @@ const slides = [
     subtitle: 'BEST TUTORS.',
     description: 'Our expert tutors provide personalized guidance and support to help you achieve your goals.',
     image: '/images/student-3.png',
+    card: <DataContainerCard />,
+  },
+  {
+    id: 4,
+    title: 'Watch & Learn',
+    subtitle: 'ANYTIME.',
+    description: 'Access hundreds of video tutorials and practice problems to reinforce your learning.',
+    videoSrc: '/videos/hero-video-1.mp4',
+    videoMuted: false,
+    card: <FeatureShowcaseCard />,
+  },
+  {
+    id: 5,
+    title: 'Learn Anytime,',
+    subtitle: 'ON THE GO.',
+    description: 'Our audio podcasts cover exam strategies, success tips, and topic deep-dives for your commute.',
+    videoSrc: '/videos/hero-video-2.mp4',
+    videoMuted: true,
+    card: <FeatureShowcaseCard />,
   },
 ];
 
 export default function HeroCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
+
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+  };
+
+  useEffect(() => {
+    videoRefs.current.forEach((video) => {
+      if (video) {
+        video.muted = isMuted ? true : video.dataset.defaultMuted === 'true';
+      }
+    });
+  }, [isMuted]);
 
   const nextSlide = useCallback(() => {
     if (isTransitioning) return;
@@ -60,10 +109,16 @@ export default function HeroCarousel() {
   }, [nextSlide]);
 
   const slide = slides[currentSlide];
+  const isVideoSlide = !!slide.videoSrc;
+
+  const getVideoMuted = (s: Slide) => {
+    if (isMuted) return true;
+    return s.videoMuted !== undefined ? s.videoMuted : false;
+  };
 
   return (
     <section className="relative w-full overflow-hidden h-[70vh] min-h-[500px] max-h-[700px] md:h-[85vh] md:max-h-[800px]">
-      {/* Full Width Background Image */}
+      {/* Full Width Background Image / Video */}
       {slides.map((s, index) => (
         <div
           key={s.id}
@@ -71,14 +126,35 @@ export default function HeroCarousel() {
             index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
           }`}
         >
-          <Image
-            src={s.image}
-            alt={s.title}
-            fill
-            className="object-cover object-center md:object-center"
-            style={{ objectPosition: '60% 50%' }}
-            priority={index === 0}
-          />
+          {s.videoSrc ? (
+            <video
+              ref={(el) => {
+                if (el) {
+                  videoRefs.current.set(s.id, el);
+                  el.dataset.defaultMuted = String(getVideoMuted(s));
+                  el.muted = getVideoMuted(s);
+                } else {
+                  videoRefs.current.delete(s.id);
+                }
+              }}
+              src={s.videoSrc}
+              autoPlay
+              loop
+              muted={getVideoMuted(s)}
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover object-center"
+              style={{ objectPosition: '60% 50%' }}
+            />
+          ) : (
+            <Image
+              src={s.image || '/images/student-1.png'}
+              alt={s.title}
+              fill
+              className="object-cover object-center md:object-center"
+              style={{ objectPosition: '60% 50%' }}
+              priority={index === 0}
+            />
+          )}
           {/* Mobile: Full overlay for readability | Desktop: Left gradient only */}
           <div className="absolute inset-0 bg-black/50 md:hidden" />
           <div
@@ -89,6 +165,17 @@ export default function HeroCarousel() {
           />
         </div>
       ))}
+
+      {/* Volume Toggle - Only on video slides */}
+      {isVideoSlide && (
+        <button
+          onClick={toggleMute}
+          className="absolute bottom-24 right-16 z-30 w-10 h-10 rounded-full bg-black/40 border border-white/20 text-white hover:bg-black/60 transition-colors flex items-center justify-center"
+          aria-label={getVideoMuted(slide) ? "Unmute" : "Mute"}
+        >
+          {getVideoMuted(slide) ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+        </button>
+      )}
 
       {/* Content Overlay */}
       <div className="relative z-20 h-full flex items-center">
@@ -198,6 +285,17 @@ export default function HeroCarousel() {
           </div>
         </div>
       </div>
+
+      {slide.card && (
+        <div
+          key={`card-${slide.id}`}
+          className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ease-in-out ${
+            currentSlide === slide.id - 1 ? 'opacity-100 z-5' : 'opacity-0 z-0'
+          }`}
+        >
+          {slide.card}
+        </div>
+      )}
 
       {/* Navigation Arrows - Hidden on mobile, visible on md+ */}
       <button

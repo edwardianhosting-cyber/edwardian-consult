@@ -193,9 +193,9 @@ export default function AdminMockResultDetailPage() {
   }
 
   function getScoreColor(score: number) {
-    if (score >= 70) return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30';
-    if (score >= 50) return 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30';
-    return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30';
+    if (score >= 70) return 'text-green-600 bg-green-50';
+    if (score >= 50) return 'text-yellow-600 bg-yellow-50';
+    return 'text-red-600 bg-red-50';
   }
 
   function getEffectiveQuestion(q: Correction): Correction {
@@ -227,12 +227,12 @@ export default function AdminMockResultDetailPage() {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Mock Exam Result</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Review mock examination result</p>
+          <h1 className="text-2xl font-bold text-gray-900">Mock Exam Result</h1>
+          <p className="text-gray-600 mt-1">Review mock examination result</p>
         </div>
-        <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
-          <AlertTriangle className="w-12 h-12 text-red-500 dark:text-red-400 mx-auto mb-4" />
-          <p className="text-red-500 dark:text-red-400 text-lg">{error}</p>
+        <div className="text-center py-16 bg-white rounded-xl border border-gray-100">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <p className="text-red-500 text-lg">{error}</p>
           <button
             onClick={fetchResult}
             className="mt-4 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
@@ -248,12 +248,12 @@ export default function AdminMockResultDetailPage() {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Mock Exam Result</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Review mock examination result</p>
+          <h1 className="text-2xl font-bold text-gray-900">Mock Exam Result</h1>
+          <p className="text-gray-600 mt-1">Review mock examination result</p>
         </div>
-        <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
-          <AlertTriangle className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-500 dark:text-gray-400 text-lg">Mock result not found</p>
+        <div className="text-center py-16 bg-white rounded-xl border border-gray-100">
+          <AlertTriangle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-500 text-lg">Mock result not found</p>
           <button
             onClick={() => router.push('/admin/results')}
             className="mt-4 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
@@ -273,13 +273,13 @@ export default function AdminMockResultDetailPage() {
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.push('/admin/results')}
-            className="p-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg"
+            className="p-2 hover:bg-gray-100:bg-gray-600 rounded-lg"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+            <ArrowLeft className="w-5 h-5 text-gray-700" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Review Mock Exam</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">{result.examTitle}</p>
+            <h1 className="text-2xl font-bold text-gray-900">Review Mock Exam</h1>
+            <p className="text-gray-600 mt-1">{result.examTitle}</p>
           </div>
         </div>
         <div className="flex gap-3">
@@ -302,7 +302,7 @@ export default function AdminMockResultDetailPage() {
           </button>
           <button
             onClick={() => window.print()}
-            className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-2"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200:bg-gray-600 flex items-center gap-2"
           >
             <Printer className="w-4 h-4" />
             Print Result
@@ -319,77 +319,77 @@ export default function AdminMockResultDetailPage() {
       </div>
 
       {/* Student Info */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Student Information</h2>
+      <div className="bg-white rounded-xl border border-gray-100 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Student Information</h2>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Student Name</p>
-            <p className="font-medium text-gray-900 dark:text-gray-100">{result.studentName}</p>
+            <p className="text-sm text-gray-500">Student Name</p>
+            <p className="font-medium text-gray-900">{result.studentName}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Email</p>
-            <p className="font-medium text-gray-900 dark:text-gray-100">{result.email}</p>
+            <p className="text-sm text-gray-500">Email</p>
+            <p className="font-medium text-gray-900">{result.email}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Gmail</p>
-            <p className="font-medium text-gray-900 dark:text-gray-100">{result.studentEmail || result.email || '-'}</p>
+            <p className="text-sm text-gray-500">Gmail</p>
+            <p className="font-medium text-gray-900">{result.studentEmail || result.email || '-'}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Subject</p>
-            <p className="font-medium text-gray-900 dark:text-gray-100">{result.examTitle}</p>
+            <p className="text-sm text-gray-500">Subject</p>
+            <p className="font-medium text-gray-900">{result.examTitle}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Date Submitted</p>
-            <p className="font-medium text-gray-900 dark:text-gray-100">{new Date(result.completedAt).toLocaleString()}</p>
+            <p className="text-sm text-gray-500">Date Submitted</p>
+            <p className="font-medium text-gray-900">{new Date(result.completedAt).toLocaleString()}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Type</p>
-            <p className="font-medium text-gray-900 dark:text-gray-100 capitalize">{result.type?.toLowerCase() || 'mock'}</p>
+            <p className="text-sm text-gray-500">Type</p>
+            <p className="font-medium text-gray-900 capitalize">{result.type?.toLowerCase() || 'mock'}</p>
           </div>
         </div>
       </div>
 
       {/* Result Summary */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Result Summary</h2>
+      <div className="bg-white rounded-xl border border-gray-100 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Result Summary</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="bg-green-50 dark:bg-green-900/30 rounded-xl p-4">
-            <CheckCircle className="w-6 h-6 text-green-500 dark:text-green-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{result.correctAnswers}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Correct</p>
+          <div className="bg-green-50 rounded-xl p-4">
+            <CheckCircle className="w-6 h-6 text-green-500 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-green-600">{result.correctAnswers}</p>
+            <p className="text-sm text-gray-500">Correct</p>
           </div>
-          <div className="bg-red-50 dark:bg-red-900/30 rounded-xl p-4">
-            <XCircle className="w-6 h-5 text-red-500 dark:text-red-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-red-600 dark:text-red-400">{result.wrongAnswers}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Wrong</p>
+          <div className="bg-red-50 rounded-xl p-4">
+            <XCircle className="w-6 h-5 text-red-500 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-red-600">{result.wrongAnswers}</p>
+            <p className="text-sm text-gray-500">Wrong</p>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
-            <AlertTriangle className="w-6 h-6 text-gray-500 dark:text-gray-300 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-600 dark:text-gray-300">{result.skippedAnswers}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Unanswered</p>
+          <div className="bg-gray-50 rounded-xl p-4">
+            <AlertTriangle className="w-6 h-6 text-gray-500 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-gray-600">{result.skippedAnswers}</p>
+            <p className="text-sm text-gray-500">Unanswered</p>
           </div>
           <div className={`rounded-xl p-4 ${getScoreColor(result.aggregate)}`}>
             <BarChart3 className="w-6 h-6 mx-auto mb-2" />
             <p className="text-2xl font-bold">{Math.round(result.aggregate)}%</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Aggregate</p>
+            <p className="text-sm text-gray-500">Aggregate</p>
           </div>
         </div>
       </div>
 
       {/* Subject Breakdown */}
       {result.subjectEntries && result.subjectEntries.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Subject Breakdown</h2>
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Subject Breakdown</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {result.subjectEntries.map((entry) => (
-              <div key={entry.subject} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+              <div key={entry.subject} className="border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium text-gray-900 dark:text-gray-100">{entry.subject}</h3>
+                  <h3 className="font-medium text-gray-900">{entry.subject}</h3>
                   <span className={`text-sm font-bold px-2 py-1 rounded ${getScoreColor(entry.score)}`}>
                     {entry.score}%
                   </span>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{entry.correct} / {entry.total} correct</p>
+                <p className="text-sm text-gray-600">{entry.correct} / {entry.total} correct</p>
               </div>
             ))}
           </div>
@@ -397,9 +397,9 @@ export default function AdminMockResultDetailPage() {
       )}
 
       {/* Corrections / Review */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Question Review</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+      <div className="bg-white rounded-xl border border-gray-100 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Question Review</h2>
+        <p className="text-sm text-gray-500 mb-4">
           Edit questions and click <strong>Recalculate</strong> to update the score based on edits.
         </p>
         <div className="space-y-4">
@@ -417,25 +417,25 @@ export default function AdminMockResultDetailPage() {
                 key={correction.questionId}
                 className={`p-4 rounded-xl border-2 ${
                   isCorrect
-                    ? 'border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/20'
-                    : 'border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20'
-                } ${isEdited ? 'border-yellow-300 dark:border-yellow-600' : ''}`}
+                    ? 'border-green-200 bg-green-50'
+                    : 'border-red-200 bg-red-50'
+                } ${isEdited ? 'border-yellow-300' : ''}`}
               >
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0 mt-1">
                     {isCorrect ? (
-                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                      <CheckCircle className="w-5 h-5 text-green-600" />
                     ) : (
-                      <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                      <XCircle className="w-5 h-5 text-red-600" />
                     )}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="font-medium text-gray-900 dark:text-gray-100">
+                      <p className="font-medium text-gray-900">
                         Q{correction.questionNumber}: {effective.question}
                       </p>
                       {isEdited && (
-                        <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 px-2 py-0.5 rounded-full">
+                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">
                           Unsaved
                         </span>
                       )}
@@ -443,24 +443,24 @@ export default function AdminMockResultDetailPage() {
 
                     {/* Passage / Group info for comprehension/cloze questions */}
                     {((isNewGroup && correction.passage) || (!isNewGroup && correction.passage && correction.groupId && corrections[index - 1]?.groupId !== correction.groupId)) && (
-                      <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                      <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                         {correction.groupTitle && (
-                          <h3 className="text-sm font-semibold text-yellow-900 dark:text-yellow-100 mb-2">{correction.groupTitle}</h3>
+                          <h3 className="text-sm font-semibold text-yellow-900 mb-2">{correction.groupTitle}</h3>
                         )}
                         {correction.groupInstructions && (
-                          <p className="text-xs text-yellow-800 dark:text-yellow-200 mb-2">{correction.groupInstructions}</p>
+                          <p className="text-xs text-yellow-800 mb-2">{correction.groupInstructions}</p>
                         )}
-                        <div className="text-sm text-yellow-900 dark:text-yellow-100 whitespace-pre-wrap leading-relaxed">{correction.passage}</div>
+                        <div className="text-sm text-yellow-900 whitespace-pre-wrap leading-relaxed">{correction.passage}</div>
                       </div>
                     )}
 
                     {/* Editable Question Text */}
                     <div className="mb-3">
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Question Text</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Question Text</label>
                       <textarea
                         value={effective.question}
                         onChange={e => handleQuestionEdit(correction.questionId, 'question', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
+                        className="w-full px-3 py-2 border border-gray-200 bg-white text-gray-900 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
                         rows={2}
                       />
                     </div>
@@ -474,11 +474,11 @@ export default function AdminMockResultDetailPage() {
 
                         let className = 'flex items-center gap-2 text-sm p-2 rounded ';
                         if (isCorrectOption) {
-                          className += 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 font-medium';
+                          className += 'bg-green-100 text-green-800 font-medium';
                         } else if (isWrongUserAnswer) {
-                          className += 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200';
+                          className += 'bg-red-100 text-red-800';
                         } else {
-                          className += 'text-gray-600 dark:text-gray-400';
+                          className += 'text-gray-600';
                         }
 
                         let label = '';
@@ -494,7 +494,7 @@ export default function AdminMockResultDetailPage() {
 
                         return (
                           <div key={optIndex} className="flex items-center gap-2">
-                            <span className="w-6 h-6 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs font-bold">
+                            <span className="w-6 h-6 flex items-center justify-center bg-gray-100 text-gray-700 rounded text-xs font-bold">
                               {String.fromCharCode(65 + optIndex)}
                             </span>
                             <input
@@ -505,7 +505,7 @@ export default function AdminMockResultDetailPage() {
                                 newOptions[optIndex] = e.target.value;
                                 handleQuestionEdit(correction.questionId, 'options', newOptions);
                               }}
-                              className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
+                              className="flex-1 px-3 py-2 border border-gray-200 bg-white text-gray-900 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
                             />
                             <button
                               type="button"
@@ -513,7 +513,7 @@ export default function AdminMockResultDetailPage() {
                               className={`px-3 py-1 rounded-lg text-xs font-medium ${
                                 effective.correctOption === optIndex
                                   ? 'bg-green-600 text-white'
-                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200:bg-gray-600'
                               }`}
                             >
                               Correct
@@ -525,13 +525,13 @@ export default function AdminMockResultDetailPage() {
 
                     {/* Student Answer display */}
                     <div className="mb-3">
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Student Answer</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Student Answer</label>
                       <div className={`px-3 py-2 rounded-lg text-sm ${
                         effective.userAnswer === -1
-                          ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                          ? 'bg-gray-100 text-gray-500'
                           : effective.isCorrect
-                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-200'
-                            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-200'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-red-100 text-red-700'
                       }`}>
                         {effective.userAnswer === -1 ? 'Unanswered' : String.fromCharCode(65 + effective.userAnswer)}
                       </div>
@@ -539,11 +539,11 @@ export default function AdminMockResultDetailPage() {
 
                     {/* Explanation */}
                     <div className="mb-3">
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Explanation</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Explanation</label>
                       <textarea
                         value={effective.explanation || ''}
                         onChange={e => handleQuestionEdit(correction.questionId, 'explanation', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
+                        className="w-full px-3 py-2 border border-gray-200 bg-white text-gray-900 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
                         rows={2}
                       />
                     </div>
@@ -551,11 +551,11 @@ export default function AdminMockResultDetailPage() {
                     {/* Topic/Subject tags */}
                     <div className="flex items-center gap-2 text-xs">
                       {correction.topic && (
-                        <span className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded">
+                        <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded">
                           {correction.topic}
                         </span>
                       )}
-                      <span className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded">
+                      <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded">
                         {correction.subject}
                       </span>
                     </div>
@@ -584,14 +584,15 @@ export default function AdminMockResultDetailPage() {
       <div className="flex justify-between items-center pt-4">
         <button
           onClick={() => router.push('/admin/results')}
-          className="px-6 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+          className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200:bg-gray-600"
         >
           Back to Results
         </button>
-        <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="text-sm text-gray-500">
           Edit questions and click <strong>Recalculate</strong> to update the score
         </div>
       </div>
     </div>
   );
 }
+

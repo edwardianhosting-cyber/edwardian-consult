@@ -190,13 +190,15 @@ export const api = {
     const query = `?page=${page}&limit=${limit}`;
     return fetchAPI(`/cbt/admin/results${query}`);
   },
-  adminGetFilteredResults: (params: { type?: string; examId?: string; sortBy?: string; page?: number; limit?: number }) => {
+   adminGetFilteredResults: (params: { type?: string; examId?: string; sortBy?: string; page?: number; limit?: number; startDate?: string; endDate?: string }) => {
     const query = new URLSearchParams();
     if (params.type) query.set('type', params.type);
     if (params.examId) query.set('examId', params.examId);
     if (params.sortBy) query.set('sortBy', params.sortBy);
     if (params.page) query.set('page', String(params.page));
     if (params.limit) query.set('limit', String(params.limit));
+    if (params.startDate) query.set('startDate', params.startDate);
+    if (params.endDate) query.set('endDate', params.endDate);
     const qs = query.toString();
     return fetchAPI(`/cbt/admin/results/filtered${qs ? `?${qs}` : ''}`);
   },

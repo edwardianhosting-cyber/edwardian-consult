@@ -50,14 +50,16 @@ export default function AdminCBTPage() {
   const [results, setResults] = useState<CBTResult[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [examTypeFilter, setExamTypeFilter] = useState('ALL');
+  const [selectedMockExamId, setSelectedMockExamId] = useState<string>('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [orgName, setOrgName] = useState('Edwardian Educational Consult');
 
   useEffect(() => {
     fetchData();
-  }, [view, examTypeFilter, currentPage]);
+  }, [view, currentPage]);
 
   async function fetchData() {
     setLoading(true);
@@ -70,10 +72,19 @@ export default function AdminCBTPage() {
         const data = await api.adminGetAllMockExams();
         setExams(data.data || []);
       }
-      if (view === 'practice' || view === 'mock') {
-        const data = await api.adminGetAllCBTResults(currentPage, 50);
-        setResults(data.data?.results || []);
-        setTotalPages(data.data?.pagination?.totalPages || 1);
+  if (view === 'practice' || view === 'mock') {
+        const data = await api.adminGetFilteredResults({
+          type: view === 'practice' ? 'PRACTICE' : 'MOCK',
+          examId: view === 'mock' ? selectedMockExamId || undefined : undefined,
+          sortBy: 'score',
+          page: currentPage,
+          limit: 50,
+          startDate,
+          endDate,
+        });
+        const response = data as any;
+        setResults(response.data?.results || []);
+        setTotalPages(response.data?.pagination?.totalPages || 1);
       }
       if (view === 'results') {
         const data = await api.adminGetAllCBTResults(currentPage, 50);
@@ -128,11 +139,7 @@ export default function AdminCBTPage() {
     window.print();
   }
 
-  const filteredResults = results.filter((result) => {
-    if (examTypeFilter === 'ALL') return true;
-    if (examTypeFilter === 'PRACTICE') return result.type !== 'MOCK';
-    return result.type === examTypeFilter || result.exam?.examType === examTypeFilter;
-  });
+  const filteredResults = results;
 
   const homeCards = [
     {
@@ -166,8 +173,6 @@ export default function AdminCBTPage() {
       onClick: () => setView('results'),
     },
   ];
-
-  const examTypes = ['ALL', 'JAMB', 'WAEC', 'NECO', 'POST-UTME', 'MOCK', 'PRACTICE'];
 
   return (
     <div className="space-y-6">
@@ -226,21 +231,45 @@ export default function AdminCBTPage() {
             <div className="printable-area space-y-4">
               <div className="bg-white rounded-xl border border-gray-100 p-4">
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Exam Type</label>
-                    <select
-                      value={examTypeFilter}
-                      onChange={(e) => {
-                        setExamTypeFilter(e.target.value);
-                        setCurrentPage(1);
-                      }}
+                  {view === 'mock' && (
+                    <div className="sm:w-64">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Mock Exam</label>
+                      <select
+                        value={selectedMockExamId}
+                        onChange={(e) => {
+                          setSelectedMockExamId(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                      >
+                        <option value="">All Mock Exams</option>
+                        {exams.map(exam => (
+                          <option key={exam.id} value={exam.id}>{exam.title}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="sm:w-48">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">From Date</label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
-                    >
-                      {examTypes.map((type) => (
-                        <option key={type} value={type}>{type === 'ALL' ? 'All Types' : type}</option>
-                      ))}
-                    </select>
+                    />
                   </div>
+
+                  <div className="sm:w-48">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">To Date</label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+
                   <div className="flex items-end">
                     <button
                       onClick={handlePrint}
@@ -282,30 +311,32 @@ export default function AdminCBTPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {filteredResults.map((result) => (
-                            <tr key={result.id} className="border-b last:border-0 hover:bg-gray-50">
-                              <td className="px-4 py-3 text-sm text-gray-900">
-                                {result.user?.fullName || result.user?.email || 'Unknown'}
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-600">{result.exam?.title || '-'}</td>
-                              <td className="px-4 py-3 text-sm text-gray-600">{result.subject}</td>
-                              <td className="px-4 py-3 text-sm text-gray-600">
-                                <span className="capitalize">{result.type.toLowerCase()}</span>
-                              </td>
-                              <td className="px-4 py-3">
-                                <span className={`text-sm font-medium px-2 py-1 rounded ${
-                                  result.score >= 70 ? 'bg-green-100 text-green-700' :
-                                  result.score >= 50 ? 'bg-yellow-100 text-yellow-700' :
-                                  'bg-red-100 text-red-700'
-                                }`}>
-                                  {Math.round(result.score)}%
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-500">
-                                {new Date(result.completedAt).toLocaleDateString()}
+                            {filteredResults.map((result: any) => {
+                             const primarySubject = result.subjectEntries?.[0]?.subject || result.subject || '-';
+                             return (
+                             <tr key={result.id} className="border-b last:border-0 hover:bg-gray-50">
+                               <td className="px-4 py-3 text-sm text-gray-900 font-medium">
+                                 {result.studentName || 'Unknown'}
+                               </td>
+                               <td className="px-4 py-3 text-sm text-gray-600">{result.examTitle || result.exam?.title || '-'}</td>
+                               <td className="px-4 py-3 text-sm text-gray-600">{primarySubject}</td>
+                               <td className="px-4 py-3 text-sm text-gray-600">
+                                 <span className="capitalize">{result.type?.toLowerCase() || 'mock'}</span>
+                               </td>
+                               <td className="px-4 py-3">
+                                 <span className={`text-sm font-medium px-2 py-1 rounded ${
+                                   result.aggregate >= 70 ? 'bg-green-100 text-green-700' :
+                                   result.aggregate >= 50 ? 'bg-yellow-100 text-yellow-700' :
+                                   'bg-red-100 text-red-700'
+                                 }`}>
+                                   {Math.round(result.aggregate || result.score)}%
+                                 </span>
+                               </td>
+                               <td className="px-4 py-3 text-sm text-gray-500">
+                                 {new Date(result.completedAt).toLocaleDateString()}
                               </td>
                             </tr>
-                          ))}
+                           )})}
                         </tbody>
                       </table>
                     </div>
