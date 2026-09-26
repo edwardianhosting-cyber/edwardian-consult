@@ -200,8 +200,9 @@ export const api = {
     const qs = query.toString();
     return fetchAPI(`/cbt/admin/results/filtered${qs ? `?${qs}` : ''}`);
   },
-  adminGetResultReview: (resultId: string) => fetchAPI(`/cbt/admin/results/${resultId}/review`),
-  adminRecalculateResult: (resultId: string) => fetchAPI(`/cbt/admin/results/${resultId}/recalculate`, { method: 'POST' }),
+   adminGetResultReview: (resultId: string) => fetchAPI(`/cbt/admin/results/${resultId}/review`),
+   adminGetMockResultDetail: (resultId: string) => fetchAPI(`/cbt/admin/mock-results/${resultId}`),
+   adminRecalculateResult: (resultId: string) => fetchAPI(`/cbt/admin/results/${resultId}/recalculate`, { method: 'POST' }),
   adminUpdateExamQuestion: (examId: string, questionId: string, data: any) => fetchAPI(`/cbt/admin/exams/${examId}/questions/${questionId}`, { method: 'PATCH', body: JSON.stringify(data) }),
   
   // Study Planner

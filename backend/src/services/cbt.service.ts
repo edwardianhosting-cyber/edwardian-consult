@@ -1593,6 +1593,135 @@ export async function getResultReviewData(resultId: string) {
   };
 }
 
+export async function getMockExamResultDetail(resultId: string) {
+  const result = await prisma.cbtResult.findFirst({
+    where: { id: resultId, type: 'MOCK' },
+    include: {
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          studentEmail: true,
+        },
+      },
+      exam: {
+        include: {
+          questions: {
+            include: { question: { include: { questionGroup: true } } },
+            orderBy: { order: 'asc' },
+          },
+        },
+      },
+    },
+  });
+
+  if (!result) {
+    return null;
+  }
+
+  const userAnswers = (result.userAnswers as Record<string, { selected: number; correct: boolean }>) || {};
+
+  let corrections;
+
+  if (result.exam) {
+    corrections = result.exam.questions.map((eq, index) => {
+      const answer = userAnswers[eq.question.id];
+      const group = eq.question?.questionGroup;
+      return {
+        questionNumber: index + 1,
+        questionId: eq.questionId,
+        question: eq.question.text,
+        options: (eq.options as string[]) || (eq.question.options as string[]),
+        correctOption: eq.correctOption ?? eq.question.correctOption,
+        userAnswer: answer?.selected ?? -1,
+        isCorrect: answer?.correct ?? false,
+        explanation: eq.question.explanation,
+        topic: eq.question.topic,
+        subject: eq.question.subject,
+        groupType: eq.questionGroupType,
+        groupId: eq.questionGroupId,
+        passage: group?.passage || undefined,
+        groupTitle: group?.title || undefined,
+        groupInstructions: group?.instructions || undefined,
+      };
+    });
+  } else {
+    const questionIds = Object.keys(userAnswers);
+    const questions = await prisma.question.findMany({
+      where: { id: { in: questionIds } },
+      include: { questionGroup: true },
+    });
+
+    corrections = questions.map((q, index) => {
+      const answer = userAnswers[q.id];
+      return {
+        questionNumber: index + 1,
+        questionId: q.id,
+        question: q.text,
+        options: q.options as string[],
+        correctOption: q.correctOption,
+        userAnswer: answer?.selected ?? -1,
+        isCorrect: answer?.correct ?? false,
+        explanation: q.explanation,
+        topic: q.topic,
+        subject: q.subject,
+        groupType: q.groupType,
+        groupId: q.groupId,
+        passage: q.questionGroup?.passage || undefined,
+        groupTitle: q.questionGroup?.title || undefined,
+        groupInstructions: q.questionGroup?.instructions || undefined,
+      };
+    });
+  }
+
+  const subjectScores: Record<string, { total: number; correct: number }> = {};
+  corrections.forEach((c) => {
+    const subject = c.subject || result.subject;
+    if (!subjectScores[subject]) {
+      subjectScores[subject] = { total: 0, correct: 0 };
+    }
+    subjectScores[subject].total++;
+    if (c.isCorrect) subjectScores[subject].correct++;
+  });
+
+  const subjectEntries = Object.entries(subjectScores).map(([subject, data]) => ({
+    subject,
+    score: data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0,
+    correct: data.correct,
+    total: data.total,
+  }));
+
+  const aggregate =
+    subjectEntries.length > 0
+      ? Math.round(subjectEntries.reduce((sum, s) => sum + s.score, 0) / subjectEntries.length)
+      : Math.round(result.score);
+
+  return {
+    result: {
+      id: result.id,
+      studentName: result.user?.fullName || result.user?.email || 'Unknown',
+      email: result.user?.email || '',
+      studentEmail: result.user?.studentEmail || '',
+      subject: result.subject,
+      type: result.type,
+      score: result.score,
+      aggregate,
+      totalQuestions: result.totalQuestions,
+      correctAnswers: result.correctAnswers,
+      wrongAnswers: result.wrongAnswers,
+      skippedAnswers: result.skippedAnswers,
+      durationUsed: result.durationUsed,
+      completedAt: result.completedAt,
+      examTitle: result.exam?.title || result.subject,
+      examId: result.examId,
+    },
+    subjectScores,
+    subjectEntries,
+    corrections,
+  };
+}
+
 export async function calculateJAMBAggregate(userId: string) {
   const results = await prisma.cbtResult.findMany({
     where: {

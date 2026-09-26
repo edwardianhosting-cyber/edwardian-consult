@@ -31,6 +31,7 @@ import {
   updateExamQuestion,
   recalculateCbtResult,
   getResultReviewData,
+  getMockExamResultDetail,
   calculateJAMBAggregate,
 } from '../services/cbt.service';
 import { sendMockResultEmail } from '../lib/email';
@@ -422,6 +423,19 @@ router.post('/admin/mock-results/:resultId/send-email', authenticate, authorize(
     }
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to send email' });
+  }
+});
+
+// Admin: get mock exam result detail for review
+router.get('/admin/mock-results/:resultId', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const data = await getMockExamResultDetail(req.params.resultId);
+    if (!data) {
+      return res.status(404).json({ success: false, message: 'Mock result not found' });
+    }
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch mock result' });
   }
 });
 
