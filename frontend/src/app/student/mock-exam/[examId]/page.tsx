@@ -547,10 +547,10 @@ export default function MockExamPage() {
       <div className="max-w-2xl mx-auto">
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-primary-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <BookOpen className="w-8 h-8 text-primary-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">{cbtData.title}</h2>
+               <div className="w-16 h-16 bg-primary-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
+               <BookOpen className="w-8 h-8 text-primary-600 dark:text-gray-300" />
+             </div>
+             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{cbtData.title}</h2>
             <p className="text-gray-600 dark:text-gray-300">Read the instructions carefully before starting</p>
           </div>
 
@@ -565,7 +565,7 @@ export default function MockExamPage() {
               </ul>
             </div>
 
-            <div className="bg-yellow-50 rounded-xl p-4">
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4">
               <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">⚠️ Important Rules</h3>
               <ul className="space-y-1 text-sm text-yellow-800 dark:text-yellow-200">
                 <li>• This exam runs in <strong>full-screen mode</strong> — you cannot exit full-screen during the exam</li>
@@ -665,7 +665,7 @@ export default function MockExamPage() {
               </div>
               <button
                 onClick={() => setCalculatorOpen(!calculatorOpen)}
-                className={`p-2 rounded-lg ${calculatorOpen ? 'bg-primary-100 dark:bg-gray-700 text-primary-700' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                className={`p-2 rounded-lg ${calculatorOpen ? 'bg-primary-100 dark:bg-gray-700 text-primary-700 dark:text-gray-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
                 title="Calculator"
               >
                 <Calculator className="w-5 h-5" />
@@ -715,16 +715,16 @@ export default function MockExamPage() {
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Question {currentQuestion + 1} of {subjectQuestions.length}
               </span>
-              {question.topic && (
-                <span className="ml-2 text-xs bg-primary-50 text-primary-700 px-2 py-1 rounded">
-                  {question.topic}
-                </span>
-              )}
-              {isFirstInSection(currentQuestion) && (
-                <span className="ml-2 text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 px-2 py-1 rounded">
-                  {getQuestionSectionLabel(question)}
-                </span>
-              )}
+               {question.topic && (
+                 <span className="ml-2 text-xs bg-primary-50 dark:bg-gray-700 text-primary-700 dark:text-gray-300 px-2 py-1 rounded">
+                   {question.topic}
+                 </span>
+               )}
+               {isFirstInSection(currentQuestion) && (
+                 <span className="ml-2 text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-200 px-2 py-1 rounded">
+                   {getQuestionSectionLabel(question)}
+                 </span>
+               )}
             </div>
 
             {(question.groupType === 'COMPREHENSION' || question.groupType === 'CLOZE') && question.passage && (
@@ -769,36 +769,36 @@ export default function MockExamPage() {
         {calculatorOpen && (
             <div className="mb-6">
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-sm">Calculator</h3>
-                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 mb-3">
-                  <div className="text-right text-xl font-mono font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 break-all">
+               <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-sm">Calculator</h3>
+                 <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 mb-3">
+                   <div className="text-right text-xl font-mono font-bold text-gray-900 dark:text-gray-100 break-all">
                     {calcDisplay}
                   </div>
                 </div>
                 <div className="grid grid-cols-5 gap-2 mb-2">
-                  <button onClick={() => handleCalcInput('(')} className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 dark:text-indigo-300 rounded hover:bg-indigo-100 text-xs font-medium">(</button>
-                  <button onClick={() => handleCalcInput(')')} className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 dark:text-indigo-300 rounded hover:bg-indigo-100 text-xs font-medium">)</button>
-                  <button onClick={() => handleCalcOperator('^')} className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 dark:text-indigo-300 rounded hover:bg-indigo-100 text-xs font-medium">x^y</button>
+                     <button onClick={() => handleCalcInput('(')} className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded hover:bg-indigo-100 dark:hover:bg-indigo-200 text-xs font-medium">(</button>
+                  <button onClick={() => handleCalcInput(')')} className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded hover:bg-indigo-100 dark:hover:bg-indigo-200 text-xs font-medium">)</button>
+                  <button onClick={() => handleCalcOperator('^')} className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded hover:bg-indigo-100 dark:hover:bg-indigo-200 text-xs font-medium">x^y</button>
                   <button onClick={handleCalcBackspace} className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-xs font-medium">⌫</button>
                 </div>
                 <div className="grid grid-cols-4 gap-2">
-                  <button onClick={handleCalcClear} className="col-span-2 p-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 text-sm font-medium">C</button>
-                  <button onClick={() => handleCalcOperator('/')} className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium">÷</button>
-                  <button onClick={() => handleCalcOperator('*')} className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium">×</button>
-                  <button onClick={() => handleCalcInput('7')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">7</button>
-                  <button onClick={() => handleCalcInput('8')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">8</button>
-                  <button onClick={() => handleCalcInput('9')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">9</button>
-                  <button onClick={() => handleCalcOperator('-')} className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium">−</button>
-                  <button onClick={() => handleCalcInput('4')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">4</button>
-                  <button onClick={() => handleCalcInput('5')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">5</button>
-                  <button onClick={() => handleCalcInput('6')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">6</button>
-                  <button onClick={() => handleCalcOperator('+')} className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium">+</button>
-                  <button onClick={() => handleCalcInput('1')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">1</button>
-                  <button onClick={() => handleCalcInput('2')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">2</button>
-                  <button onClick={() => handleCalcInput('3')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">3</button>
-                  <button onClick={handleCalcEquals} className="row-span-2 p-2 bg-primary-600 text-white rounded hover:bg-primary-700 text-sm font-medium">=</button>
-                  <button onClick={() => handleCalcInput('0')} className="col-span-2 p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">0</button>
-                  <button onClick={() => handleCalcInput('.')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">.</button>
+                   <button onClick={handleCalcClear} className="col-span-2 p-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800 text-sm font-medium">C</button>
+              <button onClick={() => handleCalcOperator('/')} className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium">÷</button>
+              <button onClick={() => handleCalcOperator('*')} className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium">×</button>
+              <button onClick={() => handleCalcInput('7')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">7</button>
+              <button onClick={() => handleCalcInput('8')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">8</button>
+              <button onClick={() => handleCalcInput('9')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">9</button>
+              <button onClick={() => handleCalcOperator('-')} className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium">−</button>
+              <button onClick={() => handleCalcInput('4')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">4</button>
+              <button onClick={() => handleCalcInput('5')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">5</button>
+              <button onClick={() => handleCalcInput('6')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">6</button>
+              <button onClick={() => handleCalcOperator('+')} className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium">+</button>
+              <button onClick={() => handleCalcInput('1')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">1</button>
+              <button onClick={() => handleCalcInput('2')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">2</button>
+              <button onClick={() => handleCalcInput('3')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">3</button>
+              <button onClick={handleCalcEquals} className="row-span-2 p-2 bg-primary-600 text-white rounded hover:bg-primary-700 text-sm font-medium">=</button>
+              <button onClick={() => handleCalcInput('0')} className="col-span-2 p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">0</button>
+              <button onClick={() => handleCalcInput('.')} className="p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-sm font-medium">.</button>
                 </div>
               </div>
             </div>
@@ -870,15 +870,15 @@ export default function MockExamPage() {
           <div className="mt-4 space-y-2 text-xs">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-primary-600 rounded"></div>
-              <span>Current</span>
+              <span className="text-gray-700 dark:text-gray-300">Current</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-green-100 dark:bg-green-900/30 border border-green-300 rounded"></div>
-              <span>Answered</span>
+              <span className="text-gray-700 dark:text-gray-300">Answered</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded"></div>
-              <span>Unanswered</span>
+              <span className="text-gray-700 dark:text-gray-300">Unanswered</span>
             </div>
           </div>
         </div>
@@ -916,20 +916,20 @@ export default function MockExamPage() {
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full">
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <AlertTriangle className="w-8 h-8 text-yellow-600" />
+                  <AlertTriangle className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">Submit Mock Exam?</h3>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Submit Mock Exam?</h3>
                 <p className="text-gray-600 dark:text-gray-300">
                   You are about to submit your mock exam. This action cannot be undone.
                 </p>
                 <div className="mt-4 bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-300">Answered:</span>
-                    <span className="font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">{answeredCount}</span>
+                    <span className="font-bold text-gray-900 dark:text-gray-100">{answeredCount}</span>
                   </div>
                   <div className="flex justify-between text-sm mt-2">
                     <span className="text-gray-600 dark:text-gray-300">Unanswered:</span>
-                    <span className="font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">{subjectQuestions.length - answeredCount}</span>
+                    <span className="font-bold text-gray-900 dark:text-gray-100">{subjectQuestions.length - answeredCount}</span>
                   </div>
                 </div>
               </div>
@@ -958,19 +958,19 @@ export default function MockExamPage() {
   // Tab Switch Warning Overlay
   if (showTabSwitchWarning) {
     return (
-      <div className="fixed inset-0 bg-red-50/95 flex items-center justify-center z-50 p-4" style={{ zIndex: 9999 }}>
+      <div className="fixed inset-0 bg-red-50/95 dark:bg-red-900/30 flex items-center justify-center z-50 p-4" style={{ zIndex: 9999 }}>
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full text-center border-2 border-red-200">
           <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
             <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">⚠️ Tab Switch Detected</h3>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">⚠️ Tab Switch Detected</h3>
           <p className="text-gray-600 dark:text-gray-300 mb-4">
             You have switched tabs <span className="font-bold text-red-600 dark:text-red-400">{tabSwitchCount}</span> time{tabSwitchCount > 1 ? 's' : ''}.
           </p>
           <p className="text-gray-600 dark:text-gray-300 mb-6">
             Switching tabs during the exam is not allowed. Return to this tab immediately.
           </p>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-sm">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6 text-sm">
             <p className="font-semibold text-red-900 dark:text-red-100 mb-1">Security Notice:</p>
             <p className="text-red-700 dark:text-red-300">Continuing to switch tabs may result in your exam being automatically submitted.</p>
           </div>
@@ -992,9 +992,9 @@ export default function MockExamPage() {
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full">
           <div className="text-center mb-6">
             <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Globe className="w-8 h-8 text-orange-600" />
+              <Globe className="w-8 h-8 text-orange-600 dark:text-orange-400" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">Full-Screen Required</h3>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Full-Screen Required</h3>
             <p className="text-gray-600 dark:text-gray-300">
               This exam requires full-screen mode. Your browser blocked the full-screen request.
             </p>
@@ -1035,13 +1035,13 @@ export default function MockExamPage() {
             <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
               <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">Exam Auto-Submitted</h3>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Exam Auto-Submitted</h3>
             <p className="text-gray-600 dark:text-gray-300">
               Your exam was interrupted by a page refresh or browser close.
             </p>
           </div>
           <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300 mb-6">
-            <p className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
               <span className="font-semibold text-red-900 dark:text-red-100">Security Policy:</span> Refreshing or closing the page during an exam automatically submits your current answers.
             </p>
             <p>Your saved answers will now be submitted automatically.</p>
@@ -1064,9 +1064,9 @@ export default function MockExamPage() {
       <div className="max-w-2xl mx-auto">
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-8 text-center">
           <div className="w-24 h-24 mx-auto rounded-full flex items-center justify-center mb-6 bg-green-100 dark:bg-green-900/30">
-            <CheckCircle className="w-12 h-12 text-green-600" />
+            <CheckCircle className="w-12 h-12 text-green-600 dark:text-green-400" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">Mock Exam Submitted Successfully</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Mock Exam Submitted Successfully</h2>
           <p className="text-gray-600 dark:text-gray-300 mb-6">You have successfully completed your mock examination.</p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">Your submission has been recorded. You can view your results later from the Mock Results page.</p>
 
@@ -1104,7 +1104,7 @@ export default function MockExamPage() {
           <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
             <XCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">Something went wrong</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Something went wrong</h2>
           <p className="text-gray-600 dark:text-gray-300 mb-6">{submitError}</p>
           <div className="flex gap-3 justify-center">
             <button
