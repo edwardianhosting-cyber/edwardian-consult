@@ -32,19 +32,19 @@ export default function CBTSimulatorCard() {
               </h4>
 
               <div className="grid grid-cols-2 gap-2">
-                <button className="py-2.5 bg-gray-700/20 border border-gray-600/20 rounded-lg text-left px-3 hover:bg-gray-700/30 transition-colors">
+                <button className="py-2.5 bg-gray-700/20 border border-gray-600/20 rounded-lg text-left px-3 hover:bg-gray-700/30 transition-colors pointer-events-auto">
                   <span className="text-xs text-gray-300">A.</span>
                   <span className="text-xs text-gray-300 ml-1">Volt</span>
                 </button>
-                <button className="py-2.5 bg-gray-700/20 border border-gray-600/20 rounded-lg text-left px-3 hover:bg-gray-700/30 transition-colors">
+                <button className="py-2.5 bg-gray-700/20 border border-gray-600/20 rounded-lg text-left px-3 hover:bg-gray-700/30 transition-colors pointer-events-auto">
                   <span className="text-xs text-gray-300">B.</span>
                   <span className="text-xs text-gray-300 ml-1">Ampere</span>
                 </button>
-                <button className="py-2.5 bg-gray-700/20 border border-gray-600/20 rounded-lg text-left px-3 hover:bg-gray-700/30 transition-colors">
+                <button className="py-2.5 bg-gray-700/20 border border-gray-600/20 rounded-lg text-left px-3 hover:bg-gray-700/30 transition-colors pointer-events-auto">
                   <span className="text-xs text-gray-300">C.</span>
                   <span className="text-xs text-gray-300 ml-1">Ohm</span>
                 </button>
-                <button className="py-2.5 bg-gray-700/20 border border-gray-600/20 rounded-lg text-left px-3 hover:bg-gray-700/30 transition-colors">
+                <button className="py-2.5 bg-gray-700/20 border border-gray-600/20 rounded-lg text-left px-3 hover:bg-gray-700/30 transition-colors pointer-events-auto">
                   <span className="text-xs text-gray-300">D.</span>
                   <span className="text-xs text-gray-300 ml-1">Joule</span>
                 </button>
@@ -54,9 +54,14 @@ export default function CBTSimulatorCard() {
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-1 text-blue-400">
                 <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
-                <span>Start exam</span>
+                <span>Practice question</span>
               </div>
-              <Link href="/register" className="text-white font-medium hover:text-primary-300 cursor-pointer pointer-events-auto">Get Started</Link>
+              <Link
+                href="/register"
+                className="text-white font-medium hover:text-primary-300 cursor-pointer pointer-events-auto"
+              >
+                Get Started
+              </Link>
             </div>
           </div>
 
@@ -73,6 +78,3 @@ export default function CBTSimulatorCard() {
     </div>
   );
 }
-
-
-
