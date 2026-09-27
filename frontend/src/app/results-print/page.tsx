@@ -80,23 +80,102 @@ function AdminPrintResultsInner() {
     return 'ALL RESULTS';
   }
 
-  function getSubjects(): string[] {
-    if (filterInfo.type === 'MOCK' && results.length > 0) {
-      const subjects = new Set<string>();
-      results.forEach(result => {
-        Object.keys(result.subjectScores || {}).forEach(subject => subjects.add(subject));
-      });
-      return Array.from(subjects);
-    }
-    return [];
+  // Fixed number of subject columns (English + up to 3 others), matching the
+  // printed sheet's layout. This is what prevents the columns from stretching
+  // past the page width and overlapping when different students/results have
+  // different subject combinations.
+  const MAX_SUBJECT_COLUMNS = 4;
+
+  function getSubjectAbbreviation(subject: string): string {
+    const abbreviations: Record<string, string> = {
+      'English Language': 'ENG',
+      English: 'ENG',
+      Mathematics: 'MATH',
+      'General Mathematics': 'MATH',
+      'Further Mathematics': 'FMATH',
+      Physics: 'PHY',
+      Chemistry: 'CHM',
+      Biology: 'BIO',
+      Government: 'GVT',
+      Economics: 'ECO',
+      'Literature in English': 'LIT',
+      Literature: 'LIT',
+      'Christian Religious Studies': 'CRS',
+      'Islamic Religious Studies': 'IRS',
+      Geography: 'GEO',
+      Commerce: 'COM',
+      Accounting: 'ACC',
+      'Financial Accounting': 'ACC',
+      'Civic Education': 'CIV',
+      History: 'HIS',
+      'Agricultural Science': 'AGR',
+      Agriculture: 'AGR',
+      French: 'FRE',
+      Yoruba: 'YOR',
+      Igbo: 'IGB',
+      Hausa: 'HAU',
+      'Computer Studies': 'CST',
+      'Data Processing': 'DTP',
+    };
+    const normalized = subject.trim();
+    return abbreviations[normalized] || normalized.toUpperCase().slice(0, 3);
   }
 
-  function getStudentScore(student: AdminResult, subject: string): number {
-    const subjectScore = student.subjectScores?.[subject];
-    if (subjectScore && subjectScore.total > 0) {
-      return Math.round((subjectScore.correct / subjectScore.total) * 100);
+  // Per-student subject breakdown, capped to MAX_SUBJECT_COLUMNS, with
+  // English pinned first when present. This is computed per row instead of
+  // as one global list, since different students/attempts can have
+  // different subject combinations.
+  function getRowSubjects(student: AdminResult): { subject: string; score: number }[] {
+    let entries: { subject: string; score: number }[] = [];
+
+    if (student.subjectEntries && student.subjectEntries.length > 0) {
+      entries = student.subjectEntries.map((entry) => ({
+        subject: entry.subject,
+        score: entry.total > 0 ? Math.round((entry.correct / entry.total) * 100) : Math.round(entry.score || 0),
+      }));
+    } else if (student.subjectScores) {
+      entries = Object.entries(student.subjectScores).map(([subject, data]) => ({
+        subject,
+        score: data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0,
+      }));
     }
-    return 0;
+
+    const englishIndex = entries.findIndex((entry) => /english/i.test(entry.subject));
+    if (englishIndex > 0) {
+      const [english] = entries.splice(englishIndex, 1);
+      entries.unshift(english);
+    }
+
+    return entries.slice(0, MAX_SUBJECT_COLUMNS);
+  }
+
+  // Total is the sum of each displayed subject's score (each out of 100),
+  // so with 4 subject columns the maximum possible total is 400.
+  function getRowTotal(student: AdminResult): number {
+    return getRowSubjects(student).reduce((sum, entry) => sum + entry.score, 0);
+  }
+
+  function getHeaderLines(): { text: string; italic?: boolean; small?: boolean }[] {
+    if (filterInfo.type === 'MOCK') {
+      return [
+        { text: 'BACK TO BACK' },
+        { text: 'UTME' },
+        { text: 'MOCK EXAM', italic: true },
+        { text: examTitle, small: true },
+      ];
+    }
+    if (filterInfo.type === 'PRACTICE') {
+      return [
+        { text: 'CBT' },
+        { text: 'PRACTICE EXAM', italic: true },
+        { text: examTitle, small: true },
+      ];
+    }
+    return [
+      { text: 'CBT' },
+      { text: 'COMBINED EXAM', italic: true },
+      { text: examTitle, small: true },
+    ];
   }
 
   function escapeHtml(value: string): string {
@@ -140,13 +219,14 @@ function AdminPrintResultsInner() {
     );
   }
 
-  const subjects = getSubjects();
   const examTitle = getExamTitle();
   const studentsPerPage = 20;
 
   const sortedStudents = [...results].sort((a, b) => {
-    if (b.aggregate !== a.aggregate) {
-      return b.aggregate - a.aggregate;
+    const totalA = getRowTotal(a);
+    const totalB = getRowTotal(b);
+    if (totalB !== totalA) {
+      return totalB - totalA;
     }
     return a.studentName.localeCompare(b.studentName);
   });
@@ -400,6 +480,8 @@ function AdminPrintResultsInner() {
           text-align: left;
           white-space: nowrap;
           font-weight: 900;
+          overflow: hidden;
+          text-overflow: clip;
         }
 
         .result-table tbody td.aggregate {
@@ -460,10 +542,14 @@ function AdminPrintResultsInner() {
                 <img src="/logo.png" alt="Edwardian Consult Logo" />
               </div>
               <div className="header-title">
-                <span className="line">BACK TO BACK</span>
-                <span className="line">UTME</span>
-                <span className="line italic">MOCK EXAM</span>
-                <span className="line-small">{escapeHtml(examTitle)}</span>
+                {getHeaderLines().map((headerLine, idx) => (
+                  <span
+                    key={idx}
+                    className={`${headerLine.small ? 'line-small' : 'line'}${headerLine.italic ? ' italic' : ''}`}
+                  >
+                    {escapeHtml(headerLine.text)}
+                  </span>
+                ))}
               </div>
               <div className="date-pill">{escapeHtml(examDate)}</div>
             </header>
@@ -477,29 +563,34 @@ function AdminPrintResultsInner() {
                 <tr>
                   <th className="sn">S/N</th>
                   <th className="student">STUDENT NAME</th>
-                  {subjects.map((subject) => (
-                    <th key={subject} className="subject">
-                      {escapeHtml(subject)}
-                    </th>
+                  {Array.from({ length: MAX_SUBJECT_COLUMNS }).map((_, idx) => (
+                    <th key={idx} className="subject"></th>
                   ))}
-                  <th className="aggregate">TOTAL</th>
+                  <th className="aggregate">AGG/400</th>
                 </tr>
               </thead>
               <tbody>
-                {page.students.map((student, index) => (
-                  <tr key={student.id}>
-                    <td className="sn">
-                      {((page.pageNumber - 1) * studentsPerPage) + index + 1}.
-                    </td>
-                    <td className="student-name">{escapeHtml(student.studentName)}</td>
-                    {subjects.map((subject) => (
-                      <td key={subject} className="subject-score">
-                        {escapeHtml(subject)} {escapeHtml(String(getStudentScore(student, subject)))}
+                {page.students.map((student, index) => {
+                  const rowSubjects = getRowSubjects(student);
+                  const total = getRowTotal(student);
+                  return (
+                    <tr key={student.id}>
+                      <td className="sn">
+                        {((page.pageNumber - 1) * studentsPerPage) + index + 1}.
                       </td>
-                    ))}
-                    <td className="aggregate">{escapeHtml(String(student.aggregate))}</td>
-                  </tr>
-                ))}
+                      <td className="student-name">{escapeHtml(student.studentName)}</td>
+                      {Array.from({ length: MAX_SUBJECT_COLUMNS }).map((_, idx) => {
+                        const entry = rowSubjects[idx];
+                        return (
+                          <td key={idx} className="subject-score">
+                            {entry ? `${escapeHtml(getSubjectAbbreviation(entry.subject))} ${escapeHtml(String(entry.score))}` : ''}
+                          </td>
+                        );
+                      })}
+                      <td className="aggregate">{total}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </section>
