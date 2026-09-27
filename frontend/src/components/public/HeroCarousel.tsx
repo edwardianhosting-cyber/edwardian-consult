@@ -67,6 +67,7 @@ const slides: Slide[] = [
 export default function HeroCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
 
@@ -104,9 +105,10 @@ export default function HeroCarousel() {
   };
 
   useEffect(() => {
+    if (isHovered) return;
     const interval = setInterval(nextSlide, 6000);
     return () => clearInterval(interval);
-  }, [nextSlide]);
+  }, [nextSlide, isHovered]);
 
   const slide = slides[currentSlide];
   const isVideoSlide = !!slide.videoSrc;
@@ -117,7 +119,11 @@ export default function HeroCarousel() {
   };
 
   return (
-    <section className="relative w-full overflow-hidden h-[70vh] min-h-[500px] max-h-[700px] md:h-[85vh] md:max-h-[800px]">
+    <section
+      className="relative w-full overflow-hidden h-[70vh] min-h-[500px] max-h-[700px] md:h-[85vh] md:max-h-[800px]"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {/* Full Width Background Image / Video */}
       {slides.map((s, index) => (
         <div
@@ -155,7 +161,7 @@ export default function HeroCarousel() {
               priority={index === 0}
             />
           )}
-          {/* Mobile: Full overlay for readability | Desktop: Left gradient only */}
+          {/* Mobile:Full overlay for readability | Desktop: Left gradient only */}
           <div className="absolute inset-0 bg-black/50 md:hidden" />
           <div
             className="absolute inset-0 hidden md:block"
