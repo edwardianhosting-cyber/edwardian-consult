@@ -231,15 +231,20 @@ export default function AdminResultsPage() {
     const params = new URLSearchParams();
     params.set('sortBy', 'score');
     if (view === 'practice' || resultTypeFilter === 'PRACTICE') {
-      params.set('sortBy', 'score');
       window.open(`/cbt-practice-print?${params.toString()}`, '_blank', 'width=1200,height=800');
+      return;
+    }
+    if (view === 'mock' || resultTypeFilter === 'MOCK') {
+      params.set('type', 'MOCK');
+      if ((view === 'mock' || resultTypeFilter === 'MOCK') && selectedMockExamId) {
+        params.set('examId', selectedMockExamId);
+      }
+      const printUrl = `/results-print?${params.toString()}`;
+      window.open(printUrl, '_blank', 'width=1200,height=800');
       return;
     }
     if (resultTypeFilter !== 'ALL') {
       params.set('type', resultTypeFilter);
-    }
-    if (resultTypeFilter === 'MOCK' && selectedMockExamId) {
-      params.set('examId', selectedMockExamId);
     }
     const printUrl = `/results-print?${params.toString()}`;
     window.open(printUrl, '_blank', 'width=1200,height=800');
