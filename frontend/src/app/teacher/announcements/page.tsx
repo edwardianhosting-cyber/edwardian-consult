@@ -68,8 +68,8 @@ export default function TeacherAnnouncements() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Announcements</h1>
-          <p className="text-gray-600 mt-1">Create and manage announcements for your classes</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Announcements</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Create and manage announcements for your classes</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
@@ -94,35 +94,35 @@ export default function TeacherAnnouncements() {
       )}
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
+        <form onSubmit={handleCreate} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Create Announcement</h2>
-            <button type="button" onClick={() => setShowForm(false)} className="p-1 hover:bg-gray-100 rounded">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Create Announcement</h2>
+            <button type="button" onClick={() => setShowForm(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
               <X className="w-5 h-5 text-gray-400" />
             </button>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Title *</label>
             <input
               type="text"
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               placeholder="e.g. Mid-term Exam Schedule"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Content *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Content *</label>
             <textarea
               value={form.content}
               onChange={(e) => setForm({ ...form, content: e.target.value })}
               rows={4}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               placeholder="Announcement details..."
             />
           </div>
           <div className="flex justify-end gap-3">
-            <button type="button" onClick={() => setShowForm(false)} className="px-5 py-2.5 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-50">
+            <button type="button" onClick={() => setShowForm(false)} className="px-5 py-2.5 border border-gray-300 rounded-xl font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
               Cancel
             </button>
             <button type="submit" disabled={saving || !form.title.trim() || !form.content.trim()} className="px-5 py-2.5 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">
@@ -134,7 +134,7 @@ export default function TeacherAnnouncements() {
       )}
 
       {/* Notices List */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
@@ -142,20 +142,20 @@ export default function TeacherAnnouncements() {
         ) : notices.length === 0 ? (
           <div className="text-center py-16">
             <Bell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">No announcements yet</p>
+            <p className="text-gray-500 dark:text-gray-400 text-lg">No announcements yet</p>
             <p className="text-gray-400 text-sm mt-1">Create your first announcement to notify your students</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
             {notices.map((notice) => (
-              <div key={notice.id} className="p-5 hover:bg-gray-50 transition-colors">
+              <div key={notice.id} className="p-5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center shrink-0">
                     <Bell className="w-5 h-5 text-purple-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900">{notice.title}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{notice.content}</p>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">{notice.title}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{notice.content}</p>
                     <p className="text-xs text-gray-400 mt-2">
                       {new Date(notice.createdAt).toLocaleDateString('en-US', {
                         year: 'numeric',

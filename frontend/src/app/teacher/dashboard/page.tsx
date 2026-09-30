@@ -66,8 +66,8 @@ export default function TeacherDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Teacher Dashboard</h1>
-        <p className="text-gray-600 mt-1">Manage your students and track their progress</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Teacher Dashboard</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your students and track their progress</p>
       </div>
 
       {error && (
@@ -78,58 +78,58 @@ export default function TeacherDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
+        <div className="bg-white rounded-xl p-4 border border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
               <Users className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalStudents}</p>
-              <p className="text-xs text-gray-500">Students</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalStudents}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Students</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
+        <div className="bg-white rounded-xl p-4 border border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
               <ClipboardList className="w-5 h-5 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalAssignments}</p>
-              <p className="text-xs text-gray-500">Assignments</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalAssignments}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Assignments</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
+        <div className="bg-white rounded-xl p-4 border border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
               <Clock className="w-5 h-5 text-yellow-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.pendingGrading}</p>
-              <p className="text-xs text-gray-500">Pending Grading</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.pendingGrading}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Pending Grading</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
+        <div className="bg-white rounded-xl p-4 border border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
               <FileText className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalCBTs}</p>
-              <p className="text-xs text-gray-500">CBTs Created</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalCBTs}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">CBTs Created</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
+        <div className="bg-white rounded-xl p-4 border border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-pink-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.averageClassScore}%</p>
-              <p className="text-xs text-gray-500">Avg. Score</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.averageClassScore}%</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Avg. Score</p>
             </div>
           </div>
         </div>
@@ -139,45 +139,45 @@ export default function TeacherDashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Link
           href="/teacher/assignments"
-          className="bg-white rounded-xl border border-gray-100 p-4 text-center hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 p-4 text-center hover:shadow-md transition-shadow"
         >
           <Plus className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-          <p className="text-sm font-medium text-gray-700">Create Assignment</p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Create Assignment</p>
         </Link>
         <Link
           href="/teacher/questions"
-          className="bg-white rounded-xl border border-gray-100 p-4 text-center hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 p-4 text-center hover:shadow-md transition-shadow"
         >
           <FileText className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-          <p className="text-sm font-medium text-gray-700">Add Questions</p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Add Questions</p>
         </Link>
         <Link
           href="/teacher/mock"
-          className="bg-white rounded-xl border border-gray-100 p-4 text-center hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 p-4 text-center hover:shadow-md transition-shadow"
         >
           <Award className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-          <p className="text-sm font-medium text-gray-700">Create CBT</p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Create CBT</p>
         </Link>
         <Link
           href="/teacher/attendance"
-          className="bg-white rounded-xl border border-gray-100 p-4 text-center hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 p-4 text-center hover:shadow-md transition-shadow"
         >
           <Calendar className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-          <p className="text-sm font-medium text-gray-700">Mark Attendance</p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Mark Attendance</p>
         </Link>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Recent Submissions */}
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Submissions</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Submissions</h2>
             <Link href="/teacher/assignments" className="text-sm text-purple-600 hover:text-purple-700">
               View All
             </Link>
           </div>
           {stats.recentSubmissions.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No submissions yet</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8">No submissions yet</p>
           ) : (
             <div className="space-y-3">
               {stats.recentSubmissions.map((submission: any, index: number) => (
@@ -192,8 +192,8 @@ export default function TeacherDashboard() {
                       </span>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{submission.student}</p>
-                      <p className="text-xs text-gray-500">{submission.assignment}</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{submission.student}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{submission.assignment}</p>
                       <p className="text-xs text-gray-400">{submission.submitted}</p>
                     </div>
                   </div>
@@ -215,15 +215,15 @@ export default function TeacherDashboard() {
         </div>
 
         {/* Upcoming Classes */}
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Upcoming Classes</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Upcoming Classes</h2>
             <Link href="/teacher/courses" className="text-sm text-purple-600 hover:text-purple-700">
               View Schedule
             </Link>
           </div>
           {stats.upcomingClasses.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No upcoming classes</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8">No upcoming classes</p>
           ) : (
             <div className="space-y-3">
               {stats.upcomingClasses.map((classItem: any, index: number) => (
@@ -236,11 +236,11 @@ export default function TeacherDashboard() {
                       <BookOpen className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{classItem.subject}</p>
-                      <p className="text-xs text-gray-500">Class {classItem.class}</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{classItem.subject}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Class {classItem.class}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 text-gray-600">
+                  <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                     <Clock className="w-4 h-4" />
                     <span className="text-sm">{classItem.time}</span>
                   </div>

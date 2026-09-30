@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { Menu, X, Phone, Mail, MapPin } from 'lucide-react';
+import { Menu, X, Phone, Mail, MapPin, Sun, Moon } from 'lucide-react';
+import { useTheme } from '@/lib/theme';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -15,6 +16,7 @@ const navLinks = [
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const { toggleTheme, theme } = useTheme();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -117,6 +119,17 @@ export default function Header() {
                 Get Started
               </Link>
             </div>
+
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={toggleTheme}
+              className={`p-2 rounded-lg transition-colors ${
+                isScrolled ? 'text-[#2C2015] hover:bg-gray-100' : 'text-white hover:bg-white/10'
+              }`}
+              aria-label="Toggle dark mode"
+            >
+              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </button>
 
             {/* Mobile Menu Button */}
             <button

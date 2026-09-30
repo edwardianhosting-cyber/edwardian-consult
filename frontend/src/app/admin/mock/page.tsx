@@ -45,7 +45,7 @@ export default function AdminMockExamPage() {
     title: '',
     subject: '',
     duration: 60,
-    questionsPerSubject: 10,
+    questionsPerSubject: 50,
   });
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export default function AdminMockExamPage() {
 
   function openCreateModal() {
     setEditingExam(null);
-    setFormData({ title: '', subject: '', duration: 60, questionsPerSubject: 10 });
+    setFormData({ title: '', subject: '', duration: 60, questionsPerSubject: 50 });
     setShowModal(true);
   }
 
@@ -77,7 +77,7 @@ export default function AdminMockExamPage() {
       title: exam.title,
       subject: exam.subject,
       duration: exam.duration,
-      questionsPerSubject: exam.questionsPerSubject || 10,
+      questionsPerSubject: exam.questionsPerSubject || 50,
     });
     setShowModal(true);
   }

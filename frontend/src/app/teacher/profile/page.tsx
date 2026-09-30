@@ -75,8 +75,8 @@ export default function TeacherProfile() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
-        <p className="text-gray-600 mt-1">View and update your personal information</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Profile</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">View and update your personal information</p>
       </div>
 
       {error && (
@@ -93,15 +93,15 @@ export default function TeacherProfile() {
         </div>
       )}
 
-      <form onSubmit={handleSave} className="bg-white rounded-xl border border-gray-100 p-6 space-y-6 max-w-2xl">
+      <form onSubmit={handleSave} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 p-6 space-y-6 max-w-2xl">
         {/* Avatar Section */}
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
             <User className="w-8 h-8 text-purple-600" />
           </div>
           <div>
-            <p className="font-semibold text-gray-900">{profile?.fullName || 'Teacher'}</p>
-            <p className="text-sm text-gray-500">{profile?.role || 'Teacher'}</p>
+            <p className="font-semibold text-gray-900 dark:text-gray-100">{profile?.fullName || 'Teacher'}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{profile?.role || 'Teacher'}</p>
           </div>
         </div>
 
@@ -109,42 +109,42 @@ export default function TeacherProfile() {
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name *</label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
                 value={form.fullName}
                 onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Address *</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone Number</label>
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="tel"
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 placeholder="+234 800 000 0000"
               />
             </div>

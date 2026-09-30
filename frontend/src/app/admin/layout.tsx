@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTheme } from '@/lib/theme';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -31,7 +32,7 @@ import {
   UserCheck,
   UserPlus,
   ClipboardList,
-  Phone,
+  Phone, Sun, Moon
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -120,6 +121,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const { toggleTheme, theme } = useTheme();
   const [avatarDropdownOpen, setAvatarDropdownOpen] = useState(false);
 
   useEffect(() => {
@@ -155,7 +157,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
       </div>
     );
@@ -172,7 +174,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -243,30 +245,37 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       </aside>
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 bg-white border-b border-gray-200">
+        <header className="sticky top-0 z-30 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between h-16 px-4">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg"
+                className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <h1 className="text-lg font-semibold text-gray-900">Administration</h1>
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Administration</h1>
             </div>
             <div className="flex items-center gap-3">
               <Link
                 href="/"
                 target="_blank"
-                className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
               >
                 View Site
               </Link>
+              <button
+                onClick={toggleTheme}
+                className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Toggle dark mode"
+              >
+                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
               <div className="relative">
-                <button
-                  onClick={() => setAvatarDropdownOpen(!avatarDropdownOpen)}
-                  className="flex items-center gap-2 p-1 hover:bg-gray-100 rounded-lg"
-                >
+            <button
+              onClick={() => setAvatarDropdownOpen(!avatarDropdownOpen)}
+              className="flex items-center gap-2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+            >
                   {user?.avatar ? (
                     <img
                       src={user.avatar}
@@ -280,7 +289,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                       </span>
                     </div>
                   )}
-                  <span className="hidden sm:block text-sm font-medium text-gray-700">
+                  <span className="hidden sm:block text-sm font-medium text-gray-700 dark:text-gray-300">
                     {user?.fullName || 'Admin'}
                   </span>
                   <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -288,14 +297,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 {avatarDropdownOpen && (
                   <>
                     <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setAvatarDropdownOpen(false)}
-                    />
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                    className="fixed inset-0 z-10"
+                    onClick={() => setAvatarDropdownOpen(false)}
+                  />
+                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-20">
                       <Link
                         href="/admin/dashboard"
                         onClick={() => setAvatarDropdownOpen(false)}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
                         Dashboard
                       </Link>
@@ -312,3 +321,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     </div>
   );
 }
+
+
+

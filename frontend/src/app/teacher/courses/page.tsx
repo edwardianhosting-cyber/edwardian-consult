@@ -90,8 +90,8 @@ export default function TeacherCourses() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">My Courses</h1>
-        <p className="text-gray-600 mt-1">Subjects and classes you are teaching</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Courses</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Subjects and classes you are teaching</p>
       </div>
 
       {error && (
@@ -103,47 +103,47 @@ export default function TeacherCourses() {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
+        <div className="bg-white rounded-xl p-4 border border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
               <BookOpen className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{subjectList.length}</p>
-              <p className="text-xs text-gray-500">Subjects</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{subjectList.length}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Subjects</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
+        <div className="bg-white rounded-xl p-4 border border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
               <Users className="w-5 h-5 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalStudents ?? 0}</p>
-              <p className="text-xs text-gray-500">Students</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalStudents ?? 0}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Students</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
+        <div className="bg-white rounded-xl p-4 border border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
               <Clock className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalAssignments ?? 0}</p>
-              <p className="text-xs text-gray-500">Assignments</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalAssignments ?? 0}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Assignments</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
+        <div className="bg-white rounded-xl p-4 border border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
               <AlertCircle className="w-5 h-5 text-yellow-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.pendingGrading ?? 0}</p>
-              <p className="text-xs text-gray-500">Pending Grading</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.pendingGrading ?? 0}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Pending Grading</p>
             </div>
           </div>
         </div>
@@ -151,28 +151,28 @@ export default function TeacherCourses() {
 
       {/* Subjects Grid */}
       {subjectList.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-gray-100">
+        <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700">
           <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500 text-lg">No subjects assigned yet</p>
+          <p className="text-gray-500 dark:text-gray-400 text-lg">No subjects assigned yet</p>
           <p className="text-gray-400 text-sm mt-1">Subjects will appear here once assigned to you</p>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {subjectList.map((subject) => (
-            <div key={subject.id} className="bg-white rounded-xl border border-gray-100 p-6 hover:shadow-md transition-shadow">
+            <div key={subject.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center shrink-0">
                   <BookOpen className="w-6 h-6 text-purple-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 truncate">{subject.name}</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{subject.name}</h3>
                   {subject.examType && (
                     <span className="inline-block mt-1 px-2 py-0.5 bg-purple-50 text-purple-700 text-xs font-medium rounded-full">
                       {subject.examType}
                     </span>
                   )}
                   {(subject as Subject).description && (
-                    <p className="text-sm text-gray-500 mt-2 line-clamp-2">{(subject as Subject).description}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 line-clamp-2">{(subject as Subject).description}</p>
                   )}
                 </div>
               </div>

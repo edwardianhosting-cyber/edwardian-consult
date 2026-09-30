@@ -148,6 +148,8 @@ model Exam {
   isPublished         Boolean    @default(false)
   publishedAt         DateTime?
   createdAt           DateTime   @default(now())
+  isAttempt           Boolean    @default(false)
+  templateExamId      String?
 
   questions     ExamQuestion[]
   cbtResults    CbtResult[]
@@ -155,6 +157,8 @@ model Exam {
   @@index([examType])
   @@index([subject])
   @@index([isPublished])
+  @@index([isAttempt])
+  @@index([templateExamId])
 }
 
 model ExamQuestion {
@@ -172,27 +176,29 @@ model ExamQuestion {
 }
 
 model CbtResult {
-  id             String   @id @default(uuid())
-  userId         String
-  examId         String?
-  subject        String
-  type           String   @default("PRACTICE")
-  score          Float
-  totalQuestions Int
-  correctAnswers Int
-  wrongAnswers   Int
-  skippedAnswers Int
-  durationUsed   Int
-  userAnswers    Json
-  weakTopics     Json?
-  completedAt    DateTime @default(now())
-  createdAt      DateTime @default(now())
+  id              String   @id @default(uuid())
+  userId          String
+  examId          String?
+  templateExamId  String?
+  subject         String
+  type            String   @default("PRACTICE")
+  score           Float
+  totalQuestions  Int
+  correctAnswers  Int
+  wrongAnswers    Int
+  skippedAnswers  Int
+  durationUsed    Int
+  userAnswers     Json
+  weakTopics      Json?
+  completedAt     DateTime @default(now())
+  createdAt       DateTime @default(now())
 
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exam           Exam?    @relation(fields: [examId], references: [id], onDelete: SetNull)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam            Exam?    @relation(fields: [examId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([examId])
+  @@index([templateExamId])
   @@index([type])
 }
 

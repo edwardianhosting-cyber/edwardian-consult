@@ -227,8 +227,8 @@ export default function TeacherQuestions() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Question Bank</h1>
-        <p className="text-gray-600 mt-1">View questions and upload via CSV, Excel, or JSON</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Question Bank</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">View questions and upload via CSV, Excel, or JSON</p>
       </div>
 
       {error && (
@@ -239,15 +239,15 @@ export default function TeacherQuestions() {
 
       {/* Question Settings */}
       <div className="bg-white rounded-xl border p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">Question Settings</h3>
-        <p className="text-xs text-gray-500 mb-4">These settings will be applied to all uploaded questions. The file should only contain question, options, answer, explanation, and optional imageUrl.</p>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Question Settings</h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">These settings will be applied to all uploaded questions. The file should only contain question, options, answer, explanation, and optional imageUrl.</p>
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">University / Institution</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">University / Institution</label>
             <select
               value={defaults.institution}
               onChange={(e) => setDefaults({ ...defaults, institution: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
             >
               <option value="">All Universities</option>
               {institutions.map((inst) => (
@@ -256,11 +256,11 @@ export default function TeacherQuestions() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subject</label>
             <select
               value={defaults.subject}
               onChange={(e) => setDefaults({ ...defaults, subject: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
             >
               <option value="">Select subject...</option>
               {subjects.map((subject) => (
@@ -269,11 +269,11 @@ export default function TeacherQuestions() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Exam Type</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Exam Type</label>
             <select
               value={defaults.examType}
               onChange={(e) => setDefaults({ ...defaults, examType: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
             >
               <option value="JAMB">JAMB</option>
               <option value="WAEC">WAEC</option>
@@ -283,11 +283,11 @@ export default function TeacherQuestions() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Year</label>
             <select
               value={defaults.year}
               onChange={(e) => setDefaults({ ...defaults, year: parseInt(e.target.value) || 0 })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
             >
               <option value="">Select year...</option>
               {years.map((year) => (
@@ -296,12 +296,12 @@ export default function TeacherQuestions() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Topic (optional)</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Topic (optional)</label>
             <input
               type="text"
               value={defaults.topic}
               onChange={(e) => setDefaults({ ...defaults, topic: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
               placeholder="e.g. Algebra"
             />
           </div>
@@ -311,20 +311,20 @@ export default function TeacherQuestions() {
       <div className="grid md:grid-cols-2 gap-6">
         {/* CSV / Excel Upload */}
         <div className="bg-white rounded-xl border p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary-600" />
             Upload Questions (CSV or Excel)
           </h3>
           <form onSubmit={handleBulkUpload} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Question File</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Question File</label>
               <input
                 type="file"
                 accept=".csv,.xlsx,.xls"
                 onChange={(e) => setBulkFile(e.target.files?.[0] || null)}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
               />
-              <p className="text-xs text-gray-500 mt-1">Supported formats: CSV (.csv) or Excel (.xlsx, .xls)</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Supported formats: CSV (.csv) or Excel (.xlsx, .xls)</p>
             </div>
             <button
               type="submit"
@@ -345,13 +345,13 @@ export default function TeacherQuestions() {
             </button>
           </form>
 
-          <div className="mt-4 p-4 rounded-lg border border-gray-200 bg-gray-50">
-            <p className="text-sm font-medium text-gray-700 mb-2">Need a template?</p>
+          <div className="mt-4 p-4 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Need a template?</p>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => downloadSample('csv')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-white border border-gray-200 rounded-lg hover:bg-primary-50"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-white border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-primary-50"
               >
                 <Download className="h-3.5 w-3.5" />
                 Sample CSV
@@ -359,15 +359,15 @@ export default function TeacherQuestions() {
               <button
                 type="button"
                 onClick={() => downloadSample('excel')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-white border border-gray-200 rounded-lg hover:bg-primary-50"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-white border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-primary-50"
               >
                 <Download className="h-3.5 w-3.5" />
                 Sample Excel
               </button>
             </div>
-            <p className="text-xs text-gray-500 mt-2">File columns: <strong>question</strong>, <strong>options</strong>, <strong>answer</strong>, <strong>explanation</strong>, <strong>imageUrl</strong> (optional).</p>
-            <p className="text-xs text-gray-500">Options should be pipe-separated (e.g., Option A|Option B|Option C|Option D).</p>
-            <p className="text-xs text-gray-500">Answer is the 0-based index of the correct option (0 = first option).</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">File columns: <strong>question</strong>, <strong>options</strong>, <strong>answer</strong>, <strong>explanation</strong>, <strong>imageUrl</strong> (optional).</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Options should be pipe-separated (e.g., Option A|Option B|Option C|Option D).</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Answer is the 0-based index of the correct option (0 = first option).</p>
           </div>
 
           {bulkResult && (
@@ -376,7 +376,7 @@ export default function TeacherQuestions() {
                 <CheckCircle className="h-5 w-5" />
                 <span className="font-medium">File Processed</span>
               </div>
-              <p className="text-sm text-gray-600">Created: {bulkResult.created} questions</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Created: {bulkResult.created} questions</p>
               {bulkResult.errors.length > 0 && (
                 <div className="mt-2">
                   <p className="text-sm font-medium text-red-700">Errors:</p>
@@ -393,16 +393,16 @@ export default function TeacherQuestions() {
 
         {/* JSON Upload */}
         <div className="bg-white rounded-xl border p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary-600" />
             Upload Questions via JSON
           </h3>
-          <p className="text-xs text-gray-500 mb-2">Paste a JSON array of questions. Only question fields are needed; settings above are applied automatically.</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Paste a JSON array of questions. Only question fields are needed; settings above are applied automatically.</p>
           <textarea
             value={questionsJsonText}
             onChange={(e) => setQuestionsJsonText(e.target.value)}
             rows={10}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 mb-3 font-mono text-xs"
+            className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 mb-3 font-mono text-xs"
             placeholder={`Paste JSON here, for example:\n[\n  {\n    "text": "What is the capital of Nigeria?",\n    "options": ["Lagos", "Abuja", "Port Harcourt", "Kano"],\n    "correctOption": 1,\n    "explanation": "Abuja is the capital."\n  }\n]`}
           />
           <div className="flex items-center gap-2 mb-3">
@@ -425,12 +425,12 @@ export default function TeacherQuestions() {
                 ];
                 setQuestionsJsonText(JSON.stringify(sample, null, 2));
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-white border border-gray-200 rounded-lg hover:bg-primary-50"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-white border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-primary-50"
             >
               <Download className="h-3.5 w-3.5" />
               Load Sample JSON
             </button>
-            <span className="text-xs text-gray-500">Click to load a sample into the textarea.</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Click to load a sample into the textarea.</span>
           </div>
           <button
             type="button"
@@ -450,23 +450,23 @@ export default function TeacherQuestions() {
               </>
             )}
           </button>
-          <p className="text-xs text-gray-500 mt-2">Supported fields: text, options, correctOption, explanation, imageUrl.</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Supported fields: text, options, correctOption, explanation, imageUrl.</p>
         </div>
       </div>
 
       {/* Image Upload */}
       <div className="bg-white rounded-xl border p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
           <Image className="h-5 w-5 text-primary-600" />
           Upload Question Images
         </h3>
-        <p className="text-xs text-gray-500 mb-3">Upload images and copy the generated URLs into the imageUrl column in your CSV/Excel or JSON.</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Upload images and copy the generated URLs into the imageUrl column in your CSV/Excel or JSON.</p>
         <input
           type="file"
           accept="image/*"
           multiple
           onChange={handleImageChange}
-          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 mb-3"
+          className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 mb-3"
         />
         {imagePreviews.length > 0 && (
           <div className="grid grid-cols-4 gap-2 mb-3">
@@ -499,12 +499,12 @@ export default function TeacherQuestions() {
               <CheckCircle className="h-5 w-5" />
               <span className="font-medium">Image{imageUrls.length > 1 ? 's' : ''} Uploaded</span>
             </div>
-            <p className="text-xs text-gray-500 mb-2">Copy these URLs into the imageUrl column in your CSV/Excel or JSON.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Copy these URLs into the imageUrl column in your CSV/Excel or JSON.</p>
             <div className="space-y-1 max-h-40 overflow-y-auto">
               {imageUrls.map((url, idx) => (
                 <div key={idx} className="flex items-center gap-2">
                   <img src={url} alt="" className="h-8 w-8 object-cover rounded border" />
-                  <p className="text-xs text-gray-600 break-all flex-1">{url}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 break-all flex-1">{url}</p>
                   <button
                     type="button"
                     onClick={() => copyToClipboard(url)}
@@ -522,7 +522,7 @@ export default function TeacherQuestions() {
 
       {/* Recent Questions */}
       <div className="bg-white rounded-xl border p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Questions</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Recent Questions</h3>
         <div className="mb-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -531,14 +531,14 @@ export default function TeacherQuestions() {
               placeholder="Search questions..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
           <div className="mt-2 flex gap-2">
             <select
               value={subjectFilter}
               onChange={(e) => setSubjectFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
             >
               <option value="">All Subjects</option>
               {uniqueSubjects.map((subject) => (
@@ -548,7 +548,7 @@ export default function TeacherQuestions() {
             <select
               value={examTypeFilter}
               onChange={(e) => setExamTypeFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
             >
               <option value="">All Exam Types</option>
               <option value="JAMB">JAMB</option>
@@ -564,28 +564,28 @@ export default function TeacherQuestions() {
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
         ) : filteredQuestions.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-8">No questions found. Upload a file to get started.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">No questions found. Upload a file to get started.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-2 px-3 font-medium text-gray-700">Exam Type</th>
-                  <th className="text-left py-2 px-3 font-medium text-gray-700">Subject</th>
-                  <th className="text-left py-2 px-3 font-medium text-gray-700">Text</th>
-                  <th className="text-left py-2 px-3 font-medium text-gray-700">Image</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-700 dark:text-gray-300">Exam Type</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-700 dark:text-gray-300">Subject</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-700 dark:text-gray-300">Text</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-700 dark:text-gray-300">Image</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredQuestions.map((q) => (
                   <tr key={q.id} className="border-b last:border-0">
-                    <td className="py-2 px-3 text-gray-900">
+                    <td className="py-2 px-3 text-gray-900 dark:text-gray-100">
                       <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-primary-50 text-primary-700">
                         {q.examType}
                       </span>
                     </td>
-                    <td className="py-2 px-3 text-gray-900">{q.subject}</td>
-                    <td className="py-2 px-3 text-gray-600 max-w-md truncate">{q.text}</td>
+                    <td className="py-2 px-3 text-gray-900 dark:text-gray-100">{q.subject}</td>
+                    <td className="py-2 px-3 text-gray-600 dark:text-gray-400 max-w-md truncate">{q.text}</td>
                     <td className="py-2 px-3">
                       {q.imageUrl ? (
                         <img src={q.imageUrl} alt="" className="h-10 w-10 object-cover rounded border" />

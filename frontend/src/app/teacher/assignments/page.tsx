@@ -154,8 +154,8 @@ export default function TeacherAssignments() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Assignments</h1>
-          <p className="text-gray-600 mt-1">Create and manage assignments for your students</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Assignments</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Create and manage assignments for your students</p>
         </div>
         <button
           onClick={openCreateModal}
@@ -173,7 +173,7 @@ export default function TeacherAssignments() {
       )}
 
       {/* Search */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 p-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
@@ -181,46 +181,46 @@ export default function TeacherAssignments() {
             placeholder="Search assignments..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           />
         </div>
       </div>
 
       {/* Assignments Table */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
           </div>
         ) : filteredAssignments.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-gray-500">No assignments found. Create your first assignment!</p>
+            <p className="text-gray-500 dark:text-gray-400">No assignments found. Create your first assignment!</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Title</th>
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Subject</th>
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Due Date</th>
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Status</th>
-                  <th className="text-right px-4 py-3 text-sm font-semibold text-gray-600">Actions</th>
+                <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700 border-gray-100">
+                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Title</th>
+                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Subject</th>
+                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Due Date</th>
+                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Status</th>
+                  <th className="text-right px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredAssignments.map((assignment) => (
-                  <tr key={assignment.id} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-900 font-medium">{assignment.title}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{assignment.subject || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                  <tr key={assignment.id} className="border-b border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 font-medium">{assignment.title}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{assignment.subject || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                       {assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : '-'}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
                         assignment.status === 'PUBLISHED'
                           ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-700'
+                          : 'bg-gray-100 text-gray-700 dark:text-gray-300'
                       }`}>
                         {assignment.status === 'PUBLISHED' ? <Check className="w-3 h-3" /> : null}
                         {assignment.status}
@@ -274,52 +274,52 @@ export default function TeacherAssignments() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
                 {editingAssignment ? 'Edit Assignment' : 'Create Assignment'}
               </h2>
-              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Title *</label>
                 <input
                   type="text"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="Assignment title"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   rows={3}
                   placeholder="Assignment description"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Subject</label>
                   <input
                     type="text"
                     value={form.subject}
                     onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="e.g. Mathematics"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Due Date</label>
                   <input
                     type="date"
                     value={form.dueDate}
                     onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -327,7 +327,7 @@ export default function TeacherAssignments() {
               {/* Questions */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700">Questions</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Questions</label>
                   <button
                     type="button"
                     onClick={addQuestion}
@@ -339,7 +339,7 @@ export default function TeacherAssignments() {
                 {form.questions.map((q, idx) => (
                   <div key={idx} className="mb-4 p-4 bg-gray-50 rounded-lg space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700">Question {idx + 1}</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Question {idx + 1}</span>
                       <button
                         type="button"
                         onClick={() => removeQuestion(idx)}
@@ -352,7 +352,7 @@ export default function TeacherAssignments() {
                       type="text"
                       value={q.text}
                       onChange={(e) => updateQuestion(idx, 'text', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
                       placeholder="Question text"
                     />
                     {q.options.map((opt, optIdx) => (
@@ -365,7 +365,7 @@ export default function TeacherAssignments() {
                           newOpts[optIdx] = e.target.value;
                           updateQuestion(idx, 'options', newOpts);
                         }}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                        className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
                         placeholder={`Option ${String.fromCharCode(65 + optIdx)}`}
                       />
                     ))}
@@ -373,7 +373,7 @@ export default function TeacherAssignments() {
                       <select
                         value={q.correctOption}
                         onChange={(e) => updateQuestion(idx, 'correctOption', Number(e.target.value))}
-                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                        className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
                       >
                         {q.options.map((_, optIdx) => (
                           <option key={optIdx} value={optIdx}>
@@ -387,7 +387,7 @@ export default function TeacherAssignments() {
               </div>
             </div>
             <div className="p-6 border-t flex justify-end gap-3">
-              <button onClick={() => setShowModal(false)} className="px-5 py-2.5 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-50">
+              <button onClick={() => setShowModal(false)} className="px-5 py-2.5 border border-gray-300 rounded-xl font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
                 Cancel
               </button>
               <button onClick={handleSave} disabled={submitting || !form.title.trim()} className="px-5 py-2.5 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">
@@ -404,25 +404,25 @@ export default function TeacherAssignments() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">{viewingAssignment.title}</h2>
-              <button onClick={() => setViewingAssignment(null)} className="p-2 hover:bg-gray-100 rounded-lg">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{viewingAssignment.title}</h2>
+              <button onClick={() => setViewingAssignment(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="p-6 space-y-4">
               {viewingAssignment.description && (
-                <p className="text-gray-700">{viewingAssignment.description}</p>
+                <p className="text-gray-700 dark:text-gray-300">{viewingAssignment.description}</p>
               )}
               {viewingAssignment.questions && viewingAssignment.questions.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="font-semibold text-gray-900">Questions</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">Questions</h3>
                   {viewingAssignment.questions.map((q: any, idx: number) => (
                     <div key={idx} className="p-4 bg-gray-50 rounded-lg">
-                      <p className="font-medium text-gray-900 mb-2">{idx + 1}. {q.text}</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">{idx + 1}. {q.text}</p>
                       {q.options && (
                         <div className="space-y-1 ml-4">
                           {q.options.map((opt: string, optIdx: number) => (
-                            <div key={optIdx} className={`text-sm ${optIdx === q.correctOption ? 'text-green-700 font-medium' : 'text-gray-600'}`}>
+                            <div key={optIdx} className={`text-sm ${optIdx === q.correctOption ? 'text-green-700 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
                               {String.fromCharCode(65 + optIdx)}. {opt} {optIdx === q.correctOption ? '(Correct)' : ''}
                             </div>
                           ))}
@@ -434,7 +434,7 @@ export default function TeacherAssignments() {
               )}
             </div>
             <div className="p-6 border-t flex justify-end">
-              <button onClick={() => setViewingAssignment(null)} className="px-5 py-2.5 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-50">
+              <button onClick={() => setViewingAssignment(null)} className="px-5 py-2.5 border border-gray-300 rounded-xl font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
                 Close
               </button>
             </div>

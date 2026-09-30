@@ -8,10 +8,10 @@ export interface EnglishExamBlueprint {
 }
 
 const DEFAULT_BLUEPRINT: EnglishExamBlueprint = {
-  totalQuestions: 60,
+  totalQuestions: 50,
   comprehensionGroupCount: 1,
   clozeGroupCount: 1,
-  standaloneCount: 58,
+  standaloneCount: 48,
 };
 
 const BLUEPRINT_KEY = 'english_exam_blueprint';

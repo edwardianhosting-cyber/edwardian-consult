@@ -88,8 +88,8 @@ export default function TeacherSettings() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600 mt-1">Manage your account settings and preferences</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your account settings and preferences</p>
       </div>
 
       {error && (
@@ -107,35 +107,35 @@ export default function TeacherSettings() {
       )}
 
       {/* Change Password */}
-      <form onSubmit={handleChangePassword} className="bg-white rounded-xl border border-gray-100 p-6 space-y-4 max-w-2xl">
+      <form onSubmit={handleChangePassword} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 p-6 space-y-4 max-w-2xl">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
             <Lock className="w-5 h-5 text-purple-600" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Change Password</h2>
-            <p className="text-sm text-gray-500">Update your account password</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Change Password</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Update your account password</p>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Current Password *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Current Password *</label>
           <input
             type="password"
             value={passwordForm.currentPassword}
             onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">New Password *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">New Password *</label>
           <input
             type="password"
             value={passwordForm.newPassword}
             onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             minLength={6}
             required
           />
@@ -143,12 +143,12 @@ export default function TeacherSettings() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm New Password *</label>
           <input
             type="password"
             value={passwordForm.confirmPassword}
             onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             required
           />
         </div>
@@ -167,25 +167,25 @@ export default function TeacherSettings() {
       </form>
 
       {/* Notification Preferences */}
-      <div className="bg-white rounded-xl border border-gray-100 p-6 max-w-2xl">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 p-6 max-w-2xl">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
             <Bell className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Notification Preferences</h2>
-            <p className="text-sm text-gray-500">Choose what notifications you receive</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Notification Preferences</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Choose what notifications you receive</p>
           </div>
         </div>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
             <div>
-              <p className="font-medium text-gray-900 flex items-center gap-2">
-                <Smartphone className="w-4 h-4 text-gray-500" />
+              <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <Smartphone className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 Push Notifications
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 {pushNotifications.supported
                   ? "Get instant alerts on this device, even when the app isn't open"
                   : "Not supported in this browser"}
@@ -217,8 +217,8 @@ export default function TeacherSettings() {
           ].map((pref) => (
             <div key={pref.key} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div>
-                <p className="font-medium text-gray-900">{pref.label}</p>
-                <p className="text-sm text-gray-500">{pref.desc}</p>
+                <p className="font-medium text-gray-900 dark:text-gray-100">{pref.label}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{pref.desc}</p>
               </div>
               <button
                 type="button"

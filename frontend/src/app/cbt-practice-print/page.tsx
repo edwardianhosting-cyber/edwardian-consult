@@ -31,28 +31,170 @@ interface AdminResult {
   };
 }
 
-function AdminPrintResultsInner() {
+const MAX_SUBJECT_COLUMNS = 4;
+
+function getSubjectAbbreviation(subject: string): string {
+  const abbreviations: Record<string, string> = {
+    'English Language': 'ENG',
+    English: 'ENG',
+    Mathematics: 'MATH',
+    'General Mathematics': 'MATH',
+    'Further Mathematics': 'FMATH',
+    Physics: 'PHY',
+    Chemistry: 'CHM',
+    Biology: 'BIO',
+    Government: 'GVT',
+    Economics: 'ECO',
+    'Literature in English': 'LIT',
+    Literature: 'LIT',
+    'Christian Religious Studies': 'CRS',
+    'Islamic Religious Studies': 'IRS',
+    Geography: 'GEO',
+    Commerce: 'COM',
+    Accounting: 'ACC',
+    'Financial Accounting': 'ACC',
+    'Civic Education': 'CIV',
+    History: 'HIS',
+    'Agricultural Science': 'AGR',
+    Agriculture: 'AGR',
+    French: 'FRE',
+    Yoruba: 'YOR',
+    Igbo: 'IGB',
+    Hausa: 'HAU',
+    'Computer Studies': 'CST',
+    'Data Processing': 'DTP',
+  };
+  const normalized = subject.trim();
+  return abbreviations[normalized] || normalized.toUpperCase().slice(0, 3);
+}
+
+interface PrintRow {
+  key: string;
+  studentName: string;
+  subjects: { subject: string; score: number }[];
+  total: number;
+}
+
+function getRowSubjects(student: AdminResult): { subject: string; score: number }[] {
+  let entries: { subject: string; score: number }[] = [];
+
+  if (student.subjectEntries && student.subjectEntries.length > 0) {
+    entries = student.subjectEntries.map((entry) => ({
+      subject: entry.subject,
+      score: entry.score,
+    }));
+  } else if (student.subjectScores) {
+    entries = Object.entries(student.subjectScores).map(([subject, data]) => ({
+      subject,
+      score: data.correct * 2,
+    }));
+  }
+
+  if (entries.length === 0 && student.subject) {
+    const subjects = student.subject.split(',').map((s) => s.trim()).filter(Boolean);
+    entries = subjects.map((subject) => ({
+      subject,
+      score: student.score || 0,
+    }));
+  }
+
+  const englishIndex = entries.findIndex((entry) => /english/i.test(entry.subject));
+  if (englishIndex > 0) {
+    const [english] = entries.splice(englishIndex, 1);
+    entries.unshift(english);
+  }
+
+  return entries.slice(0, MAX_SUBJECT_COLUMNS);
+}
+
+function getRowTotal(student: AdminResult): number {
+  return student.aggregate;
+}
+
+function buildRows(list: AdminResult[]): PrintRow[] {
+  const groups = new Map<string, {
+    studentName: string;
+    best: Map<string, { subject: string; score: number }>;
+    bestAggregate: number;
+    representative: AdminResult | null;
+  }>();
+
+  list.forEach((result) => {
+    const identity = (result.studentName || result.email || result.id).toLowerCase().replace(/\s+/g, ' ').trim();
+    const key = identity;
+
+    if (!groups.has(key)) {
+      groups.set(key, { studentName: result.studentName, best: new Map(), bestAggregate: 0, representative: null });
+    }
+    const group = groups.get(key)!;
+
+    if (result.aggregate > group.bestAggregate) {
+      group.bestAggregate = result.aggregate;
+      group.representative = result;
+    }
+
+    getRowSubjects(result).forEach((entry) => {
+      const subjectKey = entry.subject.trim().toLowerCase();
+      const existing = group.best.get(subjectKey);
+      if (!existing || entry.score > existing.score) {
+        group.best.set(subjectKey, entry);
+      }
+    });
+  });
+
+  return Array.from(groups.entries()).map(([key, group]) => {
+    const all = Array.from(group.best.values());
+    const english = all.filter((e) => /english/i.test(e.subject));
+    const others = all.filter((e) => !/english/i.test(e.subject));
+
+    const slots = MAX_SUBJECT_COLUMNS - Math.min(english.length, 1);
+    let chosenOthers = others;
+    if (others.length > slots) {
+      const topScores = [...others].sort((a, b) => b.score - a.score).slice(0, slots);
+      chosenOthers = others.filter((e) => topScores.includes(e));
+    }
+
+    const subjects = [...english.slice(0, 1), ...chosenOthers].slice(0, MAX_SUBJECT_COLUMNS);
+    const total = group.representative ? getRowTotal(group.representative) : 0;
+    return { key, studentName: group.studentName, subjects, total };
+  });
+}
+
+function escapeHtml(value: string): string {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function getHeaderLines(): { text: string; italic?: boolean; small?: boolean }[] {
+  return [
+    { text: 'CBT' },
+    { text: 'PRACTICE EXAM', italic: true },
+  ];
+}
+
+function AdminPrintPracticeInner() {
   const searchParams = useSearchParams();
-  const type = searchParams.get('type') || 'ALL';
-  const examId = searchParams.get('examId') || undefined;
   const sortBy = searchParams.get('sortBy') || 'score';
+  const subject = searchParams.get('subject') || undefined;
 
   const [results, setResults] = useState<AdminResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filterInfo, setFilterInfo] = useState<{ type: string; examTitle?: string }>({ type: 'ALL' });
 
   useEffect(() => {
     fetchResults();
-  }, [type, examId, sortBy]);
+  }, [sortBy, subject]);
 
   async function fetchResults() {
     try {
       setLoading(true);
       setError(null);
       const data = await api.adminGetFilteredResults({
-        type: type === 'ALL' ? undefined : type,
-        examId,
+        type: 'PRACTICE',
         sortBy: sortBy === 'date' ? 'date' : 'score',
         page: 1,
         limit: 1000,
@@ -60,207 +202,11 @@ function AdminPrintResultsInner() {
       const response = data as any;
       const mappedResults = (response.data?.results || []) as AdminResult[];
       setResults(mappedResults);
-      setFilterInfo({
-        type: type || 'ALL',
-        examTitle: response.data?.filter?.examTitle,
-      });
     } catch (err: any) {
       setError(err.message || 'Failed to fetch results');
     } finally {
       setLoading(false);
     }
-  }
-
-  function getExamTitle(): string {
-    if (filterInfo.type === 'MOCK' && filterInfo.examTitle) {
-      return `RESULT – ${filterInfo.examTitle}`;
-    }
-    if (filterInfo.type === 'PRACTICE') {
-      return 'CBT RESULTS';
-    }
-    return 'ALL RESULTS';
-  }
-
-  // Fixed number of subject columns (English + up to 3 others), matching the
-  // printed sheet's layout. This is what prevents the columns from stretching
-  // past the page width and overlapping when different students/results have
-  // different subject combinations.
-  const MAX_SUBJECT_COLUMNS = 4;
-
-  function getSubjectAbbreviation(subject: string): string {
-    const abbreviations: Record<string, string> = {
-      'English Language': 'ENG',
-      English: 'ENG',
-      Mathematics: 'MATH',
-      'General Mathematics': 'MATH',
-      'Further Mathematics': 'FMATH',
-      Physics: 'PHY',
-      Chemistry: 'CHM',
-      Biology: 'BIO',
-      Government: 'GVT',
-      Economics: 'ECO',
-      'Literature in English': 'LIT',
-      Literature: 'LIT',
-      'Christian Religious Studies': 'CRS',
-      'Islamic Religious Studies': 'IRS',
-      Geography: 'GEO',
-      Commerce: 'COM',
-      Accounting: 'ACC',
-      'Financial Accounting': 'ACC',
-      'Civic Education': 'CIV',
-      History: 'HIS',
-      'Agricultural Science': 'AGR',
-      Agriculture: 'AGR',
-      French: 'FRE',
-      Yoruba: 'YOR',
-      Igbo: 'IGB',
-      Hausa: 'HAU',
-      'Computer Studies': 'CST',
-      'Data Processing': 'DTP',
-    };
-    const normalized = subject.trim();
-    return abbreviations[normalized] || normalized.toUpperCase().slice(0, 3);
-  }
-
-  interface PrintRow {
-    key: string;
-    studentName: string;
-    subjects: { subject: string; score: number }[];
-    total: number;
-  }
-
-  // Per-student subject breakdown, capped to MAX_SUBJECT_COLUMNS, with
-  // English pinned first when present. Uses entry.score directly — the
-  // API already returns the correct raw score per subject, same as the
-  // admin results table. Do NOT recompute from correct/total here; that
-  // silently zeroes out real scores whenever total/correct come back as
-  // 0 or unset placeholders instead of undefined.
-  function getRowSubjects(student: AdminResult): { subject: string; score: number }[] {
-    let entries: { subject: string; score: number }[] = [];
-
-    if (student.subjectEntries && student.subjectEntries.length > 0) {
-      entries = student.subjectEntries.map((entry) => ({
-        subject: entry.subject,
-        score: entry.score,
-      }));
-    } else if (student.subjectScores) {
-      entries = Object.entries(student.subjectScores).map(([subject, data]) => ({
-        subject,
-        score: data.correct * 2,
-      }));
-    }
-
-    // Fallback: if neither subjectEntries nor subjectScores produced results,
-    // use the result's own subject field and overall score.
-    if (entries.length === 0 && student.subject) {
-      const subjects = student.subject.split(',').map(s => s.trim()).filter(Boolean);
-      entries = subjects.map((subject) => ({
-        subject,
-        score: student.score || 0,
-      }));
-    }
-
-    const englishIndex = entries.findIndex((entry) => /english/i.test(entry.subject));
-    if (englishIndex > 0) {
-      const [english] = entries.splice(englishIndex, 1);
-      entries.unshift(english);
-    }
-
-    return entries.slice(0, MAX_SUBJECT_COLUMNS);
-  }
-
-  // Trust the API's own aggregate rather than re-summing displayed
-  // subjects — mirrors what the working admin results table does.
-  function getRowTotal(student: AdminResult): number {
-    return student.aggregate;
-  }
-
-  // One printed row per STUDENT (not per attempt). All of a student's attempts
-  // are merged, keeping the best score per subject. English is pinned first,
-  // then up to 3 other subjects (best 3 if there are more). Total = sum of the
-  // displayed subjects, each out of 100, so the maximum is 400.
-  function buildRows(list: AdminResult[]): PrintRow[] {
-    const groups = new Map<string, {
-      studentName: string;
-      best: Map<string, { subject: string; score: number }>;
-      bestAggregate: number;
-      representative: AdminResult | null;
-    }>();
-
-    list.forEach((result) => {
-      // Match on the student's name (case/space-insensitive) so the same student
-      // is merged even when their attempts come from different accounts/emails.
-      const identity = (result.studentName || result.email || result.id).toLowerCase().replace(/\s+/g, ' ').trim();
-      const key = filterInfo.type === 'MOCK' ? `${identity}|${result.examId || ''}` : identity;
-
-      if (!groups.has(key)) {
-        groups.set(key, { studentName: result.studentName, best: new Map(), bestAggregate: 0, representative: null });
-      }
-      const group = groups.get(key)!;
-
-      // Track the best aggregate across attempts
-      if (result.aggregate > group.bestAggregate) {
-        group.bestAggregate = result.aggregate;
-        group.representative = result;
-      }
-
-      getRowSubjects(result).forEach((entry) => {
-        const subjectKey = entry.subject.trim().toLowerCase();
-        const existing = group.best.get(subjectKey);
-        if (!existing || entry.score > existing.score) {
-          group.best.set(subjectKey, entry);
-        }
-      });
-    });
-
-    return Array.from(groups.entries()).map(([key, group]) => {
-      const all = Array.from(group.best.values());
-      const english = all.filter((e) => /english/i.test(e.subject));
-      const others = all.filter((e) => !/english/i.test(e.subject));
-
-      const slots = MAX_SUBJECT_COLUMNS - Math.min(english.length, 1);
-      let chosenOthers = others;
-      if (others.length > slots) {
-        const topScores = [...others].sort((a, b) => b.score - a.score).slice(0, slots);
-        chosenOthers = others.filter((e) => topScores.includes(e));
-      }
-
-      const subjects = [...english.slice(0, 1), ...chosenOthers].slice(0, MAX_SUBJECT_COLUMNS);
-      const total = group.representative ? getRowTotal(group.representative) : 0;
-      return { key, studentName: group.studentName, subjects, total };
-    });
-  }
-
-  function getHeaderLines(): { text: string; italic?: boolean; small?: boolean }[] {
-    if (filterInfo.type === 'MOCK') {
-      return [
-        { text: 'BACK TO BACK' },
-        { text: 'UTME' },
-        { text: 'MOCK EXAM', italic: true },
-        { text: examTitle, small: true },
-      ];
-    }
-    if (filterInfo.type === 'PRACTICE') {
-      return [
-        { text: 'CBT' },
-        { text: 'PRACTICE EXAM', italic: true },
-        { text: examTitle, small: true },
-      ];
-    }
-    return [
-      { text: 'CBT' },
-      { text: 'COMBINED EXAM', italic: true },
-      { text: examTitle, small: true },
-    ];
-  }
-
-  function escapeHtml(value: string): string {
-    return String(value)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
   }
 
   const today = new Date();
@@ -274,7 +220,7 @@ function AdminPrintResultsInner() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -286,7 +232,7 @@ function AdminPrintResultsInner() {
           <p className="text-red-500 text-lg">{error}</p>
           <button
             onClick={fetchResults}
-            className="mt-4 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+            className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             Try Again
           </button>
@@ -295,9 +241,7 @@ function AdminPrintResultsInner() {
     );
   }
 
-  const examTitle = getExamTitle();
   const studentsPerPage = 20;
-
   const sortedStudents = buildRows(results).sort((a, b) => {
     if (b.total !== a.total) {
       return b.total - a.total;
@@ -721,10 +665,10 @@ function AdminPrintResultsInner() {
   );
 }
 
-export default function AdminPrintResultsPage() {
+export default function AdminPrintPracticePage() {
   return (
     <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div></div>}>
-      <AdminPrintResultsInner />
+      <AdminPrintPracticeInner />
     </Suspense>
   );
 }

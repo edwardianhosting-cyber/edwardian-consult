@@ -109,8 +109,8 @@ export default function TeacherAttendance() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Attendance</h1>
-          <p className="text-gray-600 mt-1">Mark and track student attendance</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Attendance</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Mark and track student attendance</p>
         </div>
         <button
           onClick={openCreateModal}
@@ -136,62 +136,62 @@ export default function TeacherAttendance() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
+        <div className="bg-white rounded-xl p-4 border border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
               <Calendar className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{attendance.length}</p>
-              <p className="text-xs text-gray-500">Total Records</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{attendance.length}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Total Records</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
+        <div className="bg-white rounded-xl p-4 border border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{presentCount}</p>
-              <p className="text-xs text-gray-500">Present</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{presentCount}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Present</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
+        <div className="bg-white rounded-xl p-4 border border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
               <XCircle className="w-5 h-5 text-red-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{absentCount}</p>
-              <p className="text-xs text-gray-500">Absent</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{absentCount}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Absent</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
+        <div className="bg-white rounded-xl p-4 border border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
               <Clock className="w-5 h-5 text-yellow-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{lateCount}</p>
-              <p className="text-xs text-gray-500">Late</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{lateCount}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Late</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Date Filter */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 p-4">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="sm:w-64">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date</label>
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
           </div>
           <div className="relative flex-1">
@@ -201,14 +201,14 @@ export default function TeacherAttendance() {
               placeholder="Search students..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
           </div>
         </div>
       </div>
 
       {/* Attendance Table */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
@@ -216,34 +216,34 @@ export default function TeacherAttendance() {
         ) : attendance.length === 0 ? (
           <div className="text-center py-16">
             <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">No attendance records</p>
+            <p className="text-gray-500 dark:text-gray-400 text-lg">No attendance records</p>
             <p className="text-gray-400 text-sm mt-1">Mark attendance for your students</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Student</th>
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Class</th>
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Subject</th>
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Status</th>
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Notes</th>
+                <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700 border-gray-100">
+                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Student</th>
+                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Class</th>
+                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Subject</th>
+                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Status</th>
+                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Notes</th>
                 </tr>
               </thead>
               <tbody>
                 {attendance.map((record) => (
-                  <tr key={record.id} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-900 font-medium">{record.studentName}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{record.className || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{record.subject || '-'}</td>
+                  <tr key={record.id} className="border-b border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 font-medium">{record.studentName}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{record.className || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{record.subject || '-'}</td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(record.status)}`}>
                         {getStatusIcon(record.status)}
                         {record.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{record.notes || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{record.notes || '-'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -257,18 +257,18 @@ export default function TeacherAttendance() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Mark Attendance</h2>
-              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Mark Attendance</h2>
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Student *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Student *</label>
                 <select
                   value={form.studentId}
                   onChange={(e) => setForm({ ...form, studentId: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="">Select a student</option>
                   {students.map((student) => (
@@ -277,31 +277,31 @@ export default function TeacherAttendance() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Class</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Class</label>
                 <input
                   type="text"
                   value={form.className}
                   onChange={(e) => setForm({ ...form, className: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="e.g. SS3A"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Subject</label>
                 <input
                   type="text"
                   value={form.subject}
                   onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="e.g. Mathematics"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
                 <select
                   value={form.status}
                   onChange={(e) => setForm({ ...form, status: e.target.value as any })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="PRESENT">Present</option>
                   <option value="ABSENT">Absent</option>
@@ -309,18 +309,18 @@ export default function TeacherAttendance() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</label>
                 <textarea
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   rows={2}
                   placeholder="Optional notes"
                 />
               </div>
             </div>
             <div className="p-6 border-t flex justify-end gap-3">
-              <button onClick={() => setShowModal(false)} className="px-5 py-2.5 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-50">
+              <button onClick={() => setShowModal(false)} className="px-5 py-2.5 border border-gray-300 rounded-xl font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
                 Cancel
               </button>
               <button onClick={handleSave} disabled={submitting || !form.studentId} className="px-5 py-2.5 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">

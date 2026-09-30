@@ -162,8 +162,6 @@ export default function AdminResultsPage() {
           sortBy: 'score',
           page: currentPage,
           limit: 50,
-          startDate,
-          endDate,
         });
         const response = data as any;
         setResults(response.data?.results || []);
@@ -231,13 +229,18 @@ export default function AdminResultsPage() {
 
   function handlePrint() {
     const params = new URLSearchParams();
+    params.set('sortBy', 'score');
+    if (view === 'practice' || resultTypeFilter === 'PRACTICE') {
+      params.set('sortBy', 'score');
+      window.open(`/cbt-practice-print?${params.toString()}`, '_blank', 'width=1200,height=800');
+      return;
+    }
     if (resultTypeFilter !== 'ALL') {
       params.set('type', resultTypeFilter);
     }
     if (resultTypeFilter === 'MOCK' && selectedMockExamId) {
       params.set('examId', selectedMockExamId);
     }
-    params.set('sortBy', 'score');
     const printUrl = `/results-print?${params.toString()}`;
     window.open(printUrl, '_blank', 'width=1200,height=800');
   }
@@ -288,13 +291,13 @@ export default function AdminResultsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">CBT Management</h1>
-          <p className="text-gray-600 mt-1">Monitor and manage CBT examinations system-wide</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">CBT Management</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Monitor and manage CBT examinations system-wide</p>
         </div>
         {view !== 'home' && (
           <button
             onClick={() => setView('home')}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium"
+            className="px-4 py-2 bg-gray-100 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 text-sm font-medium"
           >
             Back to Home
           </button>
@@ -316,15 +319,15 @@ export default function AdminResultsPage() {
                   <button
                     key={idx}
                     onClick={card.onClick}
-                    className="bg-white rounded-xl border border-gray-100 p-6 text-left hover:shadow-lg hover:border-primary-200 transition-all group"
+                    className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 p-6 text-left hover:shadow-lg hover:border-primary-200 transition-all group"
                   >
                     <div className={`flex items-center gap-4 mb-4`}>
                       <div className={`w-12 h-12 ${card.bgColor} rounded-xl flex items-center justify-center group-hover:${card.hoverBgColor} transition-colors`}>
                         <Icon className={`w-6 h-6 ${card.textColor}`} />
                       </div>
                       <div>
-                        <h3 className="font-bold text-gray-900">{card.title}</h3>
-                        <p className="text-sm text-gray-500">{card.description}</p>
+                        <h3 className="font-bold text-gray-900 dark:text-gray-100">{card.title}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{card.description}</p>
                       </div>
                     </div>
                     <div className="flex items-center text-primary-600 text-sm font-medium">
@@ -339,10 +342,10 @@ export default function AdminResultsPage() {
           {/* Results View */}
 {view === 'results' && (
             <div className="space-y-4">
-              <div className="bg-white rounded-xl border border-gray-100 p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 p-4">
                 <div className="flex flex-col sm:flex-row gap-4">
                   <div className="sm:w-48">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Result Type</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Result Type</label>
                     <select
                       value={resultTypeFilter}
                       onChange={(e) => {
@@ -350,7 +353,7 @@ export default function AdminResultsPage() {
                         setSelectedMockExamId('');
                         setCurrentPage(1);
                       }}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                     >
                       {resultTypeOptions.map(option => (
                         <option key={option.value} value={option.value}>{option.label}</option>
@@ -360,14 +363,14 @@ export default function AdminResultsPage() {
 
                   {resultTypeFilter === 'MOCK' && (
                     <div className="sm:w-64">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Mock Exam</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mock Exam</label>
                       <select
                         value={selectedMockExamId}
                         onChange={(e) => {
                           setSelectedMockExamId(e.target.value);
                           setCurrentPage(1);
                         }}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                       >
                         <option value="">All Mock Exams</option>
                         {exams.map(exam => (
@@ -389,29 +392,29 @@ export default function AdminResultsPage() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 overflow-hidden">
                 {results.length === 0 ? (
                   <div className="text-center py-16">
-                    <p className="text-gray-500">No results found</p>
+                    <p className="text-gray-500 dark:text-gray-400">No results found</p>
                   </div>
                 ) : (
                   <>
                     <div className="overflow-x-auto">
                       <table className="w-full min-w-[800px]">
                         <thead>
-                          <tr className="bg-gray-50 border-b">
-                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 whitespace-nowrap">#</th>
-                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 whitespace-nowrap min-w-[200px]">STUDENT</th>
+                          <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
+                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap">#</th>
+                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[200px]">STUDENT</th>
                             {(() => {
                               const firstResult = results[0];
                               const subjects = firstResult?.subjectEntries?.map(e => e.subject) || [];
                               return subjects.map((subject, idx) => (
-                                <th key={subject} className="text-center px-3 py-3 text-sm font-semibold text-gray-600 whitespace-nowrap min-w-[90px]">
+                                <th key={subject} className="text-center px-3 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[90px]">
                                   {idx === 0 ? 'SUBJECT' : '100'}
                                 </th>
                               ));
                             })()}
-                            <th className="text-center px-4 py-3 text-sm font-semibold text-gray-600 whitespace-nowrap min-w-[80px]">TOTAL</th>
+                            <th className="text-center px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[80px]">TOTAL</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -419,10 +422,10 @@ export default function AdminResultsPage() {
                             const subjectEntries = result.subjectEntries || [];
                             const sortedEntries = [...subjectEntries].sort((a, b) => a.subject.localeCompare(b.subject));
                             return (
-                              <tr key={result.id} className="border-b last:border-0 hover:bg-gray-50">
-                                <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">{index + 1 + (currentPage - 1) * 50}</td>
-                                <td className="px-4 py-3 text-sm text-gray-900 font-medium min-w-[200px] max-w-[300px] truncate" title={result.studentName}>
-                                  {result.studentName}
+                              <tr key={result.id} className="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap">{index + 1 + (currentPage - 1) * 50}</td>
+                                <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 font-medium min-w-[200px] max-w-[300px] truncate" title={result.studentName || 'Unknown'}>
+                                  {result.studentName || 'Unknown'}
                                 </td>
                                 {sortedEntries.map((entry, idx) => (
                                   <td key={`${result.id}-${entry.subject}`} className="px-3 py-3 text-sm text-center min-w-[90px]">
@@ -451,15 +454,15 @@ export default function AdminResultsPage() {
                         <button
                           onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                           disabled={currentPage === 1}
-                          className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                          className="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
                         >
                           Previous
                         </button>
-                        <span className="text-sm text-gray-600">Page {currentPage} of {totalPages}</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Page {currentPage} of {totalPages}</span>
                         <button
                           onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                           disabled={currentPage === totalPages}
-                          className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                          className="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
                         >
                           Next
                         </button>
@@ -474,18 +477,18 @@ export default function AdminResultsPage() {
           {/* Practice/Mock Management View */}
           {(view === 'practice' || view === 'mock') && (
             <div className="space-y-4">
-              <div className="bg-white rounded-xl border border-gray-100 p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 p-4">
                 <div className="flex flex-col sm:flex-row gap-4">
                   {view === 'mock' && (
                     <div className="sm:w-64">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Mock Exam</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mock Exam</label>
                       <select
                         value={selectedMockExamId}
                         onChange={(e) => {
                           setSelectedMockExamId(e.target.value);
                           setCurrentPage(1);
                         }}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                       >
                         <option value="">All Mock Exams</option>
                         {exams.map(exam => (
@@ -495,25 +498,29 @@ export default function AdminResultsPage() {
                     </div>
                   )}
 
-                  <div className="sm:w-48">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">From Date</label>
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
+                  {view === 'practice' && (
+                    <>
+                      <div className="sm:w-48">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">From Date</label>
+                        <input
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
+                          className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
 
-                  <div className="sm:w-48">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">To Date</label>
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
+                      <div className="sm:w-48">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">To Date</label>
+                        <input
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
+                          className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                    </>
+                  )}
 
                   <div className="flex items-end">
                     <button
@@ -530,43 +537,43 @@ export default function AdminResultsPage() {
               {/* Print Header */}
               <div className="hidden print:block mb-6">
                 <div className="text-center border-b pb-4 mb-4">
-                  <h1 className="text-2xl font-bold text-gray-900">{orgName}</h1>
-                  <p className="text-gray-600">CBT Results Report</p>
-                  <p className="text-sm text-gray-500">Generated on {new Date().toLocaleDateString()}</p>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{orgName}</h1>
+                  <p className="text-gray-600 dark:text-gray-400">CBT Results Report</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Generated on {new Date().toLocaleDateString()}</p>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 overflow-hidden">
                 {results.length === 0 ? (
                   <div className="text-center py-16">
-                    <p className="text-gray-500">No results found</p>
+                    <p className="text-gray-500 dark:text-gray-400">No results found</p>
                   </div>
                 ) : (
                   <>
                     <div className="overflow-x-auto">
                       <table className="w-full">
                          <thead>
-                           <tr className="bg-gray-50 border-b">
-                             <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Student</th>
-                             <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Exam</th>
-                             <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Subject</th>
-                             <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Type</th>
-                             <th className="text-center px-4 py-3 text-sm font-semibold text-gray-600">Score</th>
-                             <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Date</th>
-                             <th className="text-right px-4 py-3 text-sm font-semibold text-gray-600">Actions</th>
+                           <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
+                             <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Student</th>
+                             <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Exam</th>
+                             <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Subject</th>
+                             <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Type</th>
+                             <th className="text-center px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Score</th>
+                             <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Date</th>
+                             <th className="text-right px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Actions</th>
                            </tr>
                          </thead>
                          <tbody>
                            {results.map((result) => {
                              const primarySubject = result.subjectEntries?.[0]?.subject || result.subject || '-';
                              return (
-                             <tr key={result.id} className="border-b last:border-0 hover:bg-gray-50">
-                               <td className="px-4 py-3 text-sm text-gray-900 font-medium">
+                             <tr key={result.id} className="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700">
+                               <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 font-medium">
                                  {result.studentName || 'Unknown'}
                                </td>
-                               <td className="px-4 py-3 text-sm text-gray-600">{result.examTitle || result.exam?.title || '-'}</td>
-                               <td className="px-4 py-3 text-sm text-gray-600">{primarySubject}</td>
-                               <td className="px-4 py-3 text-sm text-gray-600">
+                               <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{result.examTitle || result.exam?.title || '-'}</td>
+                               <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{primarySubject}</td>
+                               <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                                  <span className="capitalize">{result.type?.toLowerCase() || 'mock'}</span>
                                </td>
                                <td className="px-4 py-3 text-center">
@@ -578,7 +585,7 @@ export default function AdminResultsPage() {
                                    {Math.round(result.aggregate)}%
                                  </span>
                                </td>
-                               <td className="px-4 py-3 text-sm text-gray-500">
+                               <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                                  {new Date(result.completedAt).toLocaleDateString()}
                                </td>
                                <td className="px-4 py-3 text-right">
@@ -607,15 +614,15 @@ export default function AdminResultsPage() {
                         <button
                           onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                           disabled={currentPage === 1}
-                          className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                          className="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
                         >
                           Previous
                         </button>
-                        <span className="text-sm text-gray-600">Page {currentPage} of {totalPages}</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Page {currentPage} of {totalPages}</span>
                         <button
                           onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                           disabled={currentPage === totalPages}
-                          className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                          className="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
                         >
                           Next
                       </button>
@@ -630,7 +637,7 @@ export default function AdminResultsPage() {
           {/* Mock Exams Management View */}
           {view === 'mock' && (
             <div className="space-y-4">
-              <div className="bg-white rounded-xl border border-gray-100 p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 p-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
@@ -638,41 +645,41 @@ export default function AdminResultsPage() {
                     placeholder="Search mock exams..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 overflow-hidden">
                 {exams.length === 0 ? (
                   <div className="text-center py-16">
-                    <p className="text-gray-500">No mock exams found</p>
+                    <p className="text-gray-500 dark:text-gray-400">No mock exams found</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
-                        <tr className="bg-gray-50 border-b">
-                          <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Title</th>
-                          <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Subject</th>
-                          <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Duration</th>
-                          <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Questions</th>
-                          <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Status</th>
-                          <th className="text-right px-4 py-3 text-sm font-semibold text-gray-600">Actions</th>
+                        <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
+                          <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Title</th>
+                          <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Subject</th>
+                          <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Duration</th>
+                          <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Questions</th>
+                          <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Status</th>
+                          <th className="text-right px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {exams.map((exam) => (
-                          <tr key={exam.id} className="border-b last:border-0 hover:bg-gray-50">
-                            <td className="px-4 py-3 text-sm text-gray-900 font-medium">{exam.title}</td>
-                            <td className="px-4 py-3 text-sm text-gray-600">{exam.subject}</td>
-                            <td className="px-4 py-3 text-sm text-gray-600">{exam.duration} min</td>
-                            <td className="px-4 py-3 text-sm text-gray-600">{exam.questions?.length || 0}</td>
+                          <tr key={exam.id} className="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 font-medium">{exam.title}</td>
+                            <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{exam.subject}</td>
+                            <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{exam.duration} min</td>
+                            <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{exam.questions?.length || 0}</td>
                             <td className="px-4 py-3">
                               <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
                                 exam.isPublished
                                   ? 'bg-green-100 text-green-700'
-                                  : 'bg-gray-100 text-gray-700'
+                                  : 'bg-gray-100 text-gray-700 dark:text-gray-300'
                               }`}>
                                 {exam.isPublished ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
                                 {exam.isPublished ? 'Published' : 'Draft'}

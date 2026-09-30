@@ -77,10 +77,7 @@ export async function generateCBT(userId: string, params: {
   const isJAMB = normalizedRequested === 'JAMB';
   const isEnglish = params.subject === 'English Language';
 
-  let questionCount = 40;
-  if (isEnglish) {
-    questionCount = 60;
-  }
+  let questionCount = params.questionCount || 50;
 
   let selectedQuestions: any[] = [];
   let selectedGroupIds: string[] = [];
@@ -226,22 +223,23 @@ export async function submitCBT(userId: string, examId: string, answers: Record<
   const score = totalMarks > 0 ? (percentage / 100) * totalMarks : percentage;
   const durationUsed = exam.duration;
 
-  const result = await prisma.cbtResult.create({
-    data: {
-      userId,
-      examId,
-      subject: exam.subject,
-      type,
-      score,
-      totalQuestions,
-      correctAnswers,
-      wrongAnswers,
-      skippedAnswers,
-      durationUsed,
-      userAnswers,
-      weakTopics,
-    },
-  });
+   const result = await prisma.cbtResult.create({
+     data: {
+       userId,
+       examId,
+       templateExamId: exam.isAttempt ? exam.templateExamId : null,
+       subject: exam.subject,
+       type,
+       score,
+       totalQuestions,
+       correctAnswers,
+       wrongAnswers,
+       skippedAnswers,
+       durationUsed,
+       userAnswers,
+       weakTopics,
+     },
+   });
 
   await checkAndAwardBadges(userId);
 
@@ -435,10 +433,11 @@ export async function getAllMockExamsForTeacher(userId: string) {
 
 export async function getAllMockExamsForAdmin() {
   return prisma.exam.findMany({
-    where: {
+     where: {
       examType: 'MOCK',
+      isAttempt: false,
     },
-    include: {
+     include: {
       questions: {
         include: { question: { include: { questionGroup: true } } },
         orderBy: { order: 'asc' },
@@ -487,10 +486,10 @@ export async function getMockExamRetakeRequests(examId: string) {
 
 export async function getAdminCBTStats() {
   const [totalExams, totalResults, publishedExams, draftExams] = await Promise.all([
-    prisma.exam.count({ where: { examType: 'MOCK' } }),
+     prisma.exam.count({ where: { examType: 'MOCK', isAttempt: false } }),
     prisma.cbtResult.count(),
-    prisma.exam.count({ where: { examType: 'MOCK', isPublished: true } }),
-    prisma.exam.count({ where: { examType: 'MOCK', isPublished: false } }),
+    prisma.exam.count({ where: { examType: 'MOCK', isAttempt: false, isPublished: true } }),
+    prisma.exam.count({ where: { examType: 'MOCK', isAttempt: false, isPublished: false } }),
   ]);
 
   const avgScore = totalResults > 0
@@ -593,7 +592,10 @@ export async function getAdminFilteredResults(options: {
     where.type = type;
   }
   if (examId) {
-    where.examId = examId;
+    where.OR = [
+      { examId: examId },
+      { templateExamId: examId },
+    ];
   }
   if (startDate) {
     where.completedAt = { gte: new Date(startDate) };
@@ -647,21 +649,27 @@ export async function getAdminFilteredResults(options: {
       }
     });
 
-    const subjectEntries = Object.entries(subjectScores).map(([subject, data]) => ({
-      subject,
-      score: data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0,
-      correct: data.correct,
-      total: data.total,
-    }));
+    const subjectEntries = Object.entries(subjectScores).map(([subject, data]) => {
+      const marksPerQuestion = (exam?.questions?.length ?? 0) > 0
+        ? (exam?.totalMarks || 100) / (exam?.questions?.length ?? 1)
+        : 0;
+      return {
+        subject,
+        score: data.total > 0 ? Math.round(data.correct * marksPerQuestion) : 0,
+        correct: data.correct,
+        total: data.total,
+      };
+    });
 
     const aggregate = subjectEntries.length > 0
-      ? Math.round(subjectEntries.reduce((sum, s) => sum + s.score, 0) / subjectEntries.length)
+      ? subjectEntries.reduce((sum, s) => sum + s.score, 0)
       : Math.round(result.score);
 
     return {
       id: result.id,
       studentName: result.user?.fullName || result.user?.email || 'Unknown',
       email: result.user?.email || '',
+      subject: result.subject,
       subjectScores,
       subjectEntries,
       aggregate,
@@ -732,7 +740,7 @@ export async function startMockExamAttempt(userId: string, examId: string) {
     throw new Error('You have already completed this mock exam. Your retake request is pending admin approval.');
   }
 
-  const questionsPerSubject = exam.questionsPerSubject || 10;
+  const questionsPerSubject = exam.questionsPerSubject || 50;
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -764,7 +772,7 @@ export async function startMockExamAttempt(userId: string, examId: string) {
   const allSelectedGroupIds: string[] = [];
 
   for (const subject of userSubjects) {
-    const subjectQuestionCount = subject === 'English Language' ? 60 : 40;
+    const subjectQuestionCount = questionsPerSubject;
 
     if (subject === 'English Language') {
       const groupedResult = await getGroupedExamQuestionsForEnglish({
@@ -802,14 +810,16 @@ export async function startMockExamAttempt(userId: string, examId: string) {
     throw new Error(`No ${primaryExamType} questions available for your registered subjects. Please contact support.`);
   }
 
-  const attemptExam = await prisma.exam.create({
-    data: {
-      title: `${exam.title} - ${new Date().toLocaleDateString()}`,
-      examType: 'MOCK',
-      subject: userSubjects[0] || exam.subject,
-      duration: exam.duration,
-      totalMarks: 400,
-      questions: {
+   const attemptExam = await prisma.exam.create({
+     data: {
+       title: `${exam.title} - ${new Date().toLocaleDateString()}`,
+       examType: 'MOCK',
+       subject: userSubjects[0] || exam.subject,
+       duration: exam.duration,
+       totalMarks: 400,
+       isAttempt: true,
+       templateExamId: exam.id,
+       questions: {
         create: finalShuffled.map((q, index) => ({
           questionId: q.id,
           order: index + 1,

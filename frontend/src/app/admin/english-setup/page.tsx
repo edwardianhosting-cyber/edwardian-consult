@@ -57,10 +57,10 @@ type TabId = typeof TABS[number]['id'];
 export default function EnglishSetupPage() {
   const [activeTab, setActiveTab] = useState<TabId>('blueprint');
   const [blueprint, setBlueprint] = useState<EnglishBlueprint>({
-    totalQuestions: 60,
+    totalQuestions: 50,
     comprehensionGroupCount: 1,
     clozeGroupCount: 1,
-    standaloneCount: 58,
+    standaloneCount: 48,
   });
   const [comprehensionGroups, setComprehensionGroups] = useState<QuestionGroup[]>([]);
   const [clozeGroups, setClozeGroups] = useState<QuestionGroup[]>([]);
