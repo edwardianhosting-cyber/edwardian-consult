@@ -236,8 +236,7 @@ function AdminPrintResultsInner() {
       return [
         { text: 'BACK TO BACK' },
         { text: 'UTME' },
-        { text: 'MOCK EXAM', italic: true },
-        { text: examTitle, small: true },
+        { text: 'MOCK EXAM RESULT', italic: true },
       ];
     }
     if (filterInfo.type === 'PRACTICE') {
