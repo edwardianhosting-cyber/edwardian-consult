@@ -389,16 +389,31 @@ router.get('/admin/results/filtered', authenticate, authorize('ADMIN'), async (r
 router.post('/admin/mock-results/:resultId/send-email', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     const { resultId } = req.params;
-    const resultData = await getCBTResultByIdForAdmin(resultId);
+    const resultData = await getMockExamResultDetail(resultId);
 
     if (!resultData || resultData.result.type !== 'MOCK') {
       return res.status(404).json({ success: false, message: 'Mock result not found' });
     }
 
     const result = resultData.result;
-    const exam = await getExamById(result.examId || '');
-    if (!exam) {
-      return res.status(404).json({ success: false, message: 'Mock exam not found' });
+    const corrections = resultData.corrections || [];
+
+    // Try to get the template mock exam for the proper title
+    let examTitle = result.examTitle;
+    if (result.examId) {
+      const attemptExam = await prisma.exam.findUnique({
+        where: { id: result.examId },
+        select: { templateExamId: true },
+      });
+      if (attemptExam?.templateExamId) {
+        const templateExam = await prisma.exam.findUnique({
+          where: { id: attemptExam.templateExamId },
+          select: { title: true },
+        });
+        if (templateExam) {
+          examTitle = templateExam.title;
+        }
+      }
     }
 
     const recipientEmail = result.studentEmail || result.email;
@@ -406,12 +421,11 @@ router.post('/admin/mock-results/:resultId/send-email', authenticate, authorize(
       return res.status(400).json({ success: false, message: 'Student email not found' });
     }
 
-    const corrections = resultData.corrections || [];
     const success = await sendMockResultEmail(
       recipientEmail,
       result.studentName || 'Student',
-      exam.title,
-      exam.examType,
+      examTitle,
+      'MOCK',
       result.score,
       result.score,
       result.correctAnswers,

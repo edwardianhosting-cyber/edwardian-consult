@@ -25,19 +25,22 @@ interface Correction {
 }
 
 interface MockResultDetail {
-  id: string;
-  studentName: string;
-  email: string;
-  studentEmail: string;
-  score: number;
-  aggregate: number;
-  correctAnswers: number;
-  wrongAnswers: number;
-  skippedAnswers: number;
-  completedAt: string;
-  type: string;
-  examTitle: string;
-  examId?: string;
+  result: {
+    id: string;
+    studentName: string;
+    email: string;
+    studentEmail: string;
+    score: number;
+    aggregate: number;
+    correctAnswers: number;
+    wrongAnswers: number;
+    skippedAnswers: number;
+    completedAt: string;
+    type: string;
+    examTitle: string;
+    examId?: string;
+    subject?: string;
+  };
   subjectScores: Record<string, { total: number; correct: number }>;
   subjectEntries: { subject: string; score: number; correct: number; total: number }[];
   corrections: Correction[];
@@ -90,7 +93,7 @@ export default function AdminMockResultDetailPage() {
     }));
   }
 
-  async function saveQuestionEdit(questionId: string) {
+async function saveQuestionEdit(questionId: string) {
     const edited = editedQuestions[questionId];
     if (!edited || !result) return;
 
@@ -99,7 +102,7 @@ export default function AdminMockResultDetailPage() {
       const question = result.corrections.find(q => q.questionId === questionId);
       if (!question) return;
 
-      await api.adminUpdateExamQuestion(result.examId || '', questionId, {
+      await api.adminUpdateExamQuestion(result.result.examId || '', questionId, {
         text: edited.question || question.question,
         options: edited.options,
         correctOption: edited.correctOption,
@@ -129,7 +132,7 @@ export default function AdminMockResultDetailPage() {
     }
   }
 
-  async function handleRecalculate() {
+async function handleRecalculate() {
     setRecalculating(true);
     try {
       const res = await api.adminRecalculateResult(attemptId);
@@ -137,15 +140,18 @@ export default function AdminMockResultDetailPage() {
       if (recalcData.result && recalcData.corrections) {
         setResult(prev => prev ? {
           ...prev,
-          score: recalcData.result.score,
-          aggregate: Math.round(
-            recalcData.corrections.length > 0
-              ? recalcData.corrections.reduce((sum: number, c: any) => sum + (c.isCorrect ? 1 : 0), 0) / recalcData.corrections.length * 100
-              : prev.aggregate
-          ),
-          correctAnswers: recalcData.result.correctAnswers,
-          wrongAnswers: recalcData.result.wrongAnswers,
-          skippedAnswers: recalcData.result.skippedAnswers,
+          result: {
+            ...prev.result,
+            score: recalcData.result.score,
+            aggregate: Math.round(
+              recalcData.corrections.length > 0
+                ? recalcData.corrections.reduce((sum: number, c: any) => sum + (c.isCorrect ? 1 : 0), 0) / recalcData.corrections.length * 100
+                : prev.result.aggregate
+            ),
+            correctAnswers: recalcData.result.correctAnswers,
+            wrongAnswers: recalcData.result.wrongAnswers,
+            skippedAnswers: recalcData.result.skippedAnswers,
+          },
           corrections: recalcData.corrections.map((c: any) => {
             const existing = prev.corrections.find(q => q.questionNumber === c.questionNumber);
             return {
@@ -179,11 +185,11 @@ export default function AdminMockResultDetailPage() {
     }
   }
 
-  async function handleSendEmail() {
+async function handleSendEmail() {
     if (!result) return;
     setSendingEmail(true);
     try {
-      await api.sendMockResultEmail(result.id);
+      await api.sendMockResultEmail(result.result.id);
       showSuccess('Mock result email sent successfully to the student');
     } catch (err: any) {
       showError(err.message || 'Failed to send email');
@@ -279,7 +285,7 @@ export default function AdminMockResultDetailPage() {
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Review Mock Exam</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">{result.examTitle}</p>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">{result.result.examTitle}</p>
           </div>
         </div>
         <div className="flex gap-3">
@@ -324,27 +330,27 @@ export default function AdminMockResultDetailPage() {
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-gray-500 dark:text-gray-400">Student Name</p>
-            <p className="font-medium text-gray-900 dark:text-gray-100">{result.studentName}</p>
+            <p className="font-medium text-gray-900 dark:text-gray-100">{result.result.studentName}</p>
           </div>
           <div>
             <p className="text-sm text-gray-500 dark:text-gray-400">Email</p>
-            <p className="font-medium text-gray-900 dark:text-gray-100">{result.email}</p>
+            <p className="font-medium text-gray-900 dark:text-gray-100">{result.result.email}</p>
           </div>
           <div>
             <p className="text-sm text-gray-500 dark:text-gray-400">Gmail</p>
-            <p className="font-medium text-gray-900 dark:text-gray-100">{result.studentEmail || result.email || '-'}</p>
+            <p className="font-medium text-gray-900 dark:text-gray-100">{result.result.studentEmail || result.result.email || '-'}</p>
           </div>
           <div>
             <p className="text-sm text-gray-500 dark:text-gray-400">Subject</p>
-            <p className="font-medium text-gray-900 dark:text-gray-100">{result.examTitle}</p>
+            <p className="font-medium text-gray-900 dark:text-gray-100">{result.result.examTitle}</p>
           </div>
           <div>
             <p className="text-sm text-gray-500 dark:text-gray-400">Date Submitted</p>
-            <p className="font-medium text-gray-900 dark:text-gray-100">{new Date(result.completedAt).toLocaleString()}</p>
+            <p className="font-medium text-gray-900 dark:text-gray-100">{new Date(result.result.completedAt).toLocaleString()}</p>
           </div>
           <div>
             <p className="text-sm text-gray-500 dark:text-gray-400">Type</p>
-            <p className="font-medium text-gray-900 dark:text-gray-100 capitalize">{result.type?.toLowerCase() || 'mock'}</p>
+            <p className="font-medium text-gray-900 dark:text-gray-100 capitalize">{result.result.type?.toLowerCase() || 'mock'}</p>
           </div>
         </div>
       </div>
@@ -355,22 +361,22 @@ export default function AdminMockResultDetailPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-green-50 dark:bg-green-900/30 rounded-xl p-4">
             <CheckCircle className="w-6 h-6 text-green-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{result.correctAnswers}</p>
+            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{result.result.correctAnswers}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">Correct</p>
           </div>
           <div className="bg-red-50 dark:bg-red-900/30 rounded-xl p-4">
             <XCircle className="w-6 h-5 text-red-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-red-600 dark:text-red-400">{result.wrongAnswers}</p>
+            <p className="text-2xl font-bold text-red-600 dark:text-red-400">{result.result.wrongAnswers}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">Wrong</p>
           </div>
           <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
             <AlertTriangle className="w-6 h-6 text-gray-500 dark:text-gray-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-600 dark:text-gray-300">{result.skippedAnswers}</p>
+            <p className="text-2xl font-bold text-gray-600 dark:text-gray-300">{result.result.skippedAnswers}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">Unanswered</p>
           </div>
-          <div className={`rounded-xl p-4 ${getScoreColor(result.aggregate)}`}>
+          <div className={`rounded-xl p-4 ${getScoreColor(result.result.aggregate)}`}>
             <BarChart3 className="w-6 h-6 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{Math.round(result.aggregate)}%</p>
+            <p className="text-2xl font-bold">{Math.round(result.result.aggregate)}%</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">Aggregate</p>
           </div>
         </div>
