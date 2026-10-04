@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 import { z } from 'zod';
 import prisma from '../lib/prisma';
 import { uploadQuestionImage, bulkCreateQuestionsFromCSV, bulkCreateQuestionsFromExcel, bulkCreateQuestionsFromJSON, bulkCreateGroupsFromJSON } from '../services/question.service';
-import { upload } from '../lib/upload';
+import { upload, uploadDocument } from '../lib/upload';
 
 const router = Router();
 
@@ -126,8 +126,62 @@ router.delete('/:id', authenticate, authorize('ADMIN'), async (req: Request, res
 router.get('/sample', authenticate, authorize('ADMIN', 'TEACHER', 'TUTOR'), async (req: Request, res: Response) => {
   try {
     const sampleData = [
-      { question: 'What is the capital of Nigeria?', options: 'Lagos|Abuja|Kano|Port Harcourt', answer: 1, explanation: 'Abuja is the capital city of Nigeria.', imageUrl: '' },
-      { question: 'Solve for x: 2x + 5 = 13', options: 'x = 3|x = 4|x = 5|x = 6', answer: 1, explanation: '2x = 8, so x = 4', imageUrl: '' },
+      {
+        subject: 'English Language',
+        examType: 'JAMB',
+        year: 2024,
+        question: 'What is the capital of Nigeria?',
+        textHtml: 'What is the <b>capital</b> of Nigeria?',
+        options: 'Lagos|Abuja|Kano|Port Harcourt',
+        optionsHtml: 'Lagos|<u>Abuja</u>|Kano|Port Harcourt',
+        answer: 1,
+        explanation: 'Abuja is the capital city of Nigeria.',
+        explanationHtml: '<i>Abuja</i> is the capital city of Nigeria.',
+        imageUrl: '',
+        formatting: JSON.stringify({ italic: ['capital'], underline: ['Abuja'], fillBlanks: [], bold: ['capital'] }),
+      },
+      {
+        subject: 'English Language',
+        examType: 'JAMB',
+        year: 2024,
+        question: 'Choose the correct option: She ___ to school every day.',
+        textHtml: 'Choose the correct option: She <u>____</u> to school every day.',
+        options: 'go|goes|going|gone',
+        optionsHtml: 'go|<b>goes</b>|going|gone',
+        answer: 1,
+        explanation: 'Third person singular present tense adds -es.',
+        explanationHtml: 'Third person singular present tense adds <b>-es</b>.',
+        imageUrl: '',
+        formatting: JSON.stringify({ italic: [], underline: ['____'], fillBlanks: ['____'], bold: ['goes'] }),
+      },
+      {
+        subject: 'English Language',
+        examType: 'JAMB',
+        year: 2024,
+        question: 'Identify the synonym of "happy".',
+        textHtml: 'Identify the <i>synonym</i> of "happy".',
+        options: 'sad|joyful|angry|tired',
+        optionsHtml: 'sad|<u>joyful</u>|angry|tired',
+        answer: 1,
+        explanation: '"Joyful" means the same as "happy".',
+        explanationHtml: '"<b>Joyful</b>" means the same as "happy".',
+        imageUrl: '',
+        formatting: JSON.stringify({ italic: ['synonym'], underline: ['joyful'], fillBlanks: [], bold: ['Joyful'] }),
+      },
+      {
+        subject: 'English Language',
+        examType: 'JAMB',
+        year: 2024,
+        question: 'Fill in the blank: The cat sat on the ___.',
+        textHtml: 'Fill in the blank: The cat sat on the <u>____</u>.',
+        options: 'mat|floor|table|chair',
+        optionsHtml: '<b>mat</b>|floor|table|chair',
+        answer: 0,
+        explanation: 'The cat sat on the mat.',
+        explanationHtml: 'The cat sat on the <b>mat</b>.',
+        imageUrl: '',
+        formatting: JSON.stringify({ italic: [], underline: ['____'], fillBlanks: ['____'], bold: ['mat'] }),
+      },
     ];
 
     const format = String(req.query.format || 'excel').toLowerCase();
@@ -166,7 +220,7 @@ router.post('/upload-image', authenticate, authorize('ADMIN'), upload.single('im
   }
 });
 
-router.post('/bulk-upload', authenticate, authorize('ADMIN'), upload.single('file'), async (req: Request, res: Response) => {
+router.post('/bulk-upload', authenticate, authorize('ADMIN'), uploadDocument.single('file'), async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file provided' });

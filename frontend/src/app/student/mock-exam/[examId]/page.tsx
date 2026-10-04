@@ -10,17 +10,24 @@ import { useTheme } from '@/lib/theme';
 interface MockQuestion {
   id: string;
   text: string;
+  textHtml?: string;
   imageUrl?: string;
   options: string[];
+  optionsHtml?: string[];
   topic?: string;
   explanation?: string;
+  explanationHtml?: string;
   subject: string;
   groupType?: string;
   groupId?: string;
   groupOrder?: number;
   passage?: string;
+  passageHtml?: string;
   groupTitle?: string;
+  groupTitleHtml?: string;
   groupInstructions?: string;
+  groupInstructionsHtml?: string;
+  formatting?: any;
 }
 
 interface MockExamData {
@@ -698,41 +705,44 @@ export default function MockExamPage() {
                )}
             </div>
 
-            {(question.groupType === 'COMPREHENSION' || question.groupType === 'CLOZE') && question.passage && (
+            {(question.groupType === 'COMPREHENSION' || question.groupType === 'CLOZE') && (question.passage || question.passageHtml) && (
               <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                {question.groupTitle && (
-                  <h3 className="text-sm font-semibold text-yellow-900 dark:text-yellow-100 mb-2">{question.groupTitle}</h3>
-                )}
-                {question.groupInstructions && (
-                  <p className="text-xs text-yellow-800 dark:text-yellow-200 mb-2">{question.groupInstructions}</p>
-                )}
-                <div className="text-sm text-yellow-900 dark:text-yellow-100 whitespace-pre-wrap leading-relaxed">{question.passage}</div>
+                {question.groupTitleHtml || question.groupTitle ? (
+                  <h3 className="text-sm font-semibold text-yellow-900 dark:text-yellow-100 mb-2" dangerouslySetInnerHTML={{ __html: question.groupTitleHtml || question.groupTitle || '' }} />
+                ) : null}
+                {question.groupInstructionsHtml || question.groupInstructions ? (
+                  <p className="text-xs text-yellow-800 dark:text-yellow-200 mb-2" dangerouslySetInnerHTML={{ __html: question.groupInstructionsHtml || question.groupInstructions || '' }} />
+                ) : null}
+                <div className="text-sm text-yellow-900 dark:text-yellow-100 whitespace-pre-wrap leading-relaxed" dangerouslySetInnerHTML={{ __html: question.passageHtml || question.passage || '' }} />
               </div>
             )}
 
-            <p className="text-lg text-gray-900 dark:text-gray-100 mb-6 leading-relaxed">{question.text}</p>
+            <p className="text-lg text-gray-900 dark:text-gray-100 mb-6 leading-relaxed" dangerouslySetInnerHTML={{ __html: question.textHtml || question.text }} />
 
             {question.imageUrl && (
               <img src={question.imageUrl} alt="Question" className="mb-6 rounded-lg max-h-64 object-contain" />
             )}
 
             <div className="space-y-3">
-              {question.options.map((option: string, index: number) => (
-                <button
-                  key={index}
-                  onClick={() => selectAnswer(question.id, index)}
-                  className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                    answers[question.id] === index
-                      ? 'border-primary-500 bg-primary-50 dark:bg-gray-700'
-                      : 'border-gray-100 dark:border-gray-600 hover:border-gray-200 dark:hover:border-gray-500 dark:border-gray-600'
-                  }`}
-                >
-                  <span className="font-bold text-gray-600 dark:text-gray-300 mr-3">
-                    {String.fromCharCode(65 + index)}.
-                  </span>
-                  <span className="text-gray-900 dark:text-gray-100">{option}</span>
-                </button>
-              ))}
+              {question.options.map((option: string, index: number) => {
+                const optionHtml = question.optionsHtml?.[index] || option;
+                return (
+                  <button
+                    key={index}
+                    onClick={() => selectAnswer(question.id, index)}
+                    className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                      answers[question.id] === index
+                        ? 'border-primary-500 bg-primary-50 dark:bg-gray-700'
+                        : 'border-gray-100 dark:border-gray-600 hover:border-gray-200 dark:hover:border-gray-500 dark:border-gray-600'
+                    }`}
+                  >
+                    <span className="font-bold text-gray-600 dark:text-gray-300 mr-3">
+                      {String.fromCharCode(65 + index)}.
+                    </span>
+                    <span className="text-gray-900 dark:text-gray-100" dangerouslySetInnerHTML={{ __html: optionHtml }} />
+                  </button>
+                );
+              })}
             </div>
           </div>
 

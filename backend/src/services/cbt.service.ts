@@ -1513,9 +1513,13 @@ export async function getCBTResultByIdForAdmin(resultId: string) {
 
 export async function updateExamQuestion(examId: string, questionId: string, data: {
   text?: string;
+  textHtml?: string;
   options?: string[];
+  optionsHtml?: string[];
   correctOption?: number;
   explanation?: string;
+  explanationHtml?: string;
+  formatting?: any;
 }) {
   const examQuestion = await prisma.examQuestion.findUnique({
     where: {
@@ -1535,7 +1539,11 @@ export async function updateExamQuestion(examId: string, questionId: string, dat
 
   const questionUpdate: any = {};
   if (data.text !== undefined) questionUpdate.text = data.text;
+  if (data.textHtml !== undefined) questionUpdate.textHtml = data.textHtml;
   if (data.explanation !== undefined) questionUpdate.explanation = data.explanation;
+  if (data.explanationHtml !== undefined) questionUpdate.explanationHtml = data.explanationHtml;
+  if (data.optionsHtml !== undefined) questionUpdate.optionsHtml = data.optionsHtml;
+  if (data.formatting !== undefined) questionUpdate.formatting = data.formatting;
 
   const examQuestionUpdate: any = {};
   if (data.options !== undefined) examQuestionUpdate.options = data.options;

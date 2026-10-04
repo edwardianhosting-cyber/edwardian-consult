@@ -1,9 +1,8 @@
 import prisma from './prisma';
 
-const SMTP_HOST = process.env.SMTP_HOST || 'mail.edwardianeducationalconsult.com.ng';
-const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587', 10);
-const SMTP_USER = process.env.SMTP_USER || 'registrar@edwardianeducationalconsult.com.ng';
-const SMTP_PASS = process.env.SMTP_PASS || '';
+const EMAIL_SERVICE_URL = process.env.EMAIL_SERVICE_URL || 'https://email.edwardianeducationalconsult.com.ng/send';
+const EMAIL_WELCOME_URL = process.env.EMAIL_WELCOME_URL || 'https://email.edwardianeducationalconsult.com.ng/send-welcome';
+const EMAIL_SERVICE_KEY = process.env.EMAIL_SERVICE_KEY || '';
 const FROM_EMAIL = process.env.FROM_EMAIL || 'registrar@edwardianeducationalconsult.com.ng';
 const FROM_NAME = process.env.MAILER_FROM_NAME || 'Edwardian Educational Consult';
 const FRONTEND_URL = process.env.FRONTEND_URL;
@@ -49,47 +48,42 @@ export async function sendEmail(params: {
   name?: string;
   purpose?: EmailPurpose;
 }): Promise<boolean> {
-  const { to, subject, html, purpose = 'NOTIFICATION' } = params;
-
-  if (!SMTP_PASS) {
-    console.warn('[email] SMTP_PASS not set — skipping email send');
-    await logEmail(to, subject, purpose || 'NOTIFICATION', 'FAILED', 'SMTP_PASS not configured');
-    return false;
-  }
+  const { to, subject, html, name, purpose = 'NOTIFICATION' } = params;
 
   if (!validateEmail(to)) {
     console.warn(`[email] Invalid email address: ${to}`);
-    await logEmail(to, subject, purpose || 'NOTIFICATION', 'FAILED', 'Invalid email address');
+    await logEmail(to, subject, purpose, 'FAILED', 'Invalid email address');
     return false;
   }
 
   try {
-    const nodemailer = await import('nodemailer');
-    const transporter = nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: SMTP_PORT,
-      secure: SMTP_PORT === 465,
-      auth: {
-        user: SMTP_USER,
-        pass: SMTP_PASS,
+    const response = await fetch(EMAIL_SERVICE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(EMAIL_SERVICE_KEY && { 'Authorization': `Bearer ${EMAIL_SERVICE_KEY}` }),
       },
+      body: JSON.stringify({
+        to,
+        subject,
+        html,
+        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        name,
+      }),
     });
 
-    await transporter.sendMail({
-      from: `${FROM_NAME} <${FROM_EMAIL}>`,
-      to,
-      subject,
-      html,
-      text: html.replace(/<[^>]*>/g, '').trim(),
-    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Email service returned ${response.status}: ${errorText}`);
+    }
 
-    console.log(`[email] Sent "${subject}" to ${to}`);
-    await logEmail(to, subject, purpose || 'NOTIFICATION', 'SENT');
+    console.log(`[email] Sent "${subject}" to ${to} via email service`);
+    await logEmail(to, subject, purpose, 'SENT');
     return true;
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
     console.error(`[email] Failed to send to ${to}:`, msg);
-    await logEmail(to, subject, purpose || 'NOTIFICATION', 'FAILED', msg);
+    await logEmail(to, subject, purpose, 'FAILED', msg);
     return false;
   }
 }
@@ -106,65 +100,37 @@ export async function sendWelcomeEmail(
 ): Promise<boolean> {
   const subject = 'Welcome to Edwardian Educational Consult - Your Account Details';
 
-  const studentEmailRow = studentEmail
-    ? `<tr>
-         <td style="padding:8px 0;color:#666;"><strong>Official Student Email:</strong></td>
-         <td style="padding:8px 0;color:#6B003B;font-weight:bold;">${studentEmail}</td>
-       </tr>`
-    : '';
+  try {
+    const response = await fetch(EMAIL_WELCOME_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(EMAIL_SERVICE_KEY && { 'Authorization': `Bearer ${EMAIL_SERVICE_KEY}` }),
+      },
+      body: JSON.stringify({
+        registeredEmail: email,
+        name,
+        portalId,
+        password,
+        parentCode,
+        studentEmail,
+      }),
+    });
 
-  const html = `
-    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
-      <div style="background:#6B003B;padding:30px;text-align:center;">
-        <h1 style="color:white;margin:0;font-size:24px;">Edwardian Educational Consult</h1>
-        <p style="color:#FFD700;margin:10px 0 0 0;">Your Pathway to Academic Excellence</p>
-      </div>
-      <div style="padding:30px;background:#ffffff;">
-        <h2 style="color:#333;">Welcome, ${name}!</h2>
-        <p>Thank you for registering with Edwardian Educational Consult. Your account has been successfully created.</p>
-        <div style="background:#f8f9fa;padding:25px;border-radius:10px;margin:25px 0;border-left:4px solid #6B003B;">
-          <h3 style="color:#6B003B;margin-top:0;">Your Login Details</h3>
-          <table style="width:100%;border-collapse:collapse;">
-            <tr>
-              <td style="padding:8px 0;color:#666;"><strong>Portal ID:</strong></td>
-              <td style="padding:8px 0;color:#333;">${portalId}</td>
-            </tr>
-            <tr>
-              <td style="padding:8px 0;color:#666;"><strong>Email:</strong></td>
-              <td style="padding:8px 0;color:#333;">${email}</td>
-            </tr>
-            <tr>
-              <td style="padding:8px 0;color:#666;"><strong>Password:</strong></td>
-              <td style="padding:8px 0;font-family:monospace;background:#eee;padding:5px 10px;border-radius:4px;">${password}</td>
-            </tr>
-            <tr>
-              <td style="padding:8px 0;color:#666;"><strong>Parent Access Code:</strong></td>
-              <td style="padding:8px 0;color:#333;">${parentCode}</td>
-            </tr>
-            ${studentEmailRow}
-          </table>
-        </div>
-        <div style="background:#fff3cd;padding:15px;border-radius:8px;margin:20px 0;border:1px solid #ffc107;">
-          <p style="margin:0 0 8px 0;color:#856404;"><strong>Important:</strong> Please save your password securely. You can change it after logging in.</p>
-          <p style="margin:0;color:#856404;">If you did not receive this email in your inbox, please check your <strong>Spam</strong> or <strong>Junk</strong> folder and mark it as "Not Spam" to receive future emails.</p>
-        </div>
-        <div style="text-align:center;margin:30px 0;">
-          <a href="${FRONTEND_URL}/login"
-             style="display:inline-block;background:#FFD700;color:#6B003B;padding:15px 40px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:16px;">
-            LOGIN TO YOUR PORTAL
-          </a>
-        </div>
-        <p style="color:#666;font-size:14px;">Questions? Contact us at registrar@edwardianeducationalconsult.com.ng</p>
-      </div>
-      <div style="background:#f8f9fa;padding:20px;text-align:center;border-top:1px solid #eee;">
-        <p style="color:#999;font-size:12px;margin:0;">&copy; ${new Date().getFullYear()} Edwardian Educational Consult. All rights reserved.</p>
-      </div>
-    </div>
-  `;
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Welcome email service returned ${response.status}: ${errorText}`);
+    }
 
-  const success = await sendEmail({ to: email, name, subject, html, purpose: 'REGISTRAR' });
-  await logEmail(email, subject, 'WELCOME', success ? 'SENT' : 'FAILED');
-  return success;
+    console.log(`[email] Welcome email sent to ${email} via email service`);
+    await logEmail(email, subject, 'WELCOME', 'SENT');
+    return true;
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[email] Failed to send welcome email to ${email}:`, msg);
+    await logEmail(email, subject, 'WELCOME', 'FAILED', msg);
+    return false;
+  }
 }
 
 // ─── 2FA code email ───────────────────────────────────────────────────────────

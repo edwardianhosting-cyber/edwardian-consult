@@ -21,10 +21,24 @@ function parseQuestionRow(row: Record<string, any>, lineIndex: number, defaults?
   const institution = String(row.institution || row.Institution || row.INSTITUTION || defaults?.institution || '').trim();
   const yearStr = String(row.year || row.Year || row.YEAR || defaults?.year || '').trim();
   const text = String(row.question || row.text || row.Text || row.TEXT || '').trim();
+  const textHtml = String(row.textHtml || row.TextHtml || row.TEXT_HTML || row['Text HTML'] || '').trim() || undefined;
   const options = String(row.options || row.Options || row.OPTIONS || '').trim();
+  const optionsHtmlRaw = row.optionsHtml || row.OptionsHtml || row.OPTIONS_HTML || row['Options HTML'];
+  const optionsHtml = optionsHtmlRaw ? String(optionsHtmlRaw).split('|').map((o: string) => o.trim()).filter(Boolean) : undefined;
   const correctOptionStr = String(row.answer || row.Answer || row.ANSWER || row.correctOption || row.CorrectOption || row.CORRECT_OPTION || row['Correct Option'] || '').trim();
   const explanation = String(row.explanation || row.Explanation || row.EXPLANATION || '').trim();
+  const explanationHtml = String(row.explanationHtml || row.ExplanationHtml || row.EXPLANATION_HTML || row['Explanation HTML'] || '').trim() || undefined;
   const imageUrl = String(row.imageUrl || row.ImageUrl || row.IMAGE_URL || row['Image URL'] || '').trim();
+
+  // Parse formatting hints
+  let formatting: any = undefined;
+  if (row.formatting) {
+    try {
+      formatting = typeof row.formatting === 'string' ? JSON.parse(row.formatting) : row.formatting;
+    } catch {
+      formatting = undefined;
+    }
+  }
 
   const finalSubject = subject || defaults?.subject;
   const finalExamType = examType || defaults?.examType;
@@ -57,10 +71,14 @@ function parseQuestionRow(row: Record<string, any>, lineIndex: number, defaults?
       institution: finalInstitution || undefined,
       year: finalYear,
       text,
+      textHtml: textHtml || text,
       imageUrl: imageUrl || undefined,
       options: optionsArray,
+      optionsHtml: optionsHtml || optionsArray,
+      formatting,
       correctOption,
       explanation: explanation || undefined,
+      explanationHtml: explanationHtml || explanation || undefined,
       isActive: true,
     },
   };
@@ -237,15 +255,29 @@ function normalizeQuestionItem(item: Record<string, any>, index: number, default
   const institution = String(item.institution || item.Institution || item.INSTITUTION || defaults?.institution || '').trim();
   const yearStr = String(item.year || item.Year || item.YEAR || defaults?.year || '').trim();
   const text = String(item.text || item.question || item.Text || item.TEXT || item.question || '').trim();
+  const textHtml = String(item.textHtml || item.TextHtml || item.TEXT_HTML || item['Text HTML'] || '').trim() || undefined;
   const optionsRaw = item.options || item.Options || item.OPTIONS || '';
   const options = Array.isArray(optionsRaw) ? optionsRaw : String(optionsRaw).split('|').map((o: string) => o.trim()).filter(Boolean);
+  const optionsHtmlRaw = item.optionsHtml || item.OptionsHtml || item.OPTIONS_HTML || item['Options HTML'];
+  const optionsHtml = Array.isArray(optionsHtmlRaw) ? optionsHtmlRaw : String(optionsHtmlRaw).split('|').map((o: string) => o.trim()).filter(Boolean) || undefined;
   const correctOptionRaw = item.correctOption ?? item.correct_option ?? item.answer ?? item.Answer ?? item.CORRECT_OPTION ?? item['Correct Option'] ?? item.answer;
   const explanation = String(item.explanation || item.Explanation || item.EXPLANATION || '').trim();
+  const explanationHtml = String(item.explanationHtml || item.ExplanationHtml || item.EXPLANATION_HTML || item['Explanation HTML'] || '').trim() || undefined;
   const imageUrl = String(item.imageUrl || item.ImageUrl || item.IMAGE_URL || item['Image URL'] || '').trim();
   const groupType = String(item.groupType || item.GroupType || item.GROUP_TYPE || item['Group Type'] || '').trim();
   const groupId = String(item.groupId || item.GroupId || item.GROUP_ID || item['Group ID'] || '').trim() || undefined;
   const groupOrderRaw = item.groupOrder ?? item.GroupOrder ?? item.GROUP_ORDER ?? item['Group Order'];
   const groupOrder = groupOrderRaw !== undefined && groupOrderRaw !== null && String(groupOrderRaw).trim() !== '' ? parseInt(String(groupOrderRaw), 10) : undefined;
+
+  // Parse formatting hints
+  let formatting: any = undefined;
+  if (item.formatting) {
+    try {
+      formatting = typeof item.formatting === 'string' ? JSON.parse(item.formatting) : item.formatting;
+    } catch {
+      formatting = undefined;
+    }
+  }
 
   const finalSubject = subject || defaults?.subject;
   const finalExamType = examType || defaults?.examType;
@@ -280,10 +312,14 @@ function normalizeQuestionItem(item: Record<string, any>, index: number, default
     institution: finalInstitution || undefined,
     year: finalYear,
     text,
+    textHtml: textHtml || text, // fallback to plain text
     imageUrl: imageUrl || undefined,
     options,
+    optionsHtml: optionsHtml || options, // fallback to plain text options
+    formatting,
     correctOption,
     explanation: explanation || undefined,
+    explanationHtml: explanationHtml || explanation || undefined,
     isActive: true,
   };
 
@@ -354,8 +390,11 @@ export async function bulkCreateGroupsFromJSON(
     const examType = String(groupPayload.examType || groupPayload.ExamType || groupPayload.EXAM_TYPE || groupPayload['Exam Type'] || defaults?.examType || '').trim();
     const groupType = String(groupPayload.groupType || groupPayload.GroupType || groupPayload.GROUP_TYPE || groupPayload['Group Type'] || '').trim();
     const title = String(groupPayload.title || groupPayload.Title || groupPayload.TITLE || groupPayload['Title'] || '').trim();
+    const titleHtml = String(groupPayload.titleHtml || groupPayload.TitleHtml || groupPayload.TITLE_HTML || groupPayload['Title HTML'] || '').trim() || undefined;
     const instructions = String(groupPayload.instructions || groupPayload.Instructions || groupPayload.INSTRUCTIONS || groupPayload['Instructions'] || '').trim();
+    const instructionsHtml = String(groupPayload.instructionsHtml || groupPayload.InstructionsHtml || groupPayload.INSTRUCTIONS_HTML || groupPayload['Instructions HTML'] || '').trim() || undefined;
     const passage = String(groupPayload.passage || groupPayload.Passage || groupPayload.PASSAGE || groupPayload['Passage'] || '').trim();
+    const passageHtml = String(groupPayload.passageHtml || groupPayload.PassageHtml || groupPayload.PASSAGE_HTML || groupPayload['Passage HTML'] || '').trim() || undefined;
     const imageUrl = String(groupPayload.imageUrl || groupPayload.ImageUrl || groupPayload.IMAGE_URL || groupPayload['Image URL'] || '').trim();
 
     const finalSubject = subject || defaults?.subject;
@@ -374,8 +413,11 @@ export async function bulkCreateGroupsFromJSON(
           examType: finalExamType,
           groupType,
           title: title || undefined,
+          titleHtml: titleHtml || title || undefined,
           instructions: instructions || undefined,
+          instructionsHtml: instructionsHtml || instructions || undefined,
           passage: passage || undefined,
+          passageHtml: passageHtml || passage || undefined,
           imageUrl: imageUrl || undefined,
           order: 0,
           isActive: true,

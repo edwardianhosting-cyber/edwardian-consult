@@ -392,7 +392,7 @@ export default function QuestionUpload({ onUploaded }: QuestionUploadProps) {
 
           <div className="mt-4 p-4 rounded-lg border border-gray-200 bg-gray-50">
             <p className="text-sm font-medium text-gray-700 mb-2">Need a template?</p>
-            <div className="flex flex-wrap gap-2">
+<div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => downloadSample('csv')}
@@ -410,9 +410,21 @@ export default function QuestionUpload({ onUploaded }: QuestionUploadProps) {
                 Sample Excel
               </button>
             </div>
-            <p className="text-xs text-gray-500 mt-2">File columns: <strong>question</strong>, <strong>options</strong>, <strong>answer</strong>, <strong>explanation</strong>, <strong>imageUrl</strong> (optional).</p>
-            <p className="text-xs text-gray-500">Options should be pipe-separated (e.g., Option A|Option B|Option C|Option D).</p>
-            <p className="text-xs text-gray-500">Answer is the 0-based index of the correct option (0 = first option).</p>
+{(() => {
+              const sampleHelpText = 'File columns: question, textHtml, options, optionsHtml, answer, explanation, explanationHtml, formatting (JSON: {italic:[], underline:[], fillBlanks:[], bold:[]}), imageUrl (optional).';
+              const optionsHelpText = 'Options should be pipe-separated (e.g., Option A|Option B|Option C|Option D).';
+              const answerHelpText = 'Answer is the 0-based index of the correct option (0 = first option).';
+              const formattingHelpText = 'Use textHtml for <i>italic</i> (<i>), <u>underline</u> (<u>), <b>bold</b> (<b>). Use formatting for fill-in-the-blanks: {"fillBlanks":["____"]}.';
+
+              return (
+                <>
+                  <p className="text-xs text-gray-500 mt-2">{sampleHelpText}</p>
+                  <p className="text-xs text-gray-500">{optionsHelpText}</p>
+                  <p className="text-xs text-gray-500">{answerHelpText}</p>
+                  <p className="text-xs text-gray-500">{formattingHelpText}</p>
+                </>
+              );
+            })()}
           </div>
 
           {bulkResult && (
@@ -518,7 +530,7 @@ export default function QuestionUpload({ onUploaded }: QuestionUploadProps) {
             onChange={(e) => setGroupsJsonText(e.target.value)}
             rows={14}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 mb-3 font-mono text-xs"
-            placeholder={`Paste grouped JSON here, for example:\n[\n  {\n    "group": {\n      "subject": "English Language",\n      "examType": "JAMB",\n      "groupType": "COMPREHENSION",\n      "title": "Reading Passage 1",\n      "instructions": "Read the passage and answer the questions below.",\n      "passage": "The passage text here..."\n    },\n    "questions": [\n      {\n        "text": "What is the main idea?",\n        "options": ["A", "B", "C", "D"],\n        "correctOption": 1,\n        "explanation": "Because..."\n      }\n    ]\n  }\n]`}
+            placeholder={`Paste grouped JSON here, for example:\n[\n  {\n    "group": {\n      "subject": "English Language",\n      "examType": "JAMB",\n      "groupType": "COMPREHENSION",\n      "title": "Reading Passage 1",\n      "instructions": "Read the passage and answer the questions below.",\n      "passage": "The passage text here..."\n    },\n    "questions": [\n      {\n        "text": "What is the main idea?",\n        "textHtml": "What is the <i>main idea</i>?",\n        "options": ["A", "B", "C", "D"],\n        "optionsHtml": ["A", "B", "<u>C</u>", "D"],\n        "correctOption": 1,\n        "explanation": "Because...",\n        "explanationHtml": "Because <b>...</b>",\n        "formatting": { "italic": ["main idea"], "underline": ["C"], "fillBlanks": [] }\n      }\n    ]\n  }\n]`}
           />
           <div className="flex items-center gap-2 mb-3">
             <button
@@ -540,18 +552,26 @@ export default function QuestionUpload({ onUploaded }: QuestionUploadProps) {
                         examType: 'JAMB',
                         year: 2024,
                         text: 'What is the main idea of the passage?',
+                        textHtml: 'What is the <i>main idea</i> of the passage?',
                         options: ['A', 'B', 'C', 'D'],
+                        optionsHtml: ['A', 'B', '<u>C</u>', 'D'],
                         correctOption: 1,
                         explanation: 'Option B best summarizes the passage.',
+                        explanationHtml: '<b>Option B</b> best summarizes the passage.',
+                        formatting: { italic: ['main idea'], underline: ['C'], fillBlanks: [] },
                       },
                       {
                         subject: 'English Language',
                         examType: 'JAMB',
                         year: 2024,
                         text: 'According to the passage, ...',
+                        textHtml: 'According to the passage, <u>the author suggests</u> that...',
                         options: ['A', 'B', 'C', 'D'],
+                        optionsHtml: ['A', 'B', 'C', '<i>D</i>'],
                         correctOption: 2,
                         explanation: 'The passage states this explicitly.',
+                        explanationHtml: 'The passage states this <b>explicitly</b>.',
+                        formatting: { italic: ['D'], underline: ['the author suggests'], fillBlanks: [] },
                       },
                     ],
                   },

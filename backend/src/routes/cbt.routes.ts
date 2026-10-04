@@ -608,17 +608,21 @@ router.post('/admin/results/:resultId/recalculate', authenticate, authorize('ADM
 router.patch('/admin/exams/:examId/questions/:questionId', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
     const { examId, questionId } = req.params;
-    const { text, options, correctOption, explanation } = req.body;
+    const { text, textHtml, options, optionsHtml, correctOption, explanation, explanationHtml, formatting } = req.body;
 
-    if (!text && !options && correctOption === undefined && !explanation) {
+    if (!text && !textHtml && !options && !optionsHtml && correctOption === undefined && !explanation && !explanationHtml && !formatting) {
       return res.status(400).json({ success: false, message: 'No update data provided' });
     }
 
     const updated = await updateExamQuestion(examId, questionId, {
       text,
+      textHtml,
       options,
+      optionsHtml,
       correctOption,
       explanation,
+      explanationHtml,
+      formatting,
     });
 
     res.json({ success: true, data: updated });

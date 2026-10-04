@@ -10,11 +10,14 @@ interface ReviewQuestion {
   questionNumber: number;
   questionId: string;
   text: string;
+  textHtml?: string;
   options: string[];
+  optionsHtml?: string[];
   correctOption: number;
   userAnswer: number;
   isCorrect: boolean;
   explanation?: string;
+  explanationHtml?: string;
   topic?: string;
   subject: string;
   groupType?: string;
@@ -22,6 +25,7 @@ interface ReviewQuestion {
   passage?: string;
   groupTitle?: string;
   groupInstructions?: string;
+  formatting?: any;
 }
 
 interface ReviewData {
@@ -97,9 +101,13 @@ export default function AdminResultReviewPage() {
 
       await api.adminUpdateExamQuestion(data.result.examId, questionId, {
         text: edited.text,
+        textHtml: edited.textHtml,
         options: edited.options,
+        optionsHtml: edited.optionsHtml,
         correctOption: edited.correctOption,
         explanation: edited.explanation,
+        explanationHtml: edited.explanationHtml,
+        formatting: edited.formatting,
       });
 
       setData(prev => prev ? {

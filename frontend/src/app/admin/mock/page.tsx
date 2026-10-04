@@ -361,11 +361,11 @@ export default function AdminMockExamPage() {
                 <div className="space-y-3">
                   {viewingExam.questions.map((q: any, idx: number) => (
                     <div key={q.id || idx} className="p-4 bg-gray-50 rounded-lg">
-                      <p className="text-sm font-medium text-gray-900 mb-2">Q{idx + 1}: {q.text || q.question?.text}</p>
+                      <p className="text-sm font-medium text-gray-900 mb-2" dangerouslySetInnerHTML={{ __html: q.textHtml || q.text || q.question?.textHtml || q.question?.text }} />
                       {q.options && (
                         <div className="text-sm text-gray-600 ml-4">
                           {q.options.map((opt: string, i: number) => (
-                            <div key={i}>{String.fromCharCode(65 + i)}. {opt}</div>
+                            <div key={i} dangerouslySetInnerHTML={{ __html: q.optionsHtml?.[i] || opt }} />
                           ))}
                         </div>
                       )}

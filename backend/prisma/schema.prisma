@@ -91,10 +91,14 @@ model Question {
   year             Int
   topic            String?
   text             String
+  textHtml         String?        // Rich text HTML version of question
   imageUrl         String?
   options          Json
+  optionsHtml      Json?          // Rich text HTML versions of options
+  formatting       Json?          // Formatting hints: { italic: string[], underline: string[], fillBlanks: string[] }
   correctOption    Int
   explanation      String?
+  explanationHtml  String?        // Rich text HTML version of explanation
   isActive         Boolean          @default(true)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
@@ -116,20 +120,23 @@ model Question {
 }
 
 model QuestionGroup {
-  id          String    @id @default(uuid())
-  subject     String
-  examType    String
-  groupType   String
-  title       String?
-  instructions String?
-  passage     String?
-  imageUrl    String?
-  order       Int       @default(0)
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id            String    @id @default(uuid())
+  subject       String
+  examType      String
+  groupType     String
+  title         String?
+  titleHtml     String?
+  instructions  String?
+  instructionsHtml String?
+  passage       String?
+  passageHtml   String?
+  imageUrl      String?
+  order         Int       @default(0)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  questions   Question[]
+  questions     Question[]
 
   @@index([subject])
   @@index([examType])

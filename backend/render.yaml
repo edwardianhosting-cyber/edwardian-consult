@@ -25,6 +25,12 @@ services:
         sync: false
       - key: FROM_EMAIL
         value: registrar@edwardianeducationalconsult.com.ng
+      - key: EMAIL_SERVICE_URL
+        value: https://email.edwardianeducationalconsult.com.ng/send
+      - key: EMAIL_WELCOME_URL
+        value: https://email.edwardianeducationalconsult.com.ng/send-welcome
+      - key: EMAIL_SERVICE_KEY
+        sync: false
       - key: TERMII_API_KEY
         sync: false
       - key: TERMII_SENDER_ID
