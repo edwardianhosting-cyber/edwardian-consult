@@ -70,9 +70,9 @@ export async function createNotification(params: CreateNotificationParams) {
 
   const preferences = user.notificationPreferences as any || {};
 
-  if (channels.includes('EMAIL') && preferences.email !== false) {
+if (channels.includes('EMAIL') && preferences.email !== false) {
     await sendEmail({
-      to: user.studentEmail || user.email,
+      to: user.email || user.studentEmail || '',
       subject: emailSubject || title,
       html: emailContent || `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -144,9 +144,9 @@ export async function createBulkNotifications(
 
     const purpose = options?.emailPurpose || 'NOTIFICATION';
 
-    for (const user of users) {
+for (const user of users) {
       await sendEmail({
-        to: user.studentEmail || user.email,
+        to: user.email || user.studentEmail || '',
         subject: title,
         html: `<p>${message}</p>${options?.link ? `<p><a href="${process.env.FRONTEND_URL}${options.link}">View Details</a></p>` : ''}`,
         purpose,

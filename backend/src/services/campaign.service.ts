@@ -144,9 +144,9 @@ export async function sendCampaign(campaignId: string) {
     try {
       let email: string;
       if (campaign.targetType === 'PARENTS') {
-        email = recipient.parentEmail || recipient.studentEmail || recipient.email;
+        email = recipient.parentEmail || recipient.studentEmail || recipient.email || '';
       } else {
-        email = recipient.studentEmail || recipient.email;
+        email = recipient.email || recipient.studentEmail || '';
       }
 
       await sendEmail({
@@ -167,8 +167,8 @@ export async function sendCampaign(campaignId: string) {
       sentCount++;
     } catch (error) {
       const email = campaign.targetType === 'PARENTS'
-        ? recipient.parentEmail || recipient.studentEmail || recipient.email
-        : recipient.studentEmail || recipient.email;
+        ? recipient.parentEmail || recipient.studentEmail || recipient.email || ''
+        : recipient.email || recipient.studentEmail || '';
 
       await prisma.campaignLog.create({
         data: {

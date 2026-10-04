@@ -416,7 +416,7 @@ router.post('/admin/mock-results/:resultId/send-email', authenticate, authorize(
       }
     }
 
-    const recipientEmail = result.studentEmail || result.email;
+    const recipientEmail = result.email || result.studentEmail;
     if (!recipientEmail) {
       return res.status(400).json({ success: false, message: 'Student email not found' });
     }
