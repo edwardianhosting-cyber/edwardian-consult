@@ -11,6 +11,10 @@ const emails = [];
 const server = new SMTPServer({
   secure: false,
   authOptional: true,
+  onAuth(auth, session, callback) {
+    // Accept any username/password for local development
+    callback(null, { user: auth.username });
+  },
   onData(stream, session, callback) {
     let emailData = '';
     stream.on('data', chunk => {

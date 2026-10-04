@@ -2,6 +2,7 @@ import { prisma } from '../lib/prisma';
 import { checkAndAwardBadges } from './gamification.service';
 import { createNotification } from './notification.service';
 import { getGroupedExamQuestionsForEnglish } from './question-group.service';
+import { sendMockResultEmail } from '../lib/email';
 
 interface CreateQuestionParams {
   subject: string;
@@ -217,29 +218,84 @@ export async function submitCBT(userId: string, examId: string, answers: Record<
     if (isCorrect) weakTopics[topic].correct++;
   }
 
-  const totalQuestions = exam.questions.length;
+const totalQuestions = exam.questions.length;
   const percentage = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
   const totalMarks = exam.totalMarks || 100;
   const score = totalMarks > 0 ? (percentage / 100) * totalMarks : percentage;
   const durationUsed = exam.duration;
 
-   const result = await prisma.cbtResult.create({
-     data: {
-       userId,
-       examId,
-       templateExamId: exam.isAttempt ? exam.templateExamId : null,
-       subject: exam.subject,
-       type,
-       score,
-       totalQuestions,
-       correctAnswers,
-       wrongAnswers,
-       skippedAnswers,
-       durationUsed,
-       userAnswers,
-       weakTopics,
-     },
-   });
+  // For MOCK exams, check if there's an existing result for this template exam
+  // If so, update it instead of creating a new one (retake overwrites)
+  let result;
+  const templateExamId = exam.isAttempt ? exam.templateExamId : null;
+
+  if (type === 'MOCK' && templateExamId) {
+    const existingResult = await prisma.cbtResult.findFirst({
+      where: {
+        userId,
+        templateExamId,
+        type: 'MOCK',
+      },
+      orderBy: { completedAt: 'desc' },
+    });
+
+    if (existingResult) {
+      // Update existing result (retake)
+      result = await prisma.cbtResult.update({
+        where: { id: existingResult.id },
+        data: {
+          examId,
+          score,
+          totalQuestions,
+          correctAnswers,
+          wrongAnswers,
+          skippedAnswers,
+          durationUsed,
+          userAnswers,
+          weakTopics,
+          completedAt: new Date(), // Update completion time
+        },
+      });
+    } else {
+      // First attempt
+      result = await prisma.cbtResult.create({
+        data: {
+          userId,
+          examId,
+          templateExamId,
+          subject: exam.subject,
+          type,
+          score,
+          totalQuestions,
+          correctAnswers,
+          wrongAnswers,
+          skippedAnswers,
+          durationUsed,
+          userAnswers,
+          weakTopics,
+        },
+      });
+    }
+  } else {
+    // PRACTICE or non-mock: always create new
+    result = await prisma.cbtResult.create({
+      data: {
+        userId,
+        examId,
+        templateExamId: exam.isAttempt ? exam.templateExamId : null,
+        subject: exam.subject,
+        type,
+        score,
+        totalQuestions,
+        correctAnswers,
+        wrongAnswers,
+        skippedAnswers,
+        durationUsed,
+        userAnswers,
+        weakTopics,
+      },
+    });
+  }
 
   await checkAndAwardBadges(userId);
 
@@ -259,6 +315,44 @@ export async function submitCBT(userId: string, examId: string, answers: Record<
       type: 'RESULT',
       link: '/student/results',
     });
+  }
+
+  // Auto-send mock exam result email
+  if (type === 'MOCK') {
+    try {
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, studentEmail: true, fullName: true } });
+      if (user?.email || user?.studentEmail) {
+        const corrections = exam.questions.map((eq, index) => {
+          const userAnswer = userAnswers[eq.question.id];
+          return {
+            questionNumber: index + 1,
+            question: eq.question.text,
+            options: (eq.options as string[]) || (eq.question.options as string[]),
+            correctOption: eq.correctOption ?? eq.question.correctOption,
+            userAnswer: userAnswer?.selected ?? -1,
+            isCorrect: userAnswer?.correct ?? false,
+            explanation: eq.question.explanation,
+            topic: eq.question.topic,
+            subject: eq.question.subject,
+          };
+        });
+
+        await sendMockResultEmail(
+          user.email,
+          user.fullName || 'Student',
+          exam.title,
+          'MOCK',
+          score,
+          percentage,
+          correctAnswers,
+          wrongAnswers,
+          skippedAnswers,
+          corrections as any
+        );
+      }
+    } catch (emailError) {
+      console.error('[submitCBT] Failed to send mock result email:', emailError);
+    }
   }
 
   return {
@@ -608,11 +702,14 @@ export async function getAdminFilteredResults(options: {
     ? { score: 'desc' }
     : { completedAt: 'desc' };
 
+  // Fetch more results initially to deduplicate for MOCK exams
+  const fetchLimit = type === 'MOCK' ? limit * 5 : limit;
+
   const [results, total] = await Promise.all([
     prisma.cbtResult.findMany({
       where,
-      take: limit,
-      skip: (page - 1) * limit,
+      take: fetchLimit,
+      skip: (page - 1) * fetchLimit,
       orderBy,
       include: {
         user: {
@@ -630,9 +727,28 @@ export async function getAdminFilteredResults(options: {
     prisma.cbtResult.count({ where }),
   ]);
 
-  const examTitle = results.find(r => r.examId === examId)?.exam?.title || (results[0]?.exam?.title) || null;
+  // For MOCK exams, deduplicate: keep only latest attempt per student per templateExamId
+  let filteredResults = results;
+  if (type === 'MOCK') {
+    const seen = new Map<string, typeof results[0]>();
+    for (const result of results) {
+      const key = `${result.userId}-${result.templateExamId || result.examId}`;
+      if (!seen.has(key) || result.completedAt > seen.get(key)!.completedAt) {
+        seen.set(key, result);
+      }
+    }
+    filteredResults = Array.from(seen.values());
+    // Re-sort after deduplication
+    filteredResults.sort((a, b) => orderBy.score === 'desc'
+      ? b.score - a.score
+      : b.completedAt.getTime() - a.completedAt.getTime());
+    // Apply limit after deduplication
+    filteredResults = filteredResults.slice(0, limit);
+  }
 
-  const mappedResults = results.map(result => {
+  const examTitle = filteredResults.find(r => r.examId === examId)?.exam?.title || (filteredResults[0]?.exam?.title) || null;
+
+  const mappedResults = filteredResults.map(result => {
     const exam = result.exam;
     const userAnswers = (result.userAnswers as Record<string, { selected: number; correct: boolean }> | null) || {};
     const subjectScores: Record<string, { total: number; correct: number }> = {};

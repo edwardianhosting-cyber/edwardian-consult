@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { api, API_BASE } from '@/lib/api';
 import { showError, showSuccess } from '@/lib/toast';
-import { Play, Clock, Award, ChevronRight, CheckCircle, XCircle, Trophy, TrendingUp, Calculator, X, AlertTriangle, BookOpen, Globe, Sun, Moon } from 'lucide-react';
+import { Play, Clock, Award, ChevronRight, CheckCircle, XCircle, Trophy, TrendingUp, Calculator, X, AlertTriangle, BookOpen, Sun, Moon } from 'lucide-react';
 import { useTheme } from '@/lib/theme';
 
 interface MockQuestion {
@@ -54,10 +54,8 @@ export default function MockExamPage() {
   const [showLeaveWarning, setShowLeaveWarning] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showTabSwitchWarning, setShowTabSwitchWarning] = useState(false);
-  const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
   const [showAutoSubmitModal, setShowAutoSubmitModal] = useState(false);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [calcDisplay, setCalcDisplay] = useState('0');
   const [result, setResult] = useState<any>(null);
@@ -105,20 +103,6 @@ export default function MockExamPage() {
     } catch (err) {
       console.error('Failed to load exam draft:', err);
       return null;
-    }
-  }
-
-  function enterFullscreen() {
-    if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen().catch(() => {
-        setShowFullscreenPrompt(true);
-      });
-    }
-  }
-
-  function exitFullscreen() {
-    if (document.exitFullscreen) {
-      document.exitFullscreen().catch(() => {});
     }
   }
 
@@ -230,15 +214,6 @@ export default function MockExamPage() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [phase]);
-
-  useEffect(() => {
-    function handleFullscreenChange() {
-      setIsFullscreen(!!document.fullscreenElement);
-    }
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
 
   useEffect(() => {
     if (phase !== 'exam' || !cbtData || showSubmitModal) return;
@@ -436,7 +411,6 @@ export default function MockExamPage() {
       setExamStarted(true);
       setPhase('exam');
       hasSubmitted.current = false;
-      setTimeout(() => enterFullscreen(), 500);
     } catch (error: any) {
       console.error('Failed to start mock exam:', error);
       const message = error?.message || 'Failed to start mock exam. Please try again.';
@@ -452,7 +426,6 @@ export default function MockExamPage() {
     hasSubmitted.current = true;
     setSubmitError(null);
     if (timerRef.current) clearInterval(timerRef.current);
-    exitFullscreen();
 
     setLoading(true);
     try {
@@ -497,7 +470,6 @@ export default function MockExamPage() {
     setSubmitError(null);
     hasSubmitted.current = false;
     clearDraft();
-    exitFullscreen();
   }
 
   // Calculator functions
@@ -568,7 +540,6 @@ export default function MockExamPage() {
             <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4">
               <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">⚠️ Important Rules</h3>
               <ul className="space-y-1 text-sm text-yellow-800 dark:text-yellow-200">
-                <li>• This exam runs in <strong>full-screen mode</strong> — you cannot exit full-screen during the exam</li>
                 <li>• <strong>Do not switch tabs or windows</strong> — switching tabs will trigger a warning and may auto-submit your exam</li>
                 <li>• <strong>Do not refresh or close the page</strong> — refreshing will automatically submit your exam</li>
                 <li>• The timer cannot be paused once started</li>
@@ -980,47 +951,6 @@ export default function MockExamPage() {
           >
             I Understand — Return to Exam
           </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Fullscreen Prompt Modal
-  if (showFullscreenPrompt) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Globe className="w-8 h-8 text-orange-600 dark:text-orange-400" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Full-Screen Required</h3>
-            <p className="text-gray-600 dark:text-gray-300">
-              This exam requires full-screen mode. Your browser blocked the full-screen request.
-            </p>
-          </div>
-          <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300 mb-6">
-            <p>Please enable full-screen manually:</p>
-            <ul className="list-disc list-inside space-y-1 text-left">
-              <li>Click the full-screen icon in your browser's address bar</li>
-              <li>Or press <kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">F11</kbd> (Windows) / <kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">Ctrl+Cmd+F</kbd> (Mac)</li>
-              <li>Then click "Continue Exam" below</li>
-            </ul>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => { setShowFullscreenPrompt(false); enterFullscreen(); }}
-              className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium"
-            >
-              Try Full-Screen Again
-            </button>
-            <button
-              onClick={() => { setShowFullscreenPrompt(false); enterFullscreen(); }}
-              className="flex-1 px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 font-medium"
-            >
-              Continue Without Full-Screen
-            </button>
-          </div>
         </div>
       </div>
     );
