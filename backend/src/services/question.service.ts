@@ -25,7 +25,8 @@ function parseQuestionRow(row: Record<string, any>, lineIndex: number, defaults?
   const options = String(row.options || row.Options || row.OPTIONS || '').trim();
   const optionsHtmlRaw = row.optionsHtml || row.OptionsHtml || row.OPTIONS_HTML || row['Options HTML'];
   const optionsHtml = optionsHtmlRaw ? String(optionsHtmlRaw).split('|').map((o: string) => o.trim()).filter(Boolean) : undefined;
-  const correctOptionStr = String(row.answer || row.Answer || row.ANSWER || row.correctOption || row.CorrectOption || row.CORRECT_OPTION || row['Correct Option'] || '').trim();
+  const correctOptionRaw = row.answer ?? row.Answer ?? row.ANSWER ?? row.correctOption ?? row.CorrectOption ?? row.CORRECT_OPTION ?? row['Correct Option'] ?? '';
+  const correctOptionStr = String(correctOptionRaw).trim();
   const explanation = String(row.explanation || row.Explanation || row.EXPLANATION || '').trim();
   const explanationHtml = String(row.explanationHtml || row.ExplanationHtml || row.EXPLANATION_HTML || row['Explanation HTML'] || '').trim() || undefined;
   const imageUrl = String(row.imageUrl || row.ImageUrl || row.IMAGE_URL || row['Image URL'] || '').trim();
