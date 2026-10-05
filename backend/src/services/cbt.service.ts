@@ -102,7 +102,30 @@ export async function generateCBT(userId: string, params: {
       where.topic = { in: params.topics };
     }
 
-    const allQuestions = await prisma.question.findMany({ where });
+    const allQuestions = await prisma.question.findMany({
+      where,
+      select: {
+        id: true,
+        subject: true,
+        examType: true,
+        institution: true,
+        year: true,
+        topic: true,
+        text: true,
+        textHtml: true,
+        imageUrl: true,
+        options: true,
+        optionsHtml: true,
+        formatting: true,
+        correctOption: true,
+        explanation: true,
+        explanationHtml: true,
+        isActive: true,
+        groupType: true,
+        groupId: true,
+        groupOrder: true,
+      },
+    });
 
     if (allQuestions.length === 0) {
       throw new Error(`No questions available for ${params.subject} (${params.examType}). Please contact support.`);
@@ -905,7 +928,30 @@ export async function startMockExamAttempt(userId: string, examId: string) {
         examType: primaryExamType,
       };
 
-      const subjectQuestions = await prisma.question.findMany({ where });
+      const subjectQuestions = await prisma.question.findMany({
+        where,
+        select: {
+          id: true,
+          subject: true,
+          examType: true,
+          institution: true,
+          year: true,
+          topic: true,
+          text: true,
+          textHtml: true,
+          imageUrl: true,
+          options: true,
+          optionsHtml: true,
+          formatting: true,
+          correctOption: true,
+          explanation: true,
+          explanationHtml: true,
+          isActive: true,
+          groupType: true,
+          groupId: true,
+          groupOrder: true,
+        },
+      });
       const shuffled = shuffleArray([...subjectQuestions]);
       const selected = shuffled.slice(0, subjectQuestionCount);
 
@@ -1774,18 +1820,25 @@ export async function getMockExamResultDetail(resultId: string) {
         questionNumber: index + 1,
         questionId: eq.questionId,
         question: eq.question.text,
+        textHtml: eq.question.textHtml || undefined,
         options: (eq.options as string[]) || (eq.question.options as string[]),
+        optionsHtml: eq.question.optionsHtml as string[] | undefined,
         correctOption: eq.correctOption ?? eq.question.correctOption,
         userAnswer: answer?.selected ?? -1,
         isCorrect: answer?.correct ?? false,
         explanation: eq.question.explanation,
+        explanationHtml: eq.question.explanationHtml || undefined,
+        formatting: eq.question.formatting || undefined,
         topic: eq.question.topic,
         subject: eq.question.subject,
         groupType: eq.questionGroupType,
         groupId: eq.questionGroupId,
         passage: group?.passage || undefined,
+        passageHtml: group?.passageHtml || undefined,
         groupTitle: group?.title || undefined,
+        groupTitleHtml: group?.titleHtml || undefined,
         groupInstructions: group?.instructions || undefined,
+        groupInstructionsHtml: group?.instructionsHtml || undefined,
       };
     });
   } else {
@@ -1801,18 +1854,25 @@ export async function getMockExamResultDetail(resultId: string) {
         questionNumber: index + 1,
         questionId: q.id,
         question: q.text,
+        textHtml: q.textHtml || undefined,
         options: q.options as string[],
+        optionsHtml: q.optionsHtml as string[] | undefined,
         correctOption: q.correctOption,
         userAnswer: answer?.selected ?? -1,
         isCorrect: answer?.correct ?? false,
         explanation: q.explanation,
+        explanationHtml: q.explanationHtml || undefined,
+        formatting: q.formatting || undefined,
         topic: q.topic,
         subject: q.subject,
         groupType: q.groupType,
         groupId: q.groupId,
         passage: q.questionGroup?.passage || undefined,
+        passageHtml: q.questionGroup?.passageHtml || undefined,
         groupTitle: q.questionGroup?.title || undefined,
+        groupTitleHtml: q.questionGroup?.titleHtml || undefined,
         groupInstructions: q.questionGroup?.instructions || undefined,
+        groupInstructionsHtml: q.questionGroup?.instructionsHtml || undefined,
       };
     });
   }

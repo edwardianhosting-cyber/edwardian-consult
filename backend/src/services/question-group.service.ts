@@ -213,17 +213,24 @@ export async function getGroupedExamQuestionsForEnglish(params: {
           return {
             id: q.id,
             text: q.text,
+            textHtml: q.textHtml || undefined,
             imageUrl: q.imageUrl || undefined,
             options: q.options as string[],
+            optionsHtml: q.optionsHtml as string[] | undefined,
             correctOption: q.correctOption,
             topic: q.topic || undefined,
             explanation: q.explanation || undefined,
+            explanationHtml: q.explanationHtml || undefined,
+            formatting: q.formatting || undefined,
             groupType: 'COMPREHENSION',
             groupId: group.id,
             groupOrder: q.groupOrder || undefined,
             passage: group.passage || undefined,
+            passageHtml: group.passageHtml || undefined,
             title: group.title || undefined,
+            titleHtml: group.titleHtml || undefined,
             instructions: group.instructions || undefined,
+            instructionsHtml: group.instructionsHtml || undefined,
           };
         });
 
@@ -267,17 +274,24 @@ export async function getGroupedExamQuestionsForEnglish(params: {
           return {
             id: q.id,
             text: q.text,
+            textHtml: q.textHtml || undefined,
             imageUrl: q.imageUrl || undefined,
             options: q.options as string[],
+            optionsHtml: q.optionsHtml as string[] | undefined,
             correctOption: q.correctOption,
             topic: q.topic || undefined,
             explanation: q.explanation || undefined,
+            explanationHtml: q.explanationHtml || undefined,
+            formatting: q.formatting || undefined,
             groupType: 'CLOZE',
             groupId: group.id,
             groupOrder: q.groupOrder || undefined,
             passage: group.passage || undefined,
+            passageHtml: group.passageHtml || undefined,
             title: group.title || undefined,
+            titleHtml: group.titleHtml || undefined,
             instructions: group.instructions || undefined,
+            instructionsHtml: group.instructionsHtml || undefined,
           };
         });
 
@@ -315,17 +329,24 @@ export async function getGroupedExamQuestionsForEnglish(params: {
     const standaloneBlock = selected.map(q => ({
       id: q.id,
       text: q.text,
+      textHtml: q.textHtml || undefined,
       imageUrl: q.imageUrl || undefined,
       options: q.options as string[],
+      optionsHtml: q.optionsHtml as string[] | undefined,
       correctOption: q.correctOption,
       topic: q.topic || undefined,
       explanation: q.explanation || undefined,
+      explanationHtml: q.explanationHtml || undefined,
+      formatting: q.formatting || undefined,
       groupType: 'STANDALONE' as const,
       groupId: undefined,
       groupOrder: undefined,
       passage: undefined,
+      passageHtml: undefined,
       title: undefined,
+      titleHtml: undefined,
       instructions: undefined,
+      instructionsHtml: undefined,
     }));
 
     if (standaloneBlock.length > 0) {
