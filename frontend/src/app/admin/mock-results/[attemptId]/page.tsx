@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Save, RefreshCw, Mail, Printer, CheckCircle, XCircle, AlertTriangle, Edit3, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Save, RefreshCw, Mail, Printer, CheckCircle, XCircle, AlertTriangle, Edit3, BarChart3, Trash2 } from 'lucide-react';
 import api from '@/lib/api';
 import { showSuccess, showError } from '@/lib/toast';
 
@@ -51,11 +51,12 @@ export default function AdminMockResultDetailPage() {
   const attemptId = params.attemptId as string;
   const router = useRouter();
 
-  const [result, setResult] = useState<MockResultDetail | null>(null);
+const [result, setResult] = useState<MockResultDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [recalculating, setRecalculating] = useState(false);
   const [editedQuestions, setEditedQuestions] = useState<Record<string, Partial<Correction>>>({});
 
@@ -129,6 +130,24 @@ async function saveQuestionEdit(questionId: string) {
       showError(err.message || 'Failed to update question');
     } finally {
       setSaving(null);
+    }
+  }
+
+  async function deleteQuestionFromAttempt(questionId: string) {
+    if (!window.confirm('Are you sure you want to delete this question from this student\'s attempt? This cannot be undone.')) {
+      return;
+    }
+
+    setDeleting(questionId);
+    try {
+      await api.adminRemoveQuestionFromAttempt(attemptId, questionId);
+      showSuccess('Question deleted from attempt');
+      // Refetch to get updated corrections and recalculated score
+      fetchResult();
+    } catch (err: any) {
+      showError(err.message || 'Failed to delete question');
+    } finally {
+      setDeleting(null);
     }
   }
 
@@ -568,7 +587,15 @@ async function handleSendEmail() {
 
                     {/* Save button for edited questions */}
                     {isEdited && (
-                      <div className="flex justify-end mt-3">
+                      <div className="flex justify-end gap-2 mt-3">
+                        <button
+                          onClick={() => deleteQuestionFromAttempt(correction.questionId)}
+                          disabled={deleting === correction.questionId}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 disabled:opacity-50 text-sm"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          {deleting === correction.questionId ? 'Deleting...' : 'Delete Question'}
+                        </button>
                         <button
                           onClick={() => saveQuestionEdit(correction.questionId)}
                           disabled={saving === correction.questionId}
