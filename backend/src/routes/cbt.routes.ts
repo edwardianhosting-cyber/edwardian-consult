@@ -32,6 +32,7 @@ import {
   recalculateCbtResult,
   getResultReviewData,
   getMockExamResultDetail,
+  removeQuestionFromAttempt,
   calculateJAMBAggregate,
 } from '../services/cbt.service';
 import { sendMockResultEmail } from '../lib/email';
@@ -293,6 +294,16 @@ router.delete('/mock-exams/:examId/questions/:questionId', authenticate, authori
     res.json({ success: true, data: questions });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to remove question' });
+  }
+});
+
+// Admin: remove question from specific student attempt
+router.delete('/admin/results/:resultId/questions/:questionId', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    await removeQuestionFromAttempt(req.params.resultId, req.params.questionId);
+    res.json({ success: true, message: 'Question removed from attempt' });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message || 'Failed to remove question from attempt' });
   }
 });
 

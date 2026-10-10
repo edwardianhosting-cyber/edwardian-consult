@@ -1340,6 +1340,28 @@ export async function removeQuestionFromMockExam(examId: string, questionId: str
   }));
 }
 
+export async function removeQuestionFromAttempt(resultId: string, questionId: string) {
+  const result = await prisma.cbtResult.findUnique({
+    where: { id: resultId },
+    select: { examId: true },
+  });
+
+  if (!result?.examId) {
+    throw new Error('Attempt exam not found');
+  }
+
+  await prisma.examQuestion.delete({
+    where: {
+      examId_questionId: {
+        examId: result.examId,
+        questionId,
+      },
+    },
+  });
+
+  return { success: true };
+}
+
 export async function getPerformanceAnalysis(userId: string) {
   const results = await prisma.cbtResult.findMany({
     where: { userId },
@@ -1808,6 +1830,16 @@ export async function getMockExamResultDetail(resultId: string) {
     return null;
   }
 
+  // Fetch the original mock exam (template) title if this is an attempt exam
+  let templateExamTitle: string | null = null;
+  if (result.exam?.templateExamId) {
+    const templateExam = await prisma.exam.findUnique({
+      where: { id: result.exam.templateExamId },
+      select: { title: true },
+    });
+    templateExamTitle = templateExam?.title || null;
+  }
+
   const userAnswers = (result.userAnswers as Record<string, { selected: number; correct: boolean }>) || {};
 
   let corrections;
@@ -1915,7 +1947,7 @@ export async function getMockExamResultDetail(resultId: string) {
       skippedAnswers: result.skippedAnswers,
       durationUsed: result.durationUsed,
       completedAt: result.completedAt,
-      examTitle: result.exam?.title || result.subject,
+      examTitle: templateExamTitle || result.exam?.title || result.subject,
       examId: result.examId,
     },
     subjectScores,

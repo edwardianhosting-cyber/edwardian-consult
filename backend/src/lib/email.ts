@@ -277,45 +277,54 @@ export async function sendMockResultEmail(
     explanation?: string | null;
     topic?: string | null;
     subject: string;
-  }>
+  }>,
+  includeDetails: boolean = false
 ): Promise<boolean> {
   const subjectLine = `Your Mock Exam Result - ${mockExamName}`;
 
-  const correctSection = corrections
-    .filter(c => c.isCorrect)
-    .map(c => `
-      <tr>
-        <td style="padding:10px;border:1px solid #e5e7eb;">${c.questionNumber}</td>
-        <td style="padding:10px;border:1px solid #e5e7eb;">${escapeHtml(c.question)}</td>
-        <td style="padding:10px;border:1px solid #e5e7eb;color:#059669;font-weight:bold;">${String.fromCharCode(65 + c.userAnswer)}</td>
-        <td style="padding:10px;border:1px solid #e5e7eb;color:#059669;font-weight:bold;">${String.fromCharCode(65 + c.correctOption)}</td>
-        <td style="padding:10px;border:1px solid #e5e7eb;color:#059669;font-weight:bold;">CORRECT</td>
-      </tr>
-    `).join('') || '<tr><td colspan="5" style="padding:10px;text-align:center;">No correct answers</td></tr>';
+  // Only include detailed tables if explicitly requested (and limit to first 20)
+  let correctSection = '<tr><td colspan="5" style="padding:10px;text-align:center;">Details not included in email. Log in to portal for full breakdown.</td></tr>';
+  let incorrectSection = '<tr><td colspan="5" style="padding:10px;text-align:center;">Details not included in email. Log in to portal for full breakdown.</td></tr>';
+  let unansweredSection = '<tr><td colspan="5" style="padding:10px;text-align:center;">Details not included in email. Log in to portal for full breakdown.</td></tr>';
 
-  const incorrectSection = corrections
-    .filter(c => !c.isCorrect && c.userAnswer !== -1)
-    .map(c => `
-      <tr>
-        <td style="padding:10px;border:1px solid #e5e7eb;">${c.questionNumber}</td>
-        <td style="padding:10px;border:1px solid #e5e7eb;">${escapeHtml(c.question)}</td>
-        <td style="padding:10px;border:1px solid #e5e7eb;color:#dc2626;font-weight:bold;">${String.fromCharCode(65 + c.userAnswer)}</td>
-        <td style="padding:10px;border:1px solid #e5e7eb;color:#059669;font-weight:bold;">${String.fromCharCode(65 + c.correctOption)}</td>
-        <td style="padding:10px;border:1px solid #e5e7eb;color:#dc2626;font-weight:bold;">INCORRECT</td>
-      </tr>
-    `).join('') || '<tr><td colspan="5" style="padding:10px;text-align:center;">No incorrect answers</td></tr>';
+  if (includeDetails) {
+    const limitedCorrections = corrections.slice(0, 20);
+    correctSection = limitedCorrections
+      .filter(c => c.isCorrect)
+      .map(c => `
+        <tr>
+          <td style="padding:10px;border:1px solid #e5e7eb;">${c.questionNumber}</td>
+          <td style="padding:10px;border:1px solid #e5e7eb;">${escapeHtml(c.question)}</td>
+          <td style="padding:10px;border:1px solid #e5e7eb;color:#059669;font-weight:bold;">${String.fromCharCode(65 + c.userAnswer)}</td>
+          <td style="padding:10px;border:1px solid #e5e7eb;color:#059669;font-weight:bold;">${String.fromCharCode(65 + c.correctOption)}</td>
+          <td style="padding:10px;border:1px solid #e5e7eb;color:#059669;font-weight:bold;">CORRECT</td>
+        </tr>
+      `).join('') || '<tr><td colspan="5" style="padding:10px;text-align:center;">No correct answers</td></tr>';
 
-  const unansweredSection = corrections
-    .filter(c => c.userAnswer === -1)
-    .map(c => `
-      <tr>
-        <td style="padding:10px;border:1px solid #e5e7eb;">${c.questionNumber}</td>
-        <td style="padding:10px;border:1px solid #e5e7eb;">${escapeHtml(c.question)}</td>
-        <td style="padding:10px;border:1px solid #e5e7eb;color:#6b7280;font-weight:bold;">-</td>
-        <td style="padding:10px;border:1px solid #e5e7eb;color:#059669;font-weight:bold;">${String.fromCharCode(65 + c.correctOption)}</td>
-        <td style="padding:10px;border:1px solid #e5e7eb;color:#6b7280;font-weight:bold;">UNANSWERED</td>
-      </tr>
-    `).join('') || '<tr><td colspan="5" style="padding:10px;text-align:center;">No unanswered questions</td></tr>';
+    incorrectSection = limitedCorrections
+      .filter(c => !c.isCorrect && c.userAnswer !== -1)
+      .map(c => `
+        <tr>
+          <td style="padding:10px;border:1px solid #e5e7eb;">${c.questionNumber}</td>
+          <td style="padding:10px;border:1px solid #e5e7eb;">${escapeHtml(c.question)}</td>
+          <td style="padding:10px;border:1px solid #e5e7eb;color:#dc2626;font-weight:bold;">${String.fromCharCode(65 + c.userAnswer)}</td>
+          <td style="padding:10px;border:1px solid #e5e7eb;color:#059669;font-weight:bold;">${String.fromCharCode(65 + c.correctOption)}</td>
+          <td style="padding:10px;border:1px solid #e5e7eb;color:#dc2626;font-weight:bold;">INCORRECT</td>
+        </tr>
+      `).join('') || '<tr><td colspan="5" style="padding:10px;text-align:center;">No incorrect answers</td></tr>';
+
+    unansweredSection = limitedCorrections
+      .filter(c => c.userAnswer === -1)
+      .map(c => `
+        <tr>
+          <td style="padding:10px;border:1px solid #e5e7eb;">${c.questionNumber}</td>
+          <td style="padding:10px;border:1px solid #e5e7eb;">${escapeHtml(c.question)}</td>
+          <td style="padding:10px;border:1px solid #e5e7eb;color:#6b7280;font-weight:bold;">-</td>
+          <td style="padding:10px;border:1px solid #e5e7eb;color:#059669;font-weight:bold;">${String.fromCharCode(65 + c.correctOption)}</td>
+          <td style="padding:10px;border:1px solid #e5e7eb;color:#6b7280;font-weight:bold;">UNANSWERED</td>
+        </tr>
+      `).join('') || '<tr><td colspan="5" style="padding:10px;text-align:center;">No unanswered questions</td></tr>';
+  }
 
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:800px;margin:0 auto;">
@@ -361,7 +370,8 @@ export async function sendMockResultEmail(
           </table>
         </div>
 
-        <h3 style="color:#6B003B;">Correct Answers</h3>
+        ${includeDetails ? `
+        <h3 style="color:#6B003B;">Correct Answers (showing first 20)</h3>
         <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
           <thead>
             <tr style="background:#f3f4f6;">
@@ -375,7 +385,7 @@ export async function sendMockResultEmail(
           <tbody>${correctSection}</tbody>
         </table>
 
-        <h3 style="color:#6B003B;">Incorrect Answers</h3>
+        <h3 style="color:#6B003B;">Incorrect Answers (showing first 20)</h3>
         <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
           <thead>
             <tr style="background:#f3f4f6;">
@@ -389,7 +399,7 @@ export async function sendMockResultEmail(
           <tbody>${incorrectSection}</tbody>
         </table>
 
-        <h3 style="color:#6B003B;">Unanswered Questions</h3>
+        <h3 style="color:#6B003B;">Unanswered Questions (showing first 20)</h3>
         <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
           <thead>
             <tr style="background:#f3f4f6;">
@@ -402,11 +412,12 @@ export async function sendMockResultEmail(
           </thead>
           <tbody>${unansweredSection}</tbody>
         </table>
+        ` : ''}
 
         <div style="text-align:center;margin:20px 0;">
           <a href="${FRONTEND_URL}/student/mock-results"
              style="display:inline-block;background:#6B003B;color:white;padding:12px 30px;text-decoration:none;border-radius:8px;">
-            View All Mock Results
+            View Full Result in Portal
           </a>
         </div>
       </div>

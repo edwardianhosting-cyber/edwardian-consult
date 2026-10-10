@@ -203,9 +203,10 @@ export const api = {
     return fetchAPI(`/cbt/admin/results/filtered${qs ? `?${qs}` : ''}`);
   },
    adminGetResultReview: (resultId: string) => fetchAPI(`/cbt/admin/results/${resultId}/review`),
-   adminGetMockResultDetail: (resultId: string) => fetchAPI(`/cbt/admin/mock-results/${resultId}`),
+adminGetMockResultDetail: (resultId: string) => fetchAPI(`/cbt/admin/mock-results/${resultId}`),
    adminRecalculateResult: (resultId: string) => fetchAPI(`/cbt/admin/results/${resultId}/recalculate`, { method: 'POST' }),
-  adminUpdateExamQuestion: (examId: string, questionId: string, data: any) => fetchAPI(`/cbt/admin/exams/${examId}/questions/${questionId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+   adminRemoveQuestionFromAttempt: (resultId: string, questionId: string) => fetchAPI(`/cbt/admin/results/${resultId}/questions/${questionId}`, { method: 'DELETE' }),
+   adminUpdateExamQuestion: (examId: string, questionId: string, data: any) => fetchAPI(`/cbt/admin/exams/${examId}/questions/${questionId}`, { method: 'PATCH', body: JSON.stringify(data) }),
   
   // Study Planner
   getStudyPlans: () => fetchAPI('/study/plans'),
