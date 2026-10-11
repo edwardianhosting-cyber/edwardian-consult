@@ -233,23 +233,26 @@ function AdminPrintResultsInner() {
 
   function getHeaderLines(): { text: string; italic?: boolean; small?: boolean }[] {
     if (filterInfo.type === 'MOCK') {
+      // Get exam type from first result's subject
+      const examType = results[0]?.exam?.examType || results[0]?.subject || 'JAMB';
+      const year = results[0] ? new Date(results[0].completedAt).getFullYear() : new Date().getFullYear();
       return [
-        { text: 'BACK TO BACK' },
-        { text: 'UTME' },
-        { text: 'MOCK EXAM RESULT', italic: true },
+        { text: `${examType} ${year}` },
+        { text: 'CBT MOCK EXAM' },
+        { text: `RESULT - ${filterInfo.examTitle || 'MOCK EXAM'}`, italic: true },
       ];
     }
     if (filterInfo.type === 'PRACTICE') {
       return [
         { text: 'CBT' },
         { text: 'PRACTICE EXAM', italic: true },
-        { text: examTitle, small: true },
+        { text: filterInfo.examTitle || '', small: true },
       ];
     }
     return [
       { text: 'CBT' },
       { text: 'COMBINED EXAM', italic: true },
-      { text: examTitle, small: true },
+      { text: filterInfo.examTitle || '', small: true },
     ];
   }
 
