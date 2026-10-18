@@ -235,7 +235,7 @@ function AdminPrintResultsInner() {
     if (filterInfo.type === 'MOCK') {
       const year = results[0] ? new Date(results[0].completedAt).getFullYear() : new Date().getFullYear();
       return [
-        { text: `MOCK ${year}` },
+        { text: `JAMB ${year}` },
         { text: 'CBT MOCK EXAM' },
         { text: `RESULT - ${filterInfo.examTitle || 'MOCK EXAM'}`, italic: true },
       ];

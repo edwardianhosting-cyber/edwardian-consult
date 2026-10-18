@@ -1,8 +1,10 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
-import { ClipboardList, BookOpen, BarChart3, CheckCircle, XCircle, Clock, Eye, EyeOff, Trash2, Search, Printer, ChevronRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ClipboardList, BookOpen, BarChart3, CheckCircle, XCircle, Clock, Eye, EyeOff, Trash2, Search, Printer, ChevronRight, Mail } from 'lucide-react';
 import { api } from '@/lib/api';
+import { showSuccess, showError } from '@/lib/toast';
 
 interface MockExam {
   id: string;
@@ -43,6 +45,7 @@ interface CBTStats {
 type View = 'home' | 'practice' | 'mock' | 'results';
 
 export default function AdminCBTPage() {
+  const router = useRouter();
   const [view, setView] = useState<View>('home');
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<CBTStats | null>(null);
@@ -130,6 +133,18 @@ export default function AdminCBTPage() {
       fetchData();
     } catch (error) {
       console.error('Failed to delete:', error);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleSendResultEmail(resultId: string) {
+    setActionLoading(resultId);
+    try {
+      await api.adminSendMockResultEmail(resultId);
+      showSuccess('Email sent to student');
+    } catch (error: any) {
+      showError(error.message || 'Failed to send email');
     } finally {
       setActionLoading(null);
     }
@@ -300,7 +315,7 @@ export default function AdminCBTPage() {
                   <>
                     <div className="overflow-x-auto">
                       <table className="w-full">
-                        <thead>
+<thead>
                           <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
                             <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Student</th>
                             <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Exam</th>
@@ -308,35 +323,67 @@ export default function AdminCBTPage() {
                             <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Type</th>
                             <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Score</th>
                             <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Date</th>
+                            <th className="text-right px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
                             {filteredResults.map((result: any) => {
                              const primarySubject = result.subjectEntries?.[0]?.subject || result.subject || '-';
                              return (
-                             <tr key={result.id} className="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700">
-                               <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 font-medium">
-                                 {result.studentName || 'Unknown'}
+                              <tr key={result.id} className="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 font-medium">
+                                  {result.studentName || 'Unknown'}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{result.examTitle || result.exam?.title || '-'}</td>
+                                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{primarySubject}</td>
+                                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                  <span className="capitalize">{result.type?.toLowerCase() || 'mock'}</span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className={`text-sm font-medium px-2 py-1 rounded ${
+                                    result.aggregate >= 70 ? 'bg-green-100 text-green-700' :
+                                    result.aggregate >= 50 ? 'bg-yellow-100 text-yellow-700' :
+                                    'bg-red-100 text-red-700'
+                                  }`}>
+                                    {Math.round(result.aggregate || result.score)}%
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                  {new Date(result.completedAt).toLocaleDateString()}
                                </td>
-                               <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{result.examTitle || result.exam?.title || '-'}</td>
-                               <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{primarySubject}</td>
-                               <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                                 <span className="capitalize">{result.type?.toLowerCase() || 'mock'}</span>
+                               <td className="px-4 py-3 text-right">
+                                 <div className="flex items-center justify-end gap-1">
+                                   {result.type === 'MOCK' ? (
+                                     <>
+                                       <button
+                                         onClick={() => router.push(`/admin/mock-results/${result.id}`)}
+                                         className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded"
+                                         title="View Attempt"
+                                       >
+                                         <Eye className="w-4 h-4" />
+                                       </button>
+                                       <button
+                                         onClick={() => handleSendResultEmail(result.id)}
+                                         disabled={actionLoading === result.id}
+                                         className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded disabled:opacity-50"
+                                         title="Send to Email"
+                                       >
+                                         <Mail className="w-4 h-4" />
+                                       </button>
+                                     </>
+                                   ) : (
+                                     <button
+                                       onClick={() => router.push(`/admin/results/review/${result.id}`)}
+                                       className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded"
+                                       title="View Result"
+                                     >
+                                       <Eye className="w-4 h-4" />
+                                     </button>
+                                   )}
+                                 </div>
                                </td>
-                               <td className="px-4 py-3">
-                                 <span className={`text-sm font-medium px-2 py-1 rounded ${
-                                   result.aggregate >= 70 ? 'bg-green-100 text-green-700' :
-                                   result.aggregate >= 50 ? 'bg-yellow-100 text-yellow-700' :
-                                   'bg-red-100 text-red-700'
-                                 }`}>
-                                   {Math.round(result.aggregate || result.score)}%
-                                 </span>
-                               </td>
-                               <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                                 {new Date(result.completedAt).toLocaleDateString()}
-                              </td>
-                            </tr>
-                           )})}
+                             </tr>
+                            )})}
                         </tbody>
                       </table>
                     </div>

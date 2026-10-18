@@ -204,6 +204,7 @@ export const api = {
   },
    adminGetResultReview: (resultId: string) => fetchAPI(`/cbt/admin/results/${resultId}/review`),
 adminGetMockResultDetail: (resultId: string) => fetchAPI(`/cbt/admin/mock-results/${resultId}`),
+   adminSendMockResultEmail: (resultId: string) => fetchAPI(`/cbt/admin/mock-results/${resultId}/send-email`, { method: 'POST' }),
    adminRecalculateResult: (resultId: string) => fetchAPI(`/cbt/admin/results/${resultId}/recalculate`, { method: 'POST' }),
    adminRemoveQuestionFromAttempt: (resultId: string, questionId: string) => fetchAPI(`/cbt/admin/results/${resultId}/questions/${questionId}`, { method: 'DELETE' }),
    adminUpdateExamQuestion: (examId: string, questionId: string, data: any) => fetchAPI(`/cbt/admin/exams/${examId}/questions/${questionId}`, { method: 'PATCH', body: JSON.stringify(data) }),
