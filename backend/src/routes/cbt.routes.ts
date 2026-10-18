@@ -35,7 +35,7 @@ import {
   removeQuestionFromAttempt,
   calculateJAMBAggregate,
 } from '../services/cbt.service';
-import { sendMockResultEmail } from '../lib/email';
+import { sendMockResultEmail, sendEmail } from '../lib/email';
 import prisma from '../lib/prisma';
 
 const router = Router();
@@ -122,6 +122,32 @@ router.post('/submit/:examId', authenticate, async (req: Request, res: Response)
           },
         });
       }
+    }
+
+    // Auto-send result email to student (fire and forget - don't block response)
+    try {
+      const resultData = await getMockExamResultDetail(result.id);
+      if (resultData) {
+        const email = resultData.result.studentEmail || resultData.result.email;
+        const name = resultData.result.studentName;
+        if (email) {
+          sendMockResultEmail({
+            email,
+            name,
+            studentName: name,
+            examTitle: resultData.result.examTitle,
+            score: resultData.result.score,
+            aggregate: resultData.result.aggregate,
+            correctAnswers: resultData.result.correctAnswers,
+            wrongAnswers: resultData.result.wrongAnswers,
+            skippedAnswers: resultData.result.skippedAnswers,
+            totalQuestions: resultData.result.totalQuestions,
+            includeDetails: false,
+          }).catch((e: any) => console.error('[auto-email] Failed:', e));
+        }
+      }
+    } catch (emailErr: any) {
+      console.error('[auto-email] Failed to send result email:', emailErr.message);
     }
 
     res.json({ success: true, data: result });
