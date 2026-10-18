@@ -22,7 +22,7 @@ export default function PlayQuiz() {
   const [animKey, setAnimKey] = useState(0);
   const timerRef = useRef<any>(null);
   const flipRef = useRef<FlipLeaderboardApi>(null);
-  const socket = useMemo(() => io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'), []);
+  const socket = useMemo(() => io(process.env.NEXT_PUBLIC_API_URL || 'https://edwardian-consult-f8bo.onrender.com/'), []);
 
   useEffect(() => {
     try {
