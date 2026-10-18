@@ -809,6 +809,7 @@ export async function getAdminFilteredResults(options: {
       studentName: result.user?.fullName || result.user?.email || 'Unknown',
       email: result.user?.email || '',
       subject: result.subject,
+      examType: exam?.examType || null,
       subjectScores,
       subjectEntries,
       aggregate,
