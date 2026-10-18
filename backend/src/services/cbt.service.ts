@@ -2,7 +2,7 @@ import { prisma } from '../lib/prisma';
 import { checkAndAwardBadges } from './gamification.service';
 import { createNotification } from './notification.service';
 import { getGroupedExamQuestionsForEnglish } from './question-group.service';
-import { sendMockResultEmail } from '../lib/email';
+import { sendEmail } from '../lib/email';
 
 interface CreateQuestionParams {
   subject: string;
@@ -338,44 +338,6 @@ const totalQuestions = exam.questions.length;
       type: 'RESULT',
       link: '/student/results',
     });
-  }
-
-  // Auto-send mock exam result email
-  if (type === 'MOCK') {
-    try {
-      const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, studentEmail: true, fullName: true } });
-      if (user?.email || user?.studentEmail) {
-        const corrections = exam.questions.map((eq, index) => {
-          const userAnswer = userAnswers[eq.question.id];
-          return {
-            questionNumber: index + 1,
-            question: eq.question.text,
-            options: (eq.options as string[]) || (eq.question.options as string[]),
-            correctOption: eq.correctOption ?? eq.question.correctOption,
-            userAnswer: userAnswer?.selected ?? -1,
-            isCorrect: userAnswer?.correct ?? false,
-            explanation: eq.question.explanation,
-            topic: eq.question.topic,
-            subject: eq.question.subject,
-          };
-        });
-
-        await sendMockResultEmail(
-          user.email,
-          user.fullName || 'Student',
-          exam.title,
-          'MOCK',
-          score,
-          percentage,
-          correctAnswers,
-          wrongAnswers,
-          skippedAnswers,
-          corrections as any
-        );
-      }
-    } catch (emailError) {
-      console.error('[submitCBT] Failed to send mock result email:', emailError);
-    }
   }
 
   return {

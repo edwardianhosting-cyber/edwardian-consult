@@ -35,7 +35,7 @@ import {
   removeQuestionFromAttempt,
   calculateJAMBAggregate,
 } from '../services/cbt.service';
-import { sendMockResultEmail, sendEmail } from '../lib/email';
+import { sendMockResultEmail } from '../lib/email';
 import prisma from '../lib/prisma';
 
 const router = Router();
@@ -126,7 +126,7 @@ router.post('/submit/:examId', authenticate, async (req: Request, res: Response)
 
     // Auto-send result email to student (fire and forget - don't block response)
     try {
-      const resultData = await getMockExamResultDetail(result.id);
+      const resultData = await getMockExamResultDetail(result.resultId);
       if (resultData) {
         const email = resultData.result.studentEmail || resultData.result.email;
         const name = resultData.result.studentName;
@@ -458,18 +458,19 @@ router.post('/admin/mock-results/:resultId/send-email', authenticate, authorize(
       return res.status(400).json({ success: false, message: 'Student email not found' });
     }
 
-    const success = await sendMockResultEmail(
-      recipientEmail,
-      result.studentName || 'Student',
+    const success = await sendMockResultEmail({
+      email: recipientEmail,
+      name: result.studentName || 'Student',
+      studentName: result.studentName,
       examTitle,
-      'MOCK',
-      result.score,
-      result.score,
-      result.correctAnswers,
-      result.wrongAnswers,
-      result.skippedAnswers,
-      corrections as any
-    );
+      score: result.score,
+      aggregate: result.aggregate,
+      correctAnswers: result.correctAnswers,
+      wrongAnswers: result.wrongAnswers,
+      skippedAnswers: result.skippedAnswers,
+      totalQuestions: result.totalQuestions,
+      includeDetails: false,
+    });
 
     if (success) {
       res.json({ success: true, message: 'Mock result email sent successfully' });

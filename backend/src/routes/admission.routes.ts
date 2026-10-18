@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize } from '../middleware/auth.middleware';
+import prisma from '../lib/prisma';
 import {
   createInstitution,
   getInstitutions,
@@ -25,6 +26,7 @@ import {
   updateAdmissionAnnouncement,
   deleteAdmissionAnnouncement,
 } from '../services/admission-announcement.service';
+import { createBulkNotifications } from '../services/notification.service';
 
 const router = Router();
 
@@ -224,6 +226,32 @@ router.post('/announcements', authenticate, authorize('ADMIN'), async (req: Requ
       ...req.body,
       authorId: req.user!.userId,
     });
+
+    // Send notifications to all students
+    try {
+      const students = await prisma.user.findMany({
+        where: { role: 'STUDENT' },
+        select: { id: true },
+      });
+      if (students.length > 0) {
+        await createBulkNotifications(
+          students.map(s => s.id),
+          announcement.title,
+          announcement.content?.slice(0, 200) || 'New announcement posted.',
+          'ANNOUNCEMENT',
+          {
+            link: `/student/admission/announcements`,
+            entityType: 'ANNOUNCEMENT',
+            entityId: announcement.id,
+            channels: ['DASHBOARD', 'EMAIL'],
+            emailPurpose: 'REGISTRAR',
+          }
+        );
+      }
+    } catch (notifErr: any) {
+      console.error('[announcement] Failed to send notifications:', notifErr.message);
+    }
+
     res.status(201).json({ success: true, data: announcement });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to create announcement' });

@@ -257,74 +257,38 @@ export async function sendCbtResultEmail(
 
 // ─── Mock result email ─────────────────────────────────────────────────────────
 
-export async function sendMockResultEmail(
-  email: string,
-  name: string,
-  mockExamName: string,
-  examType: string,
-  score: number,
-  percentage: number,
-  correctAnswers: number,
-  wrongAnswers: number,
-  skippedAnswers: number,
-  corrections: Array<{
-    questionNumber: number;
-    question: string;
-    options: string[];
-    correctOption: number;
-    userAnswer: number;
-    isCorrect: boolean;
-    explanation?: string | null;
-    topic?: string | null;
-    subject: string;
-  }>,
-  includeDetails: boolean = false
-): Promise<boolean> {
-  const subjectLine = `Your Mock Exam Result - ${mockExamName}`;
+export interface MockResultEmailParams {
+  email: string;
+  name: string;
+  studentName?: string;
+  examTitle: string;
+  score: number;
+  aggregate: number;
+  correctAnswers: number;
+  wrongAnswers: number;
+  skippedAnswers: number;
+  totalQuestions: number;
+  includeDetails?: boolean;
+}
 
-  // Only include detailed tables if explicitly requested (and limit to first 20)
-  let correctSection = '<tr><td colspan="5" style="padding:10px;text-align:center;">Details not included in email. Log in to portal for full breakdown.</td></tr>';
-  let incorrectSection = '<tr><td colspan="5" style="padding:10px;text-align:center;">Details not included in email. Log in to portal for full breakdown.</td></tr>';
-  let unansweredSection = '<tr><td colspan="5" style="padding:10px;text-align:center;">Details not included in email. Log in to portal for full breakdown.</td></tr>';
+export async function sendMockResultEmail(params: MockResultEmailParams): Promise<boolean> {
+  const {
+    email,
+    name,
+    studentName,
+    examTitle,
+    score,
+    aggregate,
+    correctAnswers,
+    wrongAnswers,
+    skippedAnswers,
+    totalQuestions,
+    includeDetails = false,
+  } = params;
 
-  if (includeDetails) {
-    const limitedCorrections = corrections.slice(0, 20);
-    correctSection = limitedCorrections
-      .filter(c => c.isCorrect)
-      .map(c => `
-        <tr>
-          <td style="padding:10px;border:1px solid #e5e7eb;">${c.questionNumber}</td>
-          <td style="padding:10px;border:1px solid #e5e7eb;">${escapeHtml(c.question)}</td>
-          <td style="padding:10px;border:1px solid #e5e7eb;color:#059669;font-weight:bold;">${String.fromCharCode(65 + c.userAnswer)}</td>
-          <td style="padding:10px;border:1px solid #e5e7eb;color:#059669;font-weight:bold;">${String.fromCharCode(65 + c.correctOption)}</td>
-          <td style="padding:10px;border:1px solid #e5e7eb;color:#059669;font-weight:bold;">CORRECT</td>
-        </tr>
-      `).join('') || '<tr><td colspan="5" style="padding:10px;text-align:center;">No correct answers</td></tr>';
-
-    incorrectSection = limitedCorrections
-      .filter(c => !c.isCorrect && c.userAnswer !== -1)
-      .map(c => `
-        <tr>
-          <td style="padding:10px;border:1px solid #e5e7eb;">${c.questionNumber}</td>
-          <td style="padding:10px;border:1px solid #e5e7eb;">${escapeHtml(c.question)}</td>
-          <td style="padding:10px;border:1px solid #e5e7eb;color:#dc2626;font-weight:bold;">${String.fromCharCode(65 + c.userAnswer)}</td>
-          <td style="padding:10px;border:1px solid #e5e7eb;color:#059669;font-weight:bold;">${String.fromCharCode(65 + c.correctOption)}</td>
-          <td style="padding:10px;border:1px solid #e5e7eb;color:#dc2626;font-weight:bold;">INCORRECT</td>
-        </tr>
-      `).join('') || '<tr><td colspan="5" style="padding:10px;text-align:center;">No incorrect answers</td></tr>';
-
-    unansweredSection = limitedCorrections
-      .filter(c => c.userAnswer === -1)
-      .map(c => `
-        <tr>
-          <td style="padding:10px;border:1px solid #e5e7eb;">${c.questionNumber}</td>
-          <td style="padding:10px;border:1px solid #e5e7eb;">${escapeHtml(c.question)}</td>
-          <td style="padding:10px;border:1px solid #e5e7eb;color:#6b7280;font-weight:bold;">-</td>
-          <td style="padding:10px;border:1px solid #e5e7eb;color:#059669;font-weight:bold;">${String.fromCharCode(65 + c.correctOption)}</td>
-          <td style="padding:10px;border:1px solid #e5e7eb;color:#6b7280;font-weight:bold;">UNANSWERED</td>
-        </tr>
-      `).join('') || '<tr><td colspan="5" style="padding:10px;text-align:center;">No unanswered questions</td></tr>';
-  }
+  const recipientName = studentName || name;
+  const subjectLine = `Your Mock Exam Result - ${examTitle}`;
+  const percentage = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
 
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:800px;margin:0 auto;">
@@ -333,19 +297,15 @@ export async function sendMockResultEmail(
         <p style="color:#FFD700;margin:10px 0 0 0;">Mock Exam Result</p>
       </div>
       <div style="padding:30px;background:#ffffff;">
-        <h2>Hello ${name},</h2>
-        <p>Your Mock Exam result for <strong>${mockExamName}</strong> is now available.</p>
+        <h2>Hello ${recipientName},</h2>
+        <p>Your Mock Exam result for <strong>${escapeHtml(examTitle)}</strong> is now available.</p>
 
         <div style="background:#f3f4f6;padding:20px;border-radius:8px;margin:20px 0;">
           <h3 style="margin-top:0;color:#6B003B;">Result Summary</h3>
           <table style="width:100%;border-collapse:collapse;">
             <tr>
               <td style="padding:8px;border:1px solid #e5e7eb;"><strong>Mock Exam:</strong></td>
-              <td style="padding:8px;border:1px solid #e5e7eb;">${escapeHtml(mockExamName)}</td>
-            </tr>
-            <tr>
-              <td style="padding:8px;border:1px solid #e5e7eb;"><strong>Exam Type:</strong></td>
-              <td style="padding:8px;border:1px solid #e5e7eb;">${escapeHtml(examType)}</td>
+              <td style="padding:8px;border:1px solid #e5e7eb;">${escapeHtml(examTitle)}</td>
             </tr>
             <tr>
               <td style="padding:8px;border:1px solid #e5e7eb;"><strong>Date:</strong></td>
@@ -370,50 +330,6 @@ export async function sendMockResultEmail(
           </table>
         </div>
 
-        ${includeDetails ? `
-        <h3 style="color:#6B003B;">Correct Answers (showing first 20)</h3>
-        <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
-          <thead>
-            <tr style="background:#f3f4f6;">
-              <th style="padding:10px;border:1px solid #e5e7eb;text-align:left;">#</th>
-              <th style="padding:10px;border:1px solid #e5e7eb;text-align:left;">Question</th>
-              <th style="padding:10px;border:1px solid #e5e7eb;text-align:left;">Your Answer</th>
-              <th style="padding:10px;border:1px solid #e5e7eb;text-align:left;">Correct Answer</th>
-              <th style="padding:10px;border:1px solid #e5e7eb;text-align:left;">Status</th>
-            </tr>
-          </thead>
-          <tbody>${correctSection}</tbody>
-        </table>
-
-        <h3 style="color:#6B003B;">Incorrect Answers (showing first 20)</h3>
-        <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
-          <thead>
-            <tr style="background:#f3f4f6;">
-              <th style="padding:10px;border:1px solid #e5e7eb;text-align:left;">#</th>
-              <th style="padding:10px;border:1px solid #e5e7eb;text-align:left;">Question</th>
-              <th style="padding:10px;border:1px solid #e5e7eb;text-align:left;">Your Answer</th>
-              <th style="padding:10px;border:1px solid #e5e7eb;text-align:left;">Correct Answer</th>
-              <th style="padding:10px;border:1px solid #e5e7eb;text-align:left;">Status</th>
-            </tr>
-          </thead>
-          <tbody>${incorrectSection}</tbody>
-        </table>
-
-        <h3 style="color:#6B003B;">Unanswered Questions (showing first 20)</h3>
-        <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
-          <thead>
-            <tr style="background:#f3f4f6;">
-              <th style="padding:10px;border:1px solid #e5e7eb;text-align:left;">#</th>
-              <th style="padding:10px;border:1px solid #e5e7eb;text-align:left;">Question</th>
-              <th style="padding:10px;border:1px solid #e5e7eb;text-align:left;">Your Answer</th>
-              <th style="padding:10px;border:1px solid #e5e7eb;text-align:left;">Correct Answer</th>
-              <th style="padding:10px;border:1px solid #e5e7eb;text-align:left;">Status</th>
-            </tr>
-          </thead>
-          <tbody>${unansweredSection}</tbody>
-        </table>
-        ` : ''}
-
         <div style="text-align:center;margin:20px 0;">
           <a href="${FRONTEND_URL}/student/mock-results"
              style="display:inline-block;background:#6B003B;color:white;padding:12px 30px;text-decoration:none;border-radius:8px;">
@@ -424,7 +340,7 @@ export async function sendMockResultEmail(
     </div>
   `;
 
-  const success = await sendEmail({ to: email, name, subject: subjectLine, html, purpose: 'NOTIFICATION' });
+  const success = await sendEmail({ to: email, name: recipientName, subject: subjectLine, html, purpose: 'NOTIFICATION' });
   await logEmail(email, subjectLine, 'MOCK_RESULT', success ? 'SENT' : 'FAILED');
   return success;
 }
