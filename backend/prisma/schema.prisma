@@ -1045,3 +1045,12 @@ model PushSubscription {
 
   @@index([userId])
 }
+
+model GameSession {
+  id String @id @default(uuid())
+  pin String
+  status String @default("completed")
+  questionIds Json
+  createdAt DateTime @default(now())
+}
+

@@ -206,6 +206,91 @@
   animation: shake 0.4s ease-in-out;
 }
 
+@keyframes quizSlideDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes quizFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes quizTimerPop {
+  0% { transform: scale(.45); }
+  70% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.quiz-question {
+  animation: quizSlideDown .45s ease both;
+}
+
+.quiz-option {
+  animation: quizFadeIn .35s ease both;
+}
+
+.quiz-timer-pop {
+  animation: quizTimerPop .25s ease;
+}
+
+.animate-quiz-fade-in {
+  animation: quizFadeIn .35s ease both;
+}
+
+@keyframes quizFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-delay-1 {
+  animation-delay: 0.06s;
+}
+
+.animate-delay-2 {
+  animation-delay: 0.12s;
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+@keyframes lightRotate {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes spotlightIn {
+  to { opacity: 1; }
+}
+
+@keyframes countPop {
+  0% { opacity: 0; transform: scale(1.7); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: scale(.85); }
+}
+
+@keyframes detailIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes medalPop {
+  0% { transform: scale(0) rotate(-15deg); }
+  65% { transform: scale(1.2) rotate(5deg); }
+  85% { transform: scale(.94) rotate(-2deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+@keyframes flash {
+  0% { opacity: 0; }
+  15% { opacity: .75; }
+  100% { opacity: 0; }
+}
+
+@keyframes bannerReveal {
+  to { opacity: 1; transform: scale(1); }
+}
+
 .perspective-1000 {
   perspective: 1000px;
 }

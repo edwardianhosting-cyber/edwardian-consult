@@ -296,8 +296,13 @@ app.use((req: Request, res: Response) => {
 // Global error handler
 app.use(errorHandler);
 
+import { createServer } from 'http';
+import { initSocket } from './socket';
+const httpServer = createServer(app);
+initSocket(httpServer);
+
 // Start server
-app.listen(PORT, HOST, () => {
+httpServer.listen(PORT, HOST, () => {
   console.log(`
   ============================================
    Edwardian Educational Consult API

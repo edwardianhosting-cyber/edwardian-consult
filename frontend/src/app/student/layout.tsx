@@ -67,6 +67,7 @@ const sidebarSections = [
       { name: 'Results', href: '/student/results', icon: Award },
       { name: 'Performance', href: '/student/performance', icon: Target },
       { name: 'Leaderboard', href: '/student/leaderboard', icon: Trophy },
+      { name: 'Live Classroom Quiz', href: '/student/live-quiz', icon: Trophy },
     ],
   },
   {

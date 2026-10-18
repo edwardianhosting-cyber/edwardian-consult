@@ -73,6 +73,7 @@ const sidebarSections = [
       { name: 'Mock Exams', href: '/admin/mock', icon: Calendar },
       { name: 'Performance', href: '/admin/performance', icon: Target },
       { name: 'JAMB Deadlines', href: '/admin/jamb/deadlines', icon: Calendar },
+      { name: 'Live Classroom Quiz', href: '/admin/live-quiz', icon: Trophy },
     ],
   },
   {
