@@ -126,25 +126,55 @@ router.post('/submit/:examId', authenticate, async (req: Request, res: Response)
 
     // Auto-send result email to student (fire and forget - don't block response)
     try {
-      const resultData = await getMockExamResultDetail(result.resultId);
-      if (resultData) {
-        const email = resultData.result.studentEmail || resultData.result.email;
-        const name = resultData.result.studentName;
-        if (email) {
-          sendMockResultEmail({
-            email,
-            name,
-            studentName: name,
-            examTitle: resultData.result.examTitle,
-            score: resultData.result.score,
-            aggregate: resultData.result.aggregate,
-            correctAnswers: resultData.result.correctAnswers,
-            wrongAnswers: resultData.result.wrongAnswers,
-            skippedAnswers: resultData.result.skippedAnswers,
-            totalQuestions: resultData.result.totalQuestions,
-            includeDetails: false,
-          }).catch((e: any) => console.error('[auto-email] Failed:', e));
+      // Fetch user's original email
+      const user = await prisma.user.findUnique({
+        where: { id: req.user!.userId },
+        select: { email: true, fullName: true },
+      });
+      
+      if (user?.email) {
+        let examTitle = 'CBT Practice Exam';
+        let score = 0, aggregate = 0, correctAnswers = 0, wrongAnswers = 0, skippedAnswers = 0, totalQuestions = 0;
+        
+        // Try to get mock result detail first (for MOCK type)
+        try {
+          const resultData = await getMockExamResultDetail(result.resultId);
+          if (resultData) {
+            examTitle = resultData.result.examTitle;
+            score = resultData.result.score;
+            aggregate = resultData.result.aggregate;
+            correctAnswers = resultData.result.correctAnswers;
+            wrongAnswers = resultData.result.wrongAnswers;
+            skippedAnswers = resultData.result.skippedAnswers;
+            totalQuestions = resultData.result.totalQuestions;
+          }
+        } catch {}
+        
+        // For practice results, fetch exam info directly
+        if (!correctAnswers) {
+          try {
+            const exam = await prisma.exam.findUnique({
+              where: { id: req.params.examId },
+              select: { title: true, totalMarks: true },
+            });
+            if (exam?.title) examTitle = exam.title;
+          } catch {}
         }
+
+        sendMockResultEmail({
+          email: user.email,
+          name: user.fullName || 'Student',
+          studentName: user.fullName,
+          examTitle,
+          score,
+          aggregate,
+          correctAnswers,
+          wrongAnswers,
+          skippedAnswers,
+          totalQuestions,
+          includeDetails: false,
+          resultType: result.type === 'MOCK' ? 'MOCK' : 'PRACTICE',
+        }).catch((e: any) => console.error('[auto-email] Failed:', e));
       }
     } catch (emailErr: any) {
       console.error('[auto-email] Failed to send result email:', emailErr.message);

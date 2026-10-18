@@ -201,7 +201,12 @@ router.post('/admin/send', authenticate, authorize('ADMIN'), async (req: Request
       title,
       message,
       type,
-      { priority, channels }
+      { 
+        priority, 
+        channels,
+        link: req.body.link || undefined,
+        emailPurpose: channels?.includes('EMAIL') ? (req.body.emailPurpose || 'REGISTRAR') : undefined,
+      }
     );
 
     res.status(201).json({

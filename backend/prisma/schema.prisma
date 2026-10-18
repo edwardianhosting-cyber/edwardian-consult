@@ -1046,6 +1046,23 @@ model PushSubscription {
   @@index([userId])
 }
 
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  platform  String   // ANDROID | IOS
+  deviceId  String?
+  appVersion String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([platform])
+  @@index([token])
+}
+
 model GameSession {
   id String @id @default(uuid())
   pin String

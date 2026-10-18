@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Send, Users, Mail, MessageSquare, Bell, AlertTriangle, AlertCircle, Info, Calendar, Clock, CheckCircle, Smartphone } from 'lucide-react';
 import api from '@/lib/api';
+import { showSuccess, showError } from '@/lib/toast';
 
 interface NotificationForm {
   title: string;
@@ -88,9 +89,11 @@ export default function AdminNotificationCenter() {
       setRecipientCount(data.data.recipientCount);
       setSent(true);
       setForm(defaultForm);
+      showSuccess(`Notification sent to ${data.data.recipientCount} recipients!`);
       setTimeout(() => setSent(false), 5000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to send notification:', error);
+      showError(error.message || 'Failed to send notification');
     } finally {
       setSending(false);
     }

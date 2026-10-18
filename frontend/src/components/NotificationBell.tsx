@@ -53,13 +53,17 @@ export default function NotificationBell() {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const res = await fetch(`${API_BASE}/notifications?limit=10`, {
+      const res = await fetch(`${API_BASE}/notifications?limit=10&sortBy=createdAt&sortOrder=desc`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (res.ok) {
         const data = await res.json();
-        setNotifications(data.data.notifications);
+        // Sort by createdAt descending (latest first)
+        const sorted = (data.data.notifications || []).sort(
+          (a: Notification, b: Notification) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        setNotifications(sorted);
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -203,7 +207,7 @@ export default function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
+        <div className="absolute right-0 mt-2 w-80 sm:w-96 max-w-[90vw] max-h-[80vh] bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50">
             <div className="flex items-center gap-2">
@@ -235,7 +239,7 @@ export default function NotificationBell() {
           </div>
 
           {/* Notifications List */}
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-96 overflow-y-auto flex-1">
             {loading ? (
               <div className="p-8 text-center">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto"></div>

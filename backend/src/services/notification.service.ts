@@ -72,7 +72,7 @@ export async function createNotification(params: CreateNotificationParams) {
 
 if (channels.includes('EMAIL') && preferences.email !== false) {
     await sendEmail({
-      to: user.email || user.studentEmail || '',
+      to: user.email || '',
       subject: emailSubject || title,
       html: emailContent || `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

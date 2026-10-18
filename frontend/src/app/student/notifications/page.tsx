@@ -51,6 +51,8 @@ export default function NotificationsPage() {
       const params: Record<string, string> = {
         page: page.toString(),
         limit: '20',
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
       };
 
       if (activeType !== 'ALL') params.type = activeType;
@@ -58,7 +60,12 @@ export default function NotificationsPage() {
 
       const data = await api.getNotifications(params);
       const result = data as any;
-      setNotifications(result.data?.notifications || []);
+      const notifs = result.data?.notifications || [];
+      // Ensure latest first
+      notifs.sort((a: Notification, b: Notification) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setNotifications(notifs);
       setUnreadCount(result.data?.unreadCount || 0);
       setTotalPages(result.data?.pagination?.totalPages || 1);
     } catch (err: any) {

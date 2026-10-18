@@ -269,6 +269,7 @@ export interface MockResultEmailParams {
   skippedAnswers: number;
   totalQuestions: number;
   includeDetails?: boolean;
+  resultType?: 'MOCK' | 'PRACTICE';
 }
 
 export async function sendMockResultEmail(params: MockResultEmailParams): Promise<boolean> {
@@ -284,21 +285,26 @@ export async function sendMockResultEmail(params: MockResultEmailParams): Promis
     skippedAnswers,
     totalQuestions,
     includeDetails = false,
+    resultType = 'MOCK',
   } = params;
 
   const recipientName = studentName || name;
-  const subjectLine = `Your Mock Exam Result - ${examTitle}`;
+  const isMock = resultType === 'MOCK';
+  const subjectLine = isMock 
+    ? `Your Mock Exam Result - ${examTitle}` 
+    : `Your CBT Practice Result - ${examTitle}`;
   const percentage = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+  const resultLabel = isMock ? 'Mock Exam Result' : 'CBT Practice Result';
 
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:800px;margin:0 auto;">
       <div style="background:#6B003B;padding:20px;text-align:center;">
         <h1 style="color:white;margin:0;">Edwardian Educational Consult</h1>
-        <p style="color:#FFD700;margin:10px 0 0 0;">Mock Exam Result</p>
+        <p style="color:#FFD700;margin:10px 0 0 0;">${resultLabel}</p>
       </div>
       <div style="padding:30px;background:#ffffff;">
         <h2>Hello ${recipientName},</h2>
-        <p>Your Mock Exam result for <strong>${escapeHtml(examTitle)}</strong> is now available.</p>
+        <p>Your ${isMock ? 'Mock Exam' : 'CBT Practice'} result for <strong>${escapeHtml(examTitle)}</strong> is now available.</p>
 
         <div style="background:#f3f4f6;padding:20px;border-radius:8px;margin:20px 0;">
           <h3 style="margin-top:0;color:#6B003B;">Result Summary</h3>

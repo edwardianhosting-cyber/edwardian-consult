@@ -240,7 +240,7 @@ router.post('/announcements', authenticate, authorize('ADMIN'), async (req: Requ
           announcement.content?.slice(0, 200) || 'New announcement posted.',
           'ANNOUNCEMENT',
           {
-            link: `/student/admission/announcements`,
+            link: `/student/notices`,
             entityType: 'ANNOUNCEMENT',
             entityId: announcement.id,
             channels: ['DASHBOARD', 'EMAIL'],
