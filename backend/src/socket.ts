@@ -51,7 +51,10 @@ async function beginQuestion(io: Server, pin: string) {
 }
 
 export function initSocket(server: any) {
-  const io = new Server(server, { cors: { origin: '*' } });
+  const io = new Server(server, {
+    cors: { origin: '*' },
+    transports: ['polling', 'websocket'],
+  });
 
   io.on('connection', (socket: Socket) => {
     socket.on('host:create', async () => {
