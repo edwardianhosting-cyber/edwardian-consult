@@ -185,17 +185,19 @@ async function endQuestion(io: Server, pin: string) {
     }
   });
   const leaderboard = Array.from(room.players.values()).map(p => ({ id: p.id, name: p.name, score: p.score, correct: p.answer === correct })).sort((a, b) => b.score - a.score);
+
+  if (room.questionCount >= 20) {
+    room.state = 'GAME_OVER';
+    try { await prisma.gameSession.create({ data: { pin, status: 'completed', questionIds: room.questionIds } }); } catch { /* best effort */ }
+    io.to(pin).emit('game:over', { leaderboard });
+    return;
+  }
+
   io.to(pin).emit('question:result', { correct, leaderboard });
 
   room.intermission && clearTimeout(room.intermission);
   room.intermission = setTimeout(async () => {
-    if (room.questionCount >= 20) {
-      room.state = 'GAME_OVER';
-      try { await prisma.gameSession.create({ data: { pin, status: 'completed', questionIds: room.questionIds } }); } catch { /* best effort */ }
-      io.to(pin).emit('game:over', { leaderboard });
-    } else {
-      room.state = 'QUESTION';
-      beginQuestion(io, pin);
-    }
+    room.state = 'QUESTION';
+    beginQuestion(io, pin);
   }, 5000);
 }

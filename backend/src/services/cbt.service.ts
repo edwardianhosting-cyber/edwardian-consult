@@ -769,7 +769,20 @@ export async function getAdminFilteredResults(options: {
     filteredResults = filteredResults.slice(0, limit);
   }
 
-  const examTitle = filteredResults.find(r => r.examId === examId)?.exam?.title || (filteredResults[0]?.exam?.title) || null;
+  // For MOCK exams, resolve the template exam title (the name the admin set)
+  let templateExamTitle: string | null = null;
+  if (type === 'MOCK' && filteredResults.length > 0) {
+    const templateExamId = filteredResults[0].templateExamId;
+    if (templateExamId) {
+      const templateExam = await prisma.exam.findUnique({
+        where: { id: templateExamId },
+        select: { title: true },
+      });
+      templateExamTitle = templateExam?.title || null;
+    }
+  }
+
+  const examTitle = templateExamTitle || filteredResults.find(r => r.examId === examId)?.exam?.title || (filteredResults[0]?.exam?.title) || null;
 
   const mappedResults = filteredResults.map(result => {
     const exam = result.exam;

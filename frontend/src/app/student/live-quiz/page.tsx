@@ -25,6 +25,20 @@ export default function PlayQuiz() {
   const socket = useMemo(() => io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'), []);
 
   useEffect(() => {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const userData = JSON.parse(userStr);
+        const fullName = (userData?.fullName || 'Student').toString().trim();
+        const firstName = fullName.split(' ')[0] || 'Student';
+        setName(firstName);
+      }
+    } catch {
+      setName('Student');
+    }
+  }, []);
+
+  useEffect(() => {
     socket.on('joined', (d: any) => {
       setStep(d.state === 'QUESTION' ? 'question' : 'waiting');
       setPlayers(d.players || []);
@@ -76,7 +90,8 @@ export default function PlayQuiz() {
           {error && <p className="text-sm text-red-600 dark:text-red-400 text-center">{error}</p>}
           <form onSubmit={handleJoin} className="space-y-3">
             <input className="w-full border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-black dark:text-white bg-white dark:bg-blue-900 transition-all duration-300 focus:scale-105 focus:shadow-lg" placeholder="Game PIN" value={pin} onChange={e => setPin(e.target.value)} required />
-            <input className="w-full border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-black dark:text-white bg-white dark:bg-blue-900 transition-all duration-300 focus:scale-105 focus:shadow-lg" placeholder="Your Name" value={name} onChange={e => setName(e.target.value)} required />
+            <input className="w-full border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-black dark:text-white bg-white dark:bg-blue-900 transition-all duration-300 focus:scale-105 focus:shadow-lg" placeholder="Your Name" value={name} readOnly />
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center">Playing as: <span className="font-medium">{name}</span></p>
             <button className="w-full bg-indigo-600 text-white rounded-lg py-3 font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg" type="submit">Join</button>
           </form>
         </div>
