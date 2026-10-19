@@ -14,6 +14,9 @@ import {
   saveSubscription,
   removeSubscription,
   sendPushToUser,
+  saveDeviceToken,
+  removeDeviceToken,
+  getDeviceTokensForUser,
 } from '../services/push.service';
 
 const router = Router();
@@ -44,6 +47,47 @@ router.post('/push/unsubscribe', authenticate, async (req: Request, res: Respons
   } catch (error) {
     console.error('Failed to remove push subscription:', error);
     res.status(500).json({ success: false, message: 'Failed to unsubscribe' });
+  }
+});
+
+// Register a mobile device FCM token for push notifications
+router.post('/register-device', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { token, platform, deviceId, appVersion } = req.body;
+
+    if (!token || !platform) {
+      res.status(400).json({ success: false, message: 'token and platform are required' });
+      return;
+    }
+
+    await saveDeviceToken(req.user!.userId, token, platform, deviceId, appVersion);
+    res.json({ success: true, message: 'Device registered for push notifications' });
+  } catch (error: any) {
+    console.error('Failed to register device:', error);
+    res.status(400).json({ success: false, message: error.message || 'Failed to register device' });
+  }
+});
+
+// Unregister a mobile device FCM token
+router.post('/unregister-device', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body;
+    await removeDeviceToken(req.user!.userId, token);
+    res.json({ success: true, message: 'Device unregistered from push notifications' });
+  } catch (error) {
+    console.error('Failed to unregister device:', error);
+    res.status(500).json({ success: false, message: 'Failed to unregister device' });
+  }
+});
+
+// Get registered device tokens for the current user
+router.get('/devices', authenticate, async (req: Request, res: Response) => {
+  try {
+    const devices = await getDeviceTokensForUser(req.user!.userId);
+    res.json({ success: true, data: devices });
+  } catch (error) {
+    console.error('Failed to fetch devices:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch devices' });
   }
 });
 

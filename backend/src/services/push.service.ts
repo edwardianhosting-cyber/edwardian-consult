@@ -1,5 +1,12 @@
 import webpush from 'web-push';
 import { prisma } from '../lib/prisma';
+import {
+  sendFcmToUser,
+  sendFcmToUsers,
+  saveDeviceToken,
+  removeDeviceToken,
+  getDeviceTokensForUser,
+} from './fcm.service';
 
 const vapidPublicKey = process.env.VAPID_PUBLIC_KEY || '';
 const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || '';
@@ -10,9 +17,7 @@ const pushConfigured = Boolean(vapidPublicKey && vapidPrivateKey);
 if (pushConfigured) {
   webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
 } else {
-  // Not fatal — the rest of the app (dashboard/email/SMS notifications) keeps working.
-  // Run `node scripts/generate-vapid-keys.js` and add the output to .env to enable push.
-  console.warn('[push] VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY not set — push notifications are disabled.');
+  console.warn('[push] VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY not set — browser push is disabled.');
 }
 
 export function isPushConfigured() {
@@ -89,8 +94,6 @@ async function deliverToSubscription(
       body
     );
   } catch (error: any) {
-    // 404/410 means the browser/device revoked or expired the subscription
-    // (uninstalled app, cleared data, permission revoked) — safe to delete.
     if (error?.statusCode === 404 || error?.statusCode === 410) {
       await prisma.pushSubscription.delete({ where: { id: subscription.id } }).catch(() => {});
     } else {
@@ -98,6 +101,8 @@ async function deliverToSubscription(
     }
   }
 }
+
+// --- Existing browser (web-push) send functions ---
 
 export async function sendPushToUser(userId: string, payload: PushPayload) {
   if (!pushConfigured) return;
@@ -120,3 +125,38 @@ export async function sendPushToUsers(userIds: string[], payload: PushPayload) {
   const body = buildPushBody(payload);
   await Promise.all(subscriptions.map((sub) => deliverToSubscription(sub, body)));
 }
+
+// --- Mobile (FCM) device token functions ---
+
+export { saveDeviceToken, removeDeviceToken, getDeviceTokensForUser };
+
+export async function sendMobilePushToUser(userId: string, payload: PushPayload) {
+  return sendFcmToUser(userId, {
+    title: payload.title,
+    body: payload.message,
+    link: payload.link,
+    type: payload.type,
+  });
+}
+
+export async function sendMobilePushToUsers(userIds: string[], payload: PushPayload) {
+  return sendFcmToUsers(userIds, {
+    title: payload.title,
+    body: payload.message,
+    link: payload.link,
+    type: payload.type,
+  });
+}
+
+export async function sendPushToUserAllChannels(userId: string, payload: PushPayload) {
+  // Send to browser subscriptions (web-push)
+  await sendPushToUser(userId, payload);
+  // Send to mobile device tokens (FCM)
+  await sendMobilePushToUser(userId, payload);
+}
+
+export async function sendPushToUsersAllChannels(userIds: string[], payload: PushPayload) {
+  await sendPushToUsers(userIds, payload);
+  await sendMobilePushToUsers(userIds, payload);
+}
+

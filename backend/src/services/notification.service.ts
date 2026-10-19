@@ -1,6 +1,6 @@
 import { prisma } from '../lib/prisma';
 import { sendEmail, EmailPurpose } from '../lib/email';
-import { sendPushToUser, sendPushToUsers } from './push.service';
+import { sendPushToUserAllChannels, sendPushToUsersAllChannels } from './push.service';
 
 export type NotificationType =
   | 'SYSTEM' | 'CBT' | 'PAYMENT' | 'ADMISSION' | 'ANNOUNCEMENT'
@@ -101,7 +101,7 @@ if (channels.includes('EMAIL') && preferences.email !== false) {
   }
 
   if (channels.includes('PUSH') && preferences.push !== false && preferences.pushNotifications !== false) {
-    await sendPushToUser(userId, { title, message, link, type });
+    await sendPushToUserAllChannels(userId, { title, message, link, type });
   }
 
   return notification;
@@ -167,7 +167,7 @@ for (const user of users) {
       })
       .map((u) => u.id);
 
-    await sendPushToUsers(pushUserIds, { title, message, link: options?.link, type });
+    await sendPushToUsersAllChannels(pushUserIds, { title, message, link: options?.link, type });
   }
 
   return notifications.length;

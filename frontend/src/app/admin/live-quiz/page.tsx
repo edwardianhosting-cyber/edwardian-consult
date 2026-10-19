@@ -1,4 +1,5 @@
 'use client';
+
 import { useEffect, useRef, useState } from 'react';
 import { FlipLeaderboard } from '@/components/FlipLeaderboard';
 import { FinalPodium } from '@/components/FinalPodium';
@@ -16,7 +17,7 @@ export default function HostQuiz() {
   const [counts, setCounts] = useState({ count: 0, total: 0 });
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [correct, setCorrect] = useState<number | null>(null);
-  const [step, setStep] = useState<'lobby'|'countdown'|'question'|'result'|'over'>('lobby');
+  const [step, setStep] = useState<'lobby' | 'countdown' | 'question' | 'result' | 'over'>('lobby');
   const [subjects, setSubjects] = useState<string[]>([]);
   const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
   const timerRef = useRef<any>(null);
@@ -51,7 +52,7 @@ export default function HostQuiz() {
         setStep('question');
         setQuestion(current || null);
         setQuestionTimeLeft(timer || 60);
-        setCounts({ count: pl?.filter((p:any)=>p.answered).length || 0, total: pl?.length || 0 });
+        setCounts({ count: pl?.filter((p: any) => p.answered).length || 0, total: pl?.length || 0 });
       } else if (state === 'GAME_OVER') {
         setStep('over');
         if (timerRef.current) clearInterval(timerRef.current);
@@ -92,18 +93,6 @@ export default function HostQuiz() {
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [pin]);
-
-  const autoNext = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    let secs = 5;
-    timerRef.current = setInterval(() => {
-      secs -= 1;
-      if (secs <= 0) {
-        clearInterval(timerRef.current);
-        timerRef.current = undefined;
-      }
-    }, 1000);
-  };
 
   const createRoom = async () => {
     try {
@@ -177,7 +166,7 @@ export default function HostQuiz() {
                       />
                       {s}
                     </label>
-                  )
+                  ))
                 )}
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Select one or more subjects; random questions will be drawn from them.</p>
@@ -186,7 +175,10 @@ export default function HostQuiz() {
             <p className="text-sm text-gray-600 dark:text-gray-300">Participants: {players.length}</p>
             <ul className="space-y-1 w-full">
               {players.map((p) => (
-                <li key={p.id} className="flex justify-between px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-blue-800 text-black dark:text-white"><span>{p.name}</span><span className="font-bold">{p.score}</span></li>
+                <li key={p.id} className="flex justify-between px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-blue-800 text-black dark:text-white">
+                  <span>{p.name}</span>
+                  <span className="font-bold">{p.score}</span>
+                </li>
               ))}
             </ul>
             <button className="bg-indigo-600 text-white rounded-lg px-6 py-2 font-semibold shadow hover:shadow-lg" disabled={players.length === 0} onClick={startGame}>Start Game</button>
@@ -216,12 +208,7 @@ export default function HostQuiz() {
         )}
 
         {step === 'result' && (
-          <FlipLeaderboard ref={flipRef}
-            players={leaderboard}
-            currentCorrect={correct}
-            questionIndex={questionIndex}
-            totalQuestions={20}
-          />
+          <FlipLeaderboard ref={flipRef} players={leaderboard} currentCorrect={correct} questionIndex={questionIndex} totalQuestions={20} />
         )}
 
         {step === 'over' && (
