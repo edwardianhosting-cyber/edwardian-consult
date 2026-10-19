@@ -1,9 +1,10 @@
 'use client';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import io from 'socket.io-client';
+import { useEffect, useRef, useState } from 'react';
 import { FlipLeaderboard } from '@/components/FlipLeaderboard';
 import { FinalPodium } from '@/components/FinalPodium';
 import type { FlipLeaderboardApi } from '@/components/FlipLeaderboard';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://edwardian-consult-f8bo.onrender.com/';
 
 export default function HostQuiz() {
   const [pin, setPin] = useState('');
@@ -20,48 +21,77 @@ export default function HostQuiz() {
   const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
   const timerRef = useRef<any>(null);
   const flipRef = useRef<FlipLeaderboardApi>(null);
-  const socket = useMemo(() => io(process.env.NEXT_PUBLIC_API_URL || 'https://edwardian-consult-f8bo.onrender.com/'), []);
+  const pollRef = useRef<any>(null);
 
   useEffect(() => {
-    socket.emit('host:create');
-    socket.emit('host:getSubjects');
-
-    socket.on('connect', () => {
-      socket.emit('host:getSubjects');
-    });
-
-    socket.on('room:created', (d: any) => {
-      setPin(d.pin);
-      setStep('lobby');
-    });
-    socket.on('room:players', (d: any) => setPlayers(d.players));
-    socket.on('game:countdown', (d: any) => { setStep('countdown'); setCountdown(d.seconds); setQuestionTimeLeft(0); setQuestion(null); });
-    socket.on('question:start', (d: any) => {
-      setStep('question'); setQuestion(d.question); setQuestionIndex(d.questionIndex || 0); setCounts({ count: 0, total: players.length }); setQuestionTimeLeft(d.timer || 60);
-      if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = setInterval(() => {
-        setQuestionTimeLeft((x) => (x > 1 ? x - 1 : 0));
-      }, 1000);
-    });
-    socket.on('response:count', (d: any) => setCounts(d));
-    socket.on('subjects:list', (d: any) => setAvailableSubjects(d.subjects || []));
-    socket.on('subjects:set', (d: any) => setSubjects(d.subjects || []));
-    socket.on('question:result', (d: any) => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      flipRef.current?.capturePositions();
-      setStep('result'); setCorrect(d.correct); setLeaderboard(d.leaderboard);
-      autoNext();
-    });
-    socket.on('game:over', (d: any) => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      setStep('over'); setLeaderboard(d.leaderboard);
-    });
-    socket.on('error', () => {});
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
-      socket.off('room:created').off('room:rejoined').off('room:players').off('game:countdown').off('question:start').off('response:count').off('subjects:set').off('question:result').off('game:over').off('error');
+      if (pollRef.current) clearInterval(pollRef.current);
     };
   }, []);
+
+  const pollRoom = async () => {
+    if (!pin) return;
+    try {
+      const res = await fetch(`${API_URL}api/live-quiz/room/${pin}`);
+      const data = await res.json();
+      if (!data.success) return;
+      const { state, players: pl, questionIndex, countdownSeconds, current, timer, subjects } = data;
+      setPlayers(pl || []);
+      setQuestionIndex(questionIndex || 0);
+      setSubjects(subjects || []);
+
+      if (state === 'LOBBY') {
+        setStep('lobby');
+      } else if (state === 'COUNTDOWN') {
+        setStep('countdown');
+        setCountdown(countdownSeconds || 0);
+        setQuestion(null);
+      } else if (state === 'QUESTION') {
+        setStep('question');
+        setQuestion(current || null);
+        setQuestionTimeLeft(timer || 60);
+        setCounts({ count: pl?.filter((p:any)=>p.answered).length || 0, total: pl?.length || 0 });
+      } else if (state === 'GAME_OVER') {
+        setStep('over');
+        if (timerRef.current) clearInterval(timerRef.current);
+      }
+    } catch {
+      // silent
+    }
+  };
+
+  const pollResults = async () => {
+    if (!pin) return;
+    try {
+      const res = await fetch(`${API_URL}api/live-quiz/room/${pin}`);
+      const data = await res.json();
+      if (!data.success) return;
+      if (data.state === 'RESULTS') {
+        setStep('result');
+        setCorrect(data.correct ?? null);
+        setLeaderboard(data.leaderboard || []);
+        setPlayers((data.leaderboard || []).map((p: any) => ({ id: p.id, name: p.name, score: p.score })));
+        setCounts({ count: data.leaderboard?.length || 0, total: data.leaderboard?.length || 0 });
+        if (timerRef.current) clearInterval(timerRef.current);
+      }
+    } catch {
+      // silent
+    }
+  };
+
+  useEffect(() => {
+    if (!pin) return;
+    pollRef.current = setInterval(() => {
+      pollRoom();
+      pollResults();
+    }, 2000);
+    pollRoom();
+    pollResults();
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [pin]);
 
   const autoNext = () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -75,18 +105,58 @@ export default function HostQuiz() {
     }, 1000);
   };
 
-  const addSubject = () => {};
-  const removeSubject = (s: string) => {};
+  const createRoom = async () => {
+    try {
+      const res = await fetch(`${API_URL}api/live-quiz/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (!data.success) return;
+      setPin(data.pin);
+      setAvailableSubjects(data.subjects || []);
+      setStep('lobby');
+    } catch {
+      // silent
+    }
+  };
 
-  const startGame = () => {
+  const startGame = async () => {
     if (!pin || players.length === 0) return;
-    socket.emit('host:startNext', { pin });
+    try {
+      await fetch(`${API_URL}api/live-quiz/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin }),
+      });
+    } catch {
+      // silent
+    }
+  };
+
+  const toggleSubject = (s: string) => {
+    const next = subjects.includes(s) ? subjects.filter((x) => x !== s) : [...subjects, s];
+    setSubjects(next);
+    if (pin) {
+      fetch(`${API_URL}api/live-quiz/subjects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin, subjects: next }),
+      }).catch(() => {});
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-blue-900 p-4 flex items-center justify-center">
       <div className="w-full max-w-2xl space-y-6">
-        {step === 'lobby' && (
+        {!pin && (
+          <div className="flex flex-col items-center gap-4 bg-white dark:bg-blue-900 shadow rounded p-6 border-2 border-gray-300 dark:border-gray-600 w-full max-w-md mx-auto transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer">
+            <h1 className="text-2xl font-bold text-black dark:text-white">Live Classroom Quiz Host</h1>
+            <button className="bg-indigo-600 text-white rounded-lg px-6 py-2 font-semibold shadow hover:shadow-lg" onClick={createRoom}>Create Room</button>
+          </div>
+        )}
+
+        {pin && step === 'lobby' && (
           <div className="flex flex-col items-center gap-4 bg-white dark:bg-blue-900 shadow rounded p-6 border-2 border-gray-300 dark:border-gray-600 w-full max-w-md mx-auto transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer">
             <h1 className="text-2xl font-bold text-black dark:text-white">Live Classroom Quiz Host</h1>
             <span className="text-xl font-mono font-bold text-black dark:text-white px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow bg-white dark:bg-blue-900">PIN: {pin}</span>
@@ -103,16 +173,12 @@ export default function HostQuiz() {
                         type="checkbox"
                         className="rounded text-indigo-600 focus:ring-indigo-500 border-gray-300"
                         checked={subjects.includes(s)}
-                        onChange={() => {
-                          const next = subjects.includes(s) ? subjects.filter((x) => x !== s) : [...subjects, s];
-                          setSubjects(next);
-                          socket.emit('host:setSubjects', { pin, subjects: next });
-                        }}
+                        onChange={() => toggleSubject(s)}
                       />
                       {s}
                     </label>
                   )
-                ))}
+                )}
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Select one or more subjects; random questions will be drawn from them.</p>
             </div>

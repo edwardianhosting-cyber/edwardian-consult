@@ -1,14 +1,16 @@
 'use client';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import io from 'socket.io-client';
+import { useEffect, useRef, useState } from 'react';
 import { FlipLeaderboard } from '@/components/FlipLeaderboard';
 import { FinalPodium } from '@/components/FinalPodium';
 import type { FlipLeaderboardApi } from '@/components/FlipLeaderboard';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://edwardian-consult-f8bo.onrender.com/';
 
 export default function PlayQuiz() {
   const [step, setStep] = useState<'join'|'waiting'|'countdown'|'question'|'result'|'over'>('join');
   const [pin, setPin] = useState('');
   const [name, setName] = useState('');
+  const [playerId, setPlayerId] = useState('');
   const [players, setPlayers] = useState<any[]>([]);
   const [question, setQuestion] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -21,8 +23,8 @@ export default function PlayQuiz() {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [animKey, setAnimKey] = useState(0);
   const timerRef = useRef<any>(null);
+  const pollRef = useRef<any>(null);
   const flipRef = useRef<FlipLeaderboardApi>(null);
-  const socket = useMemo(() => io(process.env.NEXT_PUBLIC_API_URL || 'https://edwardian-consult-f8bo.onrender.com/'), []);
 
   useEffect(() => {
     try {
@@ -39,48 +41,121 @@ export default function PlayQuiz() {
   }, []);
 
   useEffect(() => {
-    socket.on('joined', (d: any) => {
-      setStep(d.state === 'QUESTION' ? 'question' : 'waiting');
-      setPlayers(d.players || []);
-      setError(null);
-    });
-    socket.on('room:players', (d: any) => setPlayers(d.players));
-    socket.on('game:countdown', (d: any) => { setStep('countdown'); setTimeLeft(d.seconds); });
-    socket.on('question:start', (d: any) => {
-      setStep('question'); setQuestion(d.question); setQuestionIndex(d.questionIndex || 0); setTimeLeft(d.timer || 60);
-      setSelected(null); setRevealed(false); setTimerPop(false); setAnimKey(k => k + 1);
-      if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = setInterval(() => {
-        setTimeLeft((x) => {
-          if (x <= 1) { setTimerPop(false); return 0; }
-          setTimerPop(p => !p); return x - 1;
-        });
-      }, 1000);
-    });
-    socket.on('round:over', () => { setStep('waiting'); setQuestion(null); setCorrect(null); setSelected(null); setRevealed(false); if (timerRef.current) clearInterval(timerRef.current); });
-    socket.on('question:result', (d: any) => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      flipRef.current?.capturePositions();
-      setStep('result'); setCorrect(d.correct); setRevealed(true); setLeaderboard(d.leaderboard);
-      setPlayers(d.leaderboard.map((p: any) => ({ id: p.id, name: p.name, score: p.score })));
-    });
-    socket.on('game:over', (d: any) => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      setStep('over'); setLeaderboard(d.leaderboard);
-    });
-    socket.on('error', (d: any) => setError(d.message || 'Something went wrong'));
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
-      socket.off('joined').off('room:players').off('game:countdown').off('question:start').off('round:over').off('question:result').off('game:over').off('error');
+      if (pollRef.current) clearInterval(pollRef.current);
     };
   }, []);
 
-  const handleJoin = (e: React.FormEvent) => {
+  const pollRoom = async () => {
+    if (!pin) return;
+    try {
+      const res = await fetch(`${API_URL}api/live-quiz/room/${pin}`);
+      const data = await res.json();
+      if (!data.success) return;
+      const { state, players: pl, questionIndex, countdownSeconds, current, timer, subjects } = data;
+      setPlayers(pl || []);
+      setQuestionIndex(questionIndex || 0);
+
+      if (state === 'LOBBY') {
+        setStep('waiting');
+      } else if (state === 'COUNTDOWN') {
+        setStep('countdown');
+        setTimeLeft(countdownSeconds || 0);
+        setQuestion(null);
+      } else if (state === 'QUESTION') {
+        setStep('question');
+        setQuestion(current || null);
+        setTimeLeft(timer || 60);
+        setSelected(null);
+        setRevealed(false);
+        setAnimKey(k => k + 1);
+        if (timerRef.current) clearInterval(timerRef.current);
+        timerRef.current = setInterval(() => {
+          setTimeLeft((x) => {
+            if (x <= 1) { setTimerPop(false); return 0; }
+            setTimerPop(p => !p); return x - 1;
+          });
+        }, 1000);
+      } else if (state === 'RESULTS') {
+        // Results handled via separate poll of leaderboard below
+      } else if (state === 'GAME_OVER') {
+        setStep('over');
+        if (timerRef.current) clearInterval(timerRef.current);
+      }
+    } catch {
+      // silent
+    }
+  };
+
+  const pollResults = async () => {
+    if (!pin) return;
+    try {
+      const res = await fetch(`${API_URL}api/live-quiz/room/${pin}`);
+      const data = await res.json();
+      if (!data.success) return;
+      if (data.state === 'RESULTS') {
+        setStep('result');
+        setCorrect(data.correct ?? null);
+        setRevealed(true);
+        setLeaderboard(data.leaderboard || []);
+        setPlayers((data.leaderboard || []).map((p: any) => ({ id: p.id, name: p.name, score: p.score })));
+        if (timerRef.current) clearInterval(timerRef.current);
+      }
+    } catch {
+      // silent
+    }
+  };
+
+  useEffect(() => {
+    if (!pin) return;
+    pollRef.current = setInterval(() => {
+      pollRoom();
+      pollResults();
+    }, 2000);
+    pollRoom();
+    pollResults();
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [pin]);
+
+  const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
-    socket.emit('player:join', { pin, name });
+    try {
+      const res = await fetch(`${API_URL}api/live-quiz/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin, name }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setError(data.message || 'Failed to join');
+        return;
+      }
+      setPlayerId(data.playerId || '');
+      setStep(data.state === 'QUESTION' ? 'question' : 'waiting');
+      setPlayers(data.players || []);
+      setError(null);
+    } catch {
+      setError('Failed to join. Check your connection.');
+    }
   };
 
   const colors = ['#ff0808', '#0872d9', '#e5a900', '#198b08'];
+
+  const submitAnswer = async (idx: number) => {
+    if (!playerId) return;
+    try {
+      await fetch(`${API_URL}api/live-quiz/answer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin, answer: idx, playerId }),
+      });
+    } catch {
+      // silent
+    }
+  };
 
   if (step === 'join') {
     return (
@@ -137,11 +212,10 @@ export default function PlayQuiz() {
               {(question.options || []).map((o: any, i: number) => {
                 const isSelected = selected === i;
                 const isCorrect = i === correct;
-                const showSymbol = revealed && (isSelected || isCorrect);
                 const base = `w-full min-h-[75px] border-2 rounded-xl flex items-center justify-between gap-2 px-3 py-3 font-bold text-center transition-all duration-300 quiz-option animate-quiz-fade-in ${i % 2 === 0 ? 'animate-delay-1' : 'animate-delay-2'}`;
                 if (revealed && isCorrect) {
                   return (
-                    <button key={`${animKey}-${i}`} className={`${base} bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border-green-500 shadow-lg`} disabled={revealed} onClick={() => socket.emit('player:answer', { pin, answer: i })}>
+                    <button key={`${animKey}-${i}`} className={`${base} bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border-green-500 shadow-lg`} disabled={revealed} onClick={() => submitAnswer(i)}>
                       <span>{o}</span>
                       <span className="text-2xl opacity-100">✓</span>
                     </button>
@@ -149,14 +223,14 @@ export default function PlayQuiz() {
                 }
                 if (revealed && isSelected && !isCorrect) {
                   return (
-                    <button key={`${animKey}-${i}`} className={`${base} bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border-red-500`} disabled={revealed} onClick={() => socket.emit('player:answer', { pin, answer: i })}>
+                    <button key={`${animKey}-${i}`} className={`${base} bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border-red-500`} disabled={revealed} onClick={() => submitAnswer(i)}>
                       <span>{o}</span>
                       <span className="text-2xl opacity-100">✕</span>
                     </button>
                   );
                 }
                 return (
-                  <button key={`${animKey}-${i}`} className={`${base} border-gray-300 dark:border-gray-600 text-black dark:text-white bg-white dark:bg-blue-800 hover:scale-[1.02] hover:shadow-lg ${i === 0 ? 'border-red-500' : i === 1 ? 'border-blue-500' : i === 2 ? 'border-yellow-500' : 'border-green-500'}`} disabled={revealed || selected !== null} onClick={() => { setSelected(i); socket.emit('player:answer', { pin, answer: i }); }}>
+                  <button key={`${animKey}-${i}`} className={`${base} border-gray-300 dark:border-gray-600 text-black dark:text-white bg-white dark:bg-blue-800 hover:scale-[1.02] hover:shadow-lg ${i === 0 ? 'border-red-500' : i === 1 ? 'border-blue-500' : i === 2 ? 'border-yellow-500' : 'border-green-500'}`} disabled={revealed || selected !== null} onClick={() => { setSelected(i); submitAnswer(i); }}>
                     {o}
                   </button>
                 );

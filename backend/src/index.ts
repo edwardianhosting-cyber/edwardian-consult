@@ -45,6 +45,7 @@ import timetableRoutes from './routes/timetable.routes';
 import settingsRoutes from './routes/settings.routes';
 import uploadRoutes from './routes/upload.routes';
 import analyticsRoutes from './routes/analytics.routes';
+import liveQuizRoutes from './routes/live-quiz.routes';
 import { errorHandler } from './middleware/error.middleware';
 
 const app: Application = express();
@@ -263,6 +264,7 @@ app.use('/api/question-groups', questionGroupRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/live-quiz', liveQuizRoutes);
 
 // Database health check endpoint (tests DB connection and reconnects if needed)
 app.get('/api/db-health', async (req: Request, res: Response) => {
@@ -296,13 +298,8 @@ app.use((req: Request, res: Response) => {
 // Global error handler
 app.use(errorHandler);
 
-import { createServer } from 'http';
-import { initSocket } from './socket';
-const httpServer = createServer(app);
-initSocket(httpServer);
-
 // Start server
-httpServer.listen(PORT, HOST, () => {
+app.listen(PORT, HOST, () => {
   console.log(`
   ============================================
    Edwardian Educational Consult API
