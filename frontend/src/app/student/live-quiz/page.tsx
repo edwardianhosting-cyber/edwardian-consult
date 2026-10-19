@@ -4,7 +4,8 @@ import { FlipLeaderboard } from '@/components/FlipLeaderboard';
 import { FinalPodium } from '@/components/FinalPodium';
 import type { FlipLeaderboardApi } from '@/components/FlipLeaderboard';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://edwardian-consult-f8bo.onrender.com/';
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://edwardian-consult-f8bo.onrender.com/';
+const API_URL = rawApiUrl.replace(/\/+$/, '').replace(/\/api$/, '').replace(/\/+$/, '') + '/';
 
 export default function PlayQuiz() {
   const [step, setStep] = useState<'join'|'waiting'|'countdown'|'question'|'result'|'over'>('join');
