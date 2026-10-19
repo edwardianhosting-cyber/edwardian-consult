@@ -78,7 +78,7 @@ function getRoomState(room: Room) {
   };
 }
 
-router.post('/create', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+router.post('/create', async (req: Request, res: Response) => {
   let pin = makePin();
   while (rooms.has(pin)) pin = makePin();
   const room: Room = { pin, hostId: req.body.hostId || 'host', players: new Map(), nameToSocket: new Map(), state: 'LOBBY', used: new Set(), questionIds: [], questionCount: 0 };
@@ -123,7 +123,7 @@ router.get('/room/:pin', async (req: Request, res: Response) => {
   res.json({ success: true, ...getRoomState(room) });
 });
 
-router.post('/start', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+router.post('/start', async (req: Request, res: Response) => {
   const { pin } = req.body;
   const room = rooms.get(pin);
   if (!room) return res.status(404).json({ success: false, message: 'Room not found' });
@@ -173,7 +173,7 @@ router.get('/subjects', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/subjects', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+router.post('/subjects', async (req: Request, res: Response) => {
   const { pin, subjects } = req.body;
   const room = rooms.get(pin);
   if (!room) return res.status(404).json({ success: false, message: 'Room not found' });
