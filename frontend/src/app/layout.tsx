@@ -32,7 +32,6 @@ export const metadata: Metadata = {
     shortcut: '/logo.png',
     apple: '/logo.png',
   },
-  themeColor: '#0B3D91',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
