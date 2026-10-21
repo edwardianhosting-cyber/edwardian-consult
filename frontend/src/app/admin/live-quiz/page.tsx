@@ -5,7 +5,7 @@ import { FlipLeaderboard } from '@/components/FlipLeaderboard';
 import { FinalPodium } from '@/components/FinalPodium';
 import type { FlipLeaderboardApi } from '@/components/FlipLeaderboard';
 
-const API_URL = process.env.NEXT_PUBLIC_QUIZ_API_URL || 'http://localhost:8000/';
+const API_URL = process.env.NEXT_PUBLIC_QUIZ_API_URL || 'https://edwardianeducationalconsult.gt.tc/api/quiz/';
 
 export default function HostQuiz() {
   const [pin, setPin] = useState('');
