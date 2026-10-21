@@ -5,8 +5,7 @@ import { FlipLeaderboard } from '@/components/FlipLeaderboard';
 import { FinalPodium } from '@/components/FinalPodium';
 import type { FlipLeaderboardApi } from '@/components/FlipLeaderboard';
 
-const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://edwardian-consult-f8bo.onrender.com/';
-const API_URL = rawApiUrl.replace(/\/+$/, '').replace(/\/api$/, '').replace(/\/+$/, '') + '/';
+const API_URL = process.env.NEXT_PUBLIC_QUIZ_API_URL || 'http://localhost:8000/';
 
 export default function HostQuiz() {
   const [pin, setPin] = useState('');
@@ -18,7 +17,7 @@ export default function HostQuiz() {
   const [counts, setCounts] = useState({ count: 0, total: 0 });
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [correct, setCorrect] = useState<number | null>(null);
-  const [step, setStep] = useState<'lobby' | 'countdown' | 'question' | 'result' | 'over'>('lobby');
+  const [step, setStep] = useState<'lobby'|'countdown'|'question'|'result'|'over'>('lobby');
   const [subjects, setSubjects] = useState<string[]>([]);
   const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
   const timerRef = useRef<any>(null);
@@ -35,7 +34,7 @@ export default function HostQuiz() {
   const pollRoom = async () => {
     if (!pin) return;
     try {
-      const res = await fetch(`${API_URL}api/live-quiz/room/${pin}`);
+      const res = await fetch(`${API_URL}room.php?pin=${encodeURIComponent(pin)}`);
       const data = await res.json();
       if (!data.success) return;
       const { state, players: pl, questionIndex, countdownSeconds, current, timer, subjects } = data;
@@ -53,7 +52,7 @@ export default function HostQuiz() {
         setStep('question');
         setQuestion(current || null);
         setQuestionTimeLeft(timer || 60);
-        setCounts({ count: pl?.filter((p: any) => p.answered).length || 0, total: pl?.length || 0 });
+        setCounts({ count: pl?.filter((p:any)=>p.answered).length || 0, total: pl?.length || 0 });
       } else if (state === 'GAME_OVER') {
         setStep('over');
         if (timerRef.current) clearInterval(timerRef.current);
@@ -66,12 +65,12 @@ export default function HostQuiz() {
   const pollResults = async () => {
     if (!pin) return;
     try {
-      const res = await fetch(`${API_URL}api/live-quiz/room/${pin}`);
+      const res = await fetch(`${API_URL}results.php?pin=${encodeURIComponent(pin)}`);
       const data = await res.json();
       if (!data.success) return;
-      if (data.state === 'RESULTS') {
+      if (data.status === 'RESULTS' || data.status === 'GAME_OVER') {
         setStep('result');
-        setCorrect(data.correct ?? null);
+        setCorrect(null);
         setLeaderboard(data.leaderboard || []);
         setPlayers((data.leaderboard || []).map((p: any) => ({ id: p.id, name: p.name, score: p.score })));
         setCounts({ count: data.leaderboard?.length || 0, total: data.leaderboard?.length || 0 });
@@ -87,7 +86,7 @@ export default function HostQuiz() {
     pollRef.current = setInterval(() => {
       pollRoom();
       pollResults();
-    }, 2000);
+    }, 5000);
     pollRoom();
     pollResults();
     return () => {
@@ -97,7 +96,7 @@ export default function HostQuiz() {
 
   const createRoom = async () => {
     try {
-      const res = await fetch(`${API_URL}api/live-quiz/create`, {
+      const res = await fetch(`${API_URL}create.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -114,7 +113,7 @@ export default function HostQuiz() {
   const startGame = async () => {
     if (!pin || players.length === 0) return;
     try {
-      await fetch(`${API_URL}api/live-quiz/start`, {
+      await fetch(`${API_URL}start.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pin }),
@@ -128,7 +127,7 @@ export default function HostQuiz() {
     const next = subjects.includes(s) ? subjects.filter((x) => x !== s) : [...subjects, s];
     setSubjects(next);
     if (pin) {
-      fetch(`${API_URL}api/live-quiz/subjects`, {
+      fetch(`${API_URL}set-subjects.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pin, subjects: next }),
@@ -176,7 +175,7 @@ export default function HostQuiz() {
             <p className="text-sm text-gray-600 dark:text-gray-300">Participants: {players.length}</p>
             <ul className="space-y-1 w-full">
               {players.map((p) => (
-                <li key={p.id} className="flex justify-between px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-blue-800 text-black dark:text-white">
+                <li key={p.name} className="flex justify-between px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-blue-800 text-black dark:text-white">
                   <span>{p.name}</span>
                   <span className="font-bold">{p.score}</span>
                 </li>

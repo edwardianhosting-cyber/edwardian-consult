@@ -4,14 +4,13 @@ import { FlipLeaderboard } from '@/components/FlipLeaderboard';
 import { FinalPodium } from '@/components/FinalPodium';
 import type { FlipLeaderboardApi } from '@/components/FlipLeaderboard';
 
-const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://edwardian-consult-f8bo.onrender.com/';
-const API_URL = rawApiUrl.replace(/\/+$/, '').replace(/\/api$/, '').replace(/\/+$/, '') + '/';
+const API_URL = process.env.NEXT_PUBLIC_QUIZ_API_URL || 'http://localhost:8000/';
 
 export default function PlayQuiz() {
   const [step, setStep] = useState<'join'|'waiting'|'countdown'|'question'|'result'|'over'>('join');
   const [pin, setPin] = useState('');
   const [name, setName] = useState('');
-  const [playerId, setPlayerId] = useState('');
+  const [playerName, setPlayerName] = useState('');
   const [players, setPlayers] = useState<any[]>([]);
   const [question, setQuestion] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -35,9 +34,11 @@ export default function PlayQuiz() {
         const fullName = (userData?.fullName || 'Student').toString().trim();
         const firstName = fullName.split(' ')[0] || 'Student';
         setName(firstName);
+        setPlayerName(firstName);
       }
     } catch {
       setName('Student');
+      setPlayerName('Student');
     }
   }, []);
 
@@ -51,7 +52,7 @@ export default function PlayQuiz() {
   const pollRoom = async () => {
     if (!pin) return;
     try {
-      const res = await fetch(`${API_URL}api/live-quiz/room/${pin}`);
+      const res = await fetch(`${API_URL}room.php?pin=${encodeURIComponent(pin)}`);
       const data = await res.json();
       if (!data.success) return;
       const { state, players: pl, questionIndex, countdownSeconds, current, timer, subjects } = data;
@@ -78,11 +79,6 @@ export default function PlayQuiz() {
             setTimerPop(p => !p); return x - 1;
           });
         }, 1000);
-      } else if (state === 'RESULTS') {
-        // Results handled via separate poll of leaderboard below
-      } else if (state === 'GAME_OVER') {
-        setStep('over');
-        if (timerRef.current) clearInterval(timerRef.current);
       }
     } catch {
       // silent
@@ -92,12 +88,12 @@ export default function PlayQuiz() {
   const pollResults = async () => {
     if (!pin) return;
     try {
-      const res = await fetch(`${API_URL}api/live-quiz/room/${pin}`);
+      const res = await fetch(`${API_URL}results.php?pin=${encodeURIComponent(pin)}`);
       const data = await res.json();
       if (!data.success) return;
-      if (data.state === 'RESULTS') {
-        setStep('result');
-        setCorrect(data.correct ?? null);
+      if (data.status === 'RESULTS' || data.status === 'GAME_OVER') {
+        setStep(data.status === 'GAME_OVER' ? 'over' : 'result');
+        setCorrect(null);
         setRevealed(true);
         setLeaderboard(data.leaderboard || []);
         setPlayers((data.leaderboard || []).map((p: any) => ({ id: p.id, name: p.name, score: p.score })));
@@ -113,7 +109,7 @@ export default function PlayQuiz() {
     pollRef.current = setInterval(() => {
       pollRoom();
       pollResults();
-    }, 2000);
+    }, 5000);
     pollRoom();
     pollResults();
     return () => {
@@ -124,7 +120,7 @@ export default function PlayQuiz() {
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${API_URL}api/live-quiz/join`, {
+      const res = await fetch(`${API_URL}join.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pin, name }),
@@ -134,7 +130,6 @@ export default function PlayQuiz() {
         setError(data.message || 'Failed to join');
         return;
       }
-      setPlayerId(data.playerId || '');
       setStep(data.state === 'QUESTION' ? 'question' : 'waiting');
       setPlayers(data.players || []);
       setError(null);
@@ -146,12 +141,12 @@ export default function PlayQuiz() {
   const colors = ['#ff0808', '#0872d9', '#e5a900', '#198b08'];
 
   const submitAnswer = async (idx: number) => {
-    if (!playerId) return;
+    if (!playerName) return;
     try {
-      await fetch(`${API_URL}api/live-quiz/answer`, {
+      await fetch(`${API_URL}answer.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin, answer: idx, playerId }),
+        body: JSON.stringify({ pin, answer: idx, playerName, answerTimeMs: (60 - timeLeft) * 1000 }),
       });
     } catch {
       // silent
@@ -187,7 +182,7 @@ export default function PlayQuiz() {
             <p className="text-sm text-center font-medium">Participants: {players.length}</p>
             <ul className="space-y-1 w-full max-w-xs mx-auto">
               {players.map((p) => (
-                <li key={p.id} className="text-black dark:text-white text-center px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-blue-800">{p.name}</li>
+                <li key={p.name} className="text-black dark:text-white text-center px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-blue-800">{p.name}</li>
               ))}
             </ul>
           </div>
