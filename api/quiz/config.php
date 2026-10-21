@@ -1,11 +1,14 @@
 <?php
-// API Quiz Backend - MySQL Connection (XAMPP Local / Infinity Free)
-// Configure these values to match your MySQL database
-
+// API Quiz Backend - MySQL Connection (Infinity Free)
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Content-Type: application/json');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 // Force HTTPS
 if (!isset($_SERVER['HTTPS']) || $_SERVER['HTTPS'] !== 'on') {
@@ -13,19 +16,14 @@ if (!isset($_SERVER['HTTPS']) || $_SERVER['HTTPS'] !== 'on') {
     exit();
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
-
 // ============================================
 // DATABASE CONFIGURATION - EDIT THESE VALUES
 // ============================================
-$db_host     = 'localhost';      // MySQL host (localhost for XAMPP, sqlXXX.infinityfree.com for Infinity Free)
+$db_host     = 'sql312.infinityfree.com';      // MySQL host
 $db_port     = '3306';           // MySQL port
-$db_name     = 'edwardian_local'; // Your database name
-$db_user     = 'root';           // Your MySQL user (XAMPP default: root)
-$db_password = '';               // Your MySQL password (XAMPP default: empty)
+$db_name     = 'if0_42843408_games'; // Your database name
+$db_user     = 'if0_42843408';           // Your MySQL user
+$db_password = 'Olashprince1';               // Your MySQL password
 
 // Connect to MySQL using MySQLi
 $conn = mysqli_connect($db_host, $db_user, $db_password, $db_name);
