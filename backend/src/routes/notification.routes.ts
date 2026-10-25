@@ -205,7 +205,7 @@ router.post('/admin/send', authenticate, authorize('ADMIN'), async (req: Request
       priority,
       targetType,
       targetFilter,
-      channels,
+      channels = ['DASHBOARD', 'EMAIL'],
       scheduledAt,
     } = req.body;
 
@@ -247,9 +247,9 @@ router.post('/admin/send', authenticate, authorize('ADMIN'), async (req: Request
       type,
       { 
         priority, 
-        channels,
+        channels: channels?.length ? channels : ['DASHBOARD', 'EMAIL'],
         link: req.body.link || undefined,
-        emailPurpose: channels?.includes('EMAIL') ? (req.body.emailPurpose || 'REGISTRAR') : undefined,
+        emailPurpose: (channels?.includes('EMAIL') || !channels?.length) ? (req.body.emailPurpose || 'REGISTRAR') : undefined,
       }
     );
 

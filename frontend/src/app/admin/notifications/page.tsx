@@ -28,7 +28,7 @@ const defaultForm: NotificationForm = {
   priority: 'NORMAL',
   targetType: 'ALL',
   targetFilter: {},
-  channels: ['DASHBOARD'],
+  channels: ['DASHBOARD', 'EMAIL'],
   scheduledAt: '',
   link: '',
 };

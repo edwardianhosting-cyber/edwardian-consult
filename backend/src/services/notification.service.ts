@@ -144,11 +144,22 @@ export async function createBulkNotifications(
 
     const purpose = options?.emailPurpose || 'NOTIFICATION';
 
-for (const user of users) {
+    for (const user of users) {
+      const toEmail = user.email || user.studentEmail;
+      if (!toEmail) continue;
       await sendEmail({
-        to: user.email || user.studentEmail || '',
+        to: toEmail,
         subject: title,
-        html: `<p>${message}</p>${options?.link ? `<p><a href="${process.env.FRONTEND_URL}${options.link}">View Details</a></p>` : ''}`,
+        html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #8B6F47; padding: 20px; text-align: center;">
+            <h1 style="color: white; margin: 0;">Edwardian Educational Consult</h1>
+          </div>
+          <div style="padding: 30px; background: #ffffff;">
+            <h2 style="color: #333;">${title}</h2>
+            <p style="color: #666; font-size: 16px;">${message.replace(/\n/g, '<br/>')}</p>
+            ${options?.link ? `<a href="${process.env.FRONTEND_URL}${options.link}" style="display: inline-block; background: #8B6F47; color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; margin-top: 20px;">View Details</a>` : ''}
+          </div>
+        </div>`,
         purpose,
         name: user.fullName,
       });
