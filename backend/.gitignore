@@ -8,6 +8,10 @@ dist/
 .env
 .env.local
 
+# Firebase service account keys (never commit these)
+firebase-key.json
+firebase-service-account.json
+
 # IDE
 .vscode/
 .idea/

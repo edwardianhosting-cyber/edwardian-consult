@@ -1,31 +1,23 @@
 import admin, { cert } from 'firebase-admin';
-import path from 'path';
 
 let firebaseApp: admin.App | null = null;
 
 export function getFirebaseApp() {
   if (firebaseApp) return firebaseApp;
 
-  const serviceAccountPath = path.join(process.cwd(), 'firebase-service-account.json');
   let serviceAccount: any = null;
 
   try {
-    serviceAccount = require(serviceAccountPath);
-  } catch {
-    try {
-      serviceAccount = {
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      };
-    } catch {
-      console.warn('[firebase] Service account not found — FCM push disabled');
-      return null;
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
     }
+  } catch {
+    console.warn('[firebase] Failed to parse FIREBASE_SERVICE_ACCOUNT env var — FCM push disabled');
+    return null;
   }
 
   if (!serviceAccount) {
-    console.warn('[firebase] No service account configured — FCM push disabled');
+    console.warn('[firebase] No FIREBASE_SERVICE_ACCOUNT configured — FCM push disabled');
     return null;
   }
 
@@ -45,9 +37,12 @@ export function getFirebaseMessaging() {
 
 export function isFirebaseConfigured() {
   try {
-    require(path.join(process.cwd(), 'firebase-service-account.json'));
-    return true;
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+      JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      return true;
+    }
+    return false;
   } catch {
-    return Boolean(process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY);
+    return false;
   }
 }
