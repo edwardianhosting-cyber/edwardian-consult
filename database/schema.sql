@@ -7,6 +7,9 @@
 -- =====================================================================
 
 -- Drop in reverse-dependency order
+DROP TABLE IF EXISTS "DeviceToken" CASCADE;
+DROP TABLE IF EXISTS "PushSubscription" CASCADE;
+DROP TABLE IF EXISTS "MockExamAttempt" CASCADE;
 DROP TABLE IF EXISTS "TimetableEntry" CASCADE;
 DROP TABLE IF EXISTS "StudySchedule" CASCADE;
 DROP TABLE IF EXISTS "StudyTask" CASCADE;
@@ -121,39 +124,59 @@ CREATE TABLE "Question" (
   "topic"         TEXT,
   "difficulty"    TEXT NOT NULL DEFAULT 'MEDIUM',
   "text"          TEXT NOT NULL,
+  "textHtml"      TEXT,
   "imageUrl"      TEXT,
   "options"       JSONB NOT NULL,
+  "optionsHtml"   JSONB,
+  "formatting"    JSONB,
   "correctOption" INTEGER NOT NULL,
   "explanation"   TEXT,
+  "explanationHtml" TEXT,
   "isActive"      BOOLEAN NOT NULL DEFAULT true,
   "createdAt"     TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "updatedAt"     TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+  "updatedAt"     TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "groupType"     TEXT,
+  "groupId"       UUID,
+  "groupOrder"    INTEGER,
+  CONSTRAINT "Question_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "QuestionGroup" ("id") ON DELETE SET NULL
 );
 CREATE INDEX "Question_subject_idx" ON "Question" ("subject");
 CREATE INDEX "Question_examType_idx" ON "Question" ("examType");
 CREATE INDEX "Question_topic_idx" ON "Question" ("topic");
 CREATE INDEX "Question_year_idx" ON "Question" ("year");
+CREATE INDEX "Question_groupType_idx" ON "Question" ("groupType");
+CREATE INDEX "Question_groupId_idx" ON "Question" ("groupId");
+CREATE INDEX "Question_examType_subject_idx" ON "Question" ("examType", "subject");
 
 CREATE TABLE "Exam" (
-  "id"          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  "title"       TEXT NOT NULL,
-  "examType"    TEXT NOT NULL,
-  "subject"     TEXT NOT NULL,
-  "duration"    INTEGER NOT NULL,
-  "totalMarks"  INTEGER NOT NULL,
-  "isActive"    BOOLEAN NOT NULL DEFAULT true,
-  "isPublished" BOOLEAN NOT NULL DEFAULT false,
-  "publishedAt" TIMESTAMP(3),
-  "createdAt"   TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+  "id"                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  "title"               TEXT NOT NULL,
+  "examType"            TEXT NOT NULL,
+  "subject"             TEXT NOT NULL,
+  "duration"            INTEGER NOT NULL,
+  "totalMarks"          INTEGER NOT NULL,
+  "questionsPerSubject" INTEGER,
+  "isActive"            BOOLEAN NOT NULL DEFAULT true,
+  "isPublished"         BOOLEAN NOT NULL DEFAULT false,
+  "publishedAt"         TIMESTAMP(3),
+  "createdAt"           TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "isAttempt"           Boolean NOT NULL DEFAULT false,
+  "templateExamId"      TEXT
 );
 CREATE INDEX "Exam_examType_idx" ON "Exam" ("examType");
 CREATE INDEX "Exam_subject_idx" ON "Exam" ("subject");
 CREATE INDEX "Exam_isPublished_idx" ON "Exam" ("isPublished");
+CREATE INDEX "Exam_isAttempt_idx" ON "Exam" ("isAttempt");
+CREATE INDEX "Exam_templateExamId_idx" ON "Exam" ("templateExamId");
 
 CREATE TABLE "ExamQuestion" (
-  "examId"     UUID NOT NULL,
-  "questionId" UUID NOT NULL,
-  "order"      INTEGER NOT NULL,
+  "examId"             UUID NOT NULL,
+  "questionId"         UUID NOT NULL,
+  "order"              INTEGER NOT NULL,
+  "options"            JSONB,
+  "correctOption"      INTEGER,
+  "questionGroupId"    TEXT,
+  "questionGroupType"  TEXT,
   PRIMARY KEY ("examId", "questionId"),
   CONSTRAINT "ExamQuestion_examId_fkey"     FOREIGN KEY ("examId")     REFERENCES "Exam"     ("id") ON DELETE CASCADE,
   CONSTRAINT "ExamQuestion_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "Question" ("id") ON DELETE CASCADE
@@ -163,6 +186,7 @@ CREATE TABLE "CbtResult" (
   "id"             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   "userId"         UUID NOT NULL,
   "examId"         UUID,
+  "templateExamId" TEXT,
   "subject"        TEXT NOT NULL,
   "type"           TEXT NOT NULL DEFAULT 'PRACTICE',
   "score"          DOUBLE PRECISION NOT NULL,
@@ -181,6 +205,29 @@ CREATE TABLE "CbtResult" (
 CREATE INDEX "CbtResult_userId_idx" ON "CbtResult" ("userId");
 CREATE INDEX "CbtResult_examId_idx" ON "CbtResult" ("examId");
 CREATE INDEX "CbtResult_type_idx"    ON "CbtResult" ("type");
+CREATE INDEX "CbtResult_templateExamId_idx" ON "CbtResult" ("templateExamId");
+
+-- =====================================================================
+-- MOCK EXAM ATTEMPTS
+-- =====================================================================
+CREATE TABLE "MockExamAttempt" (
+  "id"              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  "userId"          UUID NOT NULL,
+  "examId"          UUID NOT NULL,
+  "isCompleted"     Boolean NOT NULL DEFAULT false,
+  "retakeRequested" Boolean NOT NULL DEFAULT false,
+  "retakeApproved"  Boolean NOT NULL DEFAULT false,
+  "startedAt"       TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "completedAt"     TIMESTAMP(3),
+  "createdAt"       TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"       TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "MockExamAttempt_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE,
+  CONSTRAINT "MockExamAttempt_examId_fkey" FOREIGN KEY ("examId") REFERENCES "Exam" ("id") ON DELETE CASCADE
+);
+CREATE UNIQUE INDEX "MockExamAttempt_userId_examId_key" ON "MockExamAttempt" ("userId", "examId");
+CREATE INDEX "MockExamAttempt_userId_idx" ON "MockExamAttempt" ("userId");
+CREATE INDEX "MockExamAttempt_examId_idx" ON "MockExamAttempt" ("examId");
+CREATE INDEX "MockExamAttempt_retakeApproved_idx" ON "MockExamAttempt" ("retakeApproved");
 
 -- =====================================================================
 -- PARENT / ENROLLMENT / FEEDBACK
@@ -886,3 +933,65 @@ CREATE TABLE "TimetableEntry" (
 );
 CREATE INDEX "TimetableEntry_day_idx"     ON "TimetableEntry" ("day");
 CREATE INDEX "TimetableEntry_examType_idx" ON "TimetableEntry" ("examType");
+
+-- =====================================================================
+-- PUSH NOTIFICATIONS / DEVICE TOKENS
+-- =====================================================================
+CREATE TABLE "PushSubscription" (
+  "id"        UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  "userId"    UUID NOT NULL,
+  "endpoint"  TEXT NOT NULL UNIQUE,
+  "p256dh"    TEXT NOT NULL,
+  "auth"      TEXT NOT NULL,
+  "userAgent" TEXT,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "PushSubscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE
+);
+CREATE INDEX "PushSubscription_userId_idx" ON "PushSubscription" ("userId");
+
+CREATE TABLE "DeviceToken" (
+  "id"         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  "userId"     UUID NOT NULL,
+  "token"      TEXT NOT NULL UNIQUE,
+  "platform"   TEXT NOT NULL,
+  "deviceId"   TEXT,
+  "appVersion" TEXT,
+  "createdAt"  TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"  TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "DeviceToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE
+);
+CREATE INDEX "DeviceToken_userId_idx" ON "DeviceToken" ("userId");
+CREATE INDEX "DeviceToken_platform_idx" ON "DeviceToken" ("platform");
+CREATE INDEX "DeviceToken_token_idx" ON "DeviceToken" ("token");
+
+-- =====================================================================
+-- ONLINE CLASSES
+-- =====================================================================
+CREATE TABLE "OnlineClass" (
+  "id"           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  "title"        TEXT NOT NULL,
+  "description"  TEXT,
+  "subject"      TEXT,
+  "thumbnailUrl" TEXT,
+  "classLink"    TEXT NOT NULL,
+  "scheduledAt"  TIMESTAMP(3),
+  "isActive"     BOOLEAN NOT NULL DEFAULT true,
+  "createdBy"    TEXT NOT NULL,
+  "createdAt"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX "OnlineClass_isActive_idx" ON "OnlineClass" ("isActive");
+CREATE INDEX "OnlineClass_scheduledAt_idx" ON "OnlineClass" ("scheduledAt");
+
+-- =====================================================================
+-- GAME SESSIONS
+-- =====================================================================
+CREATE TABLE "GameSession" (
+  "id"          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  "pin"         TEXT NOT NULL,
+  "status"      TEXT NOT NULL DEFAULT 'completed',
+  "questionIds" JSONB NOT NULL,
+  "createdAt"   TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
