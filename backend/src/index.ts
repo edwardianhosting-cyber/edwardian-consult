@@ -299,7 +299,7 @@ app.use((req: Request, res: Response) => {
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, HOST, () => {
+app.listen(PORT, HOST, async () => {
   console.log(`
   ============================================
    Edwardian Educational Consult API
@@ -308,6 +308,17 @@ app.listen(PORT, HOST, () => {
    Environment: ${process.env.NODE_ENV || 'development'}
    API URL: http://${HOST}:${PORT}/api
   ============================================
+
+  // Clear PostgreSQL cached prepared statements to prevent
+  // "cached plan must not change result type" errors after
+  // schema changes (e.g., DeviceToken UUID -> TEXT migration)
+  try {
+    const { prisma } = await import('./lib/prisma');
+    await prisma.$queryRawUnsafe('DEALLOCATE ALL');
+    console.log('[database] Cleared prepared statement cache');
+  } catch (err: any) {
+    console.warn('[database] Could not clear prepared statement cache:', err?.message || err);
+  }
   `);
 });
 
