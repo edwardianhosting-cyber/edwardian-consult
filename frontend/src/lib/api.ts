@@ -174,6 +174,12 @@ export const api = {
   getAvailableAssignments: () => fetchAPI('/assignments/available'),
   submitAssignment: (id: string, data: any) => fetchAPI(`/assignments/${id}/submit`, { method: 'POST', body: JSON.stringify(data) }),
   
+  // Device registration for mobile push notifications
+  registerDeviceToken: (data: { token: string; platform: string; deviceId?: string; appVersion?: string }) =>
+    fetchAPI('/notifications/register-device', { method: 'POST', body: JSON.stringify(data) }),
+  unregisterDeviceToken: (token: string) =>
+    fetchAPI('/notifications/unregister-device', { method: 'POST', body: JSON.stringify({ token }) }),
+  
   // Mock Exams
   getMockExams: () => fetchAPI('/cbt/mock-exams'),
   startMockExam: (examId: string) => fetchAPI(`/cbt/mock-exams/${examId}/start`, { method: 'POST' }),

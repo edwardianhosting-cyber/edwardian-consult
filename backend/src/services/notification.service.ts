@@ -272,7 +272,7 @@ export async function notifyWelcome(userId: string) {
     link: '/student/profile',
     entityType: 'USER',
     entityId: userId,
-    channels: ['DASHBOARD', 'EMAIL'],
+    channels: ['DASHBOARD', 'EMAIL', 'PUSH'],
     emailSubject: 'Welcome to Edwardian Educational Consult',
   });
 }
@@ -287,7 +287,7 @@ export async function notifyNewCBT(userId: string, cbtTitle: string, cbtId: stri
     link: `/student/cbt/${cbtId}`,
     entityType: 'CBT',
     entityId: cbtId,
-    channels: ['DASHBOARD', 'EMAIL'],
+    channels: ['DASHBOARD', 'EMAIL', 'PUSH'],
     emailSubject: `New CBT: ${cbtTitle}`,
   });
 }
@@ -302,7 +302,7 @@ export async function notifyCBTResult(userId: string, cbtTitle: string, score: n
     link: `/student/results/${resultId}`,
     entityType: 'RESULT',
     entityId: resultId,
-    channels: ['DASHBOARD', 'EMAIL'],
+    channels: ['DASHBOARD', 'EMAIL', 'PUSH'],
     emailSubject: `CBT Result: ${cbtTitle}`,
   });
 }
@@ -317,7 +317,7 @@ export async function notifyPaymentSuccess(userId: string, amount: number, refer
     link: '/student/wallet',
     entityType: 'PAYMENT',
     entityId: reference,
-    channels: ['DASHBOARD', 'EMAIL'],
+    channels: ['DASHBOARD', 'EMAIL', 'PUSH'],
     emailSubject: 'Payment Confirmation',
     smsContent: `Your payment of ₦${amount.toLocaleString()} has been confirmed. Ref: ${reference}`,
   });
@@ -333,7 +333,7 @@ export async function notifyPaymentFailed(userId: string, amount: number, refere
     link: '/student/payments',
     entityType: 'PAYMENT',
     entityId: reference,
-    channels: ['DASHBOARD', 'EMAIL', 'SMS'],
+    channels: ['DASHBOARD', 'EMAIL', 'SMS', 'PUSH'],
     emailSubject: 'Payment Failed',
     smsContent: `Your payment of ₦${amount.toLocaleString()} failed. Please try again or contact support.`,
   });
@@ -349,7 +349,7 @@ export async function notifyAdmissionUpdate(userId: string, status: string, inst
     link: '/student/dashboard',
     entityType: 'APPLICATION',
     entityId: applicationId,
-    channels: ['DASHBOARD', 'EMAIL'],
+    channels: ['DASHBOARD', 'EMAIL', 'PUSH'],
     emailSubject: 'Admission Update',
   });
 }
@@ -362,7 +362,7 @@ export async function notifyPostUTMEOpen(userId: string, institution: string, de
     type: 'ADMISSION',
     priority: 'URGENT',
     link: '/student/dashboard',
-    channels: ['DASHBOARD', 'EMAIL', 'SMS'],
+    channels: ['DASHBOARD', 'EMAIL', 'SMS', 'PUSH'],
     emailSubject: 'Post-UTME Registration Open',
     smsContent: `Post-UTME registration for ${institution} is now open. Register before ${deadline}.`,
   });
@@ -378,7 +378,7 @@ export async function notifyMockExamReminder(userId: string, examTitle: string, 
     link: `/student/mock/${examId}`,
     entityType: 'EXAM',
     entityId: examId,
-    channels: ['DASHBOARD', 'EMAIL', 'SMS'],
+    channels: ['DASHBOARD', 'EMAIL', 'SMS', 'PUSH'],
     emailSubject: `Reminder: ${examTitle}`,
     smsContent: `Reminder: Your mock exam "${examTitle}" is on ${date}.`,
   });
@@ -394,7 +394,7 @@ export async function notifyNewAssignment(userId: string, assignmentTitle: strin
     link: `/student/assignments/${assignmentId}`,
     entityType: 'ASSIGNMENT',
     entityId: assignmentId,
-    channels: ['DASHBOARD', 'EMAIL'],
+    channels: ['DASHBOARD', 'EMAIL', 'PUSH'],
     emailSubject: `New Assignment: ${assignmentTitle}`,
   });
 }
@@ -409,7 +409,7 @@ export async function notifyAssignmentGraded(userId: string, assignmentTitle: st
     link: `/student/assignments/${assignmentId}`,
     entityType: 'ASSIGNMENT',
     entityId: assignmentId,
-    channels: ['DASHBOARD', 'EMAIL'],
+    channels: ['DASHBOARD', 'EMAIL', 'PUSH'],
     emailSubject: `Assignment Graded: ${assignmentTitle}`,
   });
 }
@@ -424,7 +424,7 @@ export async function notifyNewMaterial(userId: string, materialTitle: string, s
     link: `/student/materials/${materialId}`,
     entityType: 'MATERIAL',
     entityId: materialId,
-    channels: ['DASHBOARD'],
+    channels: ['DASHBOARD', 'PUSH'],
   });
 }
 
@@ -438,7 +438,7 @@ export async function notifyCertificateGenerated(userId: string, programme: stri
     link: `/student/wallet`,
     entityType: 'CERTIFICATE',
     entityId: certificateId,
-    channels: ['DASHBOARD', 'EMAIL'],
+    channels: ['DASHBOARD', 'EMAIL', 'PUSH'],
     emailSubject: 'Your Certificate is Ready',
   });
 }
@@ -453,7 +453,7 @@ export async function notifyIdCardGenerated(userId: string) {
     link: '/student/id-card',
     entityType: 'ID_CARD',
     entityId: userId,
-    channels: ['DASHBOARD', 'EMAIL'],
+    channels: ['DASHBOARD', 'EMAIL', 'PUSH'],
     emailSubject: 'Your Student ID Card is Ready',
   });
 }
@@ -467,9 +467,9 @@ export async function notifyProfileCompletion(userId: string, completionPercent:
       type: 'PROFILE',
       priority: 'NORMAL',
       link: '/student/profile',
-      entityType: 'USER',
-      entityId: userId,
-      channels: ['DASHBOARD'],
+    entityType: 'USER',
+    entityId: userId,
+    channels: ['DASHBOARD', 'PUSH'],
     });
   }
 }
@@ -482,7 +482,7 @@ export async function notifyTimetableUpdate(userId: string, classTitle: string) 
     type: 'REMINDER',
     priority: 'IMPORTANT',
     link: '/student/timetable',
-    channels: ['DASHBOARD', 'EMAIL'],
+    channels: ['DASHBOARD', 'EMAIL', 'PUSH'],
     emailSubject: 'Timetable Update',
   });
 }
@@ -497,7 +497,7 @@ export async function notifyExamDeadlineReminder(userId: string, examTitle: stri
     link: `/student/cbt/${examId}`,
     entityType: 'EXAM',
     entityId: examId,
-    channels: ['DASHBOARD', 'EMAIL', 'SMS'],
+    channels: ['DASHBOARD', 'EMAIL', 'SMS', 'PUSH'],
     emailSubject: `Deadline Reminder: ${examTitle}`,
     smsContent: `Reminder: "${examTitle}" deadline is ${deadline}. Don't miss it!`,
   });
@@ -513,7 +513,7 @@ export async function notifyAnnouncement(userId: string, title: string, announce
     link: `/student/news/${announcementId}`,
     entityType: 'ANNOUNCEMENT',
     entityId: announcementId,
-    channels: ['DASHBOARD', 'EMAIL'],
+    channels: ['DASHBOARD', 'EMAIL', 'PUSH'],
     emailSubject: `New Announcement: ${title}`,
   });
 }

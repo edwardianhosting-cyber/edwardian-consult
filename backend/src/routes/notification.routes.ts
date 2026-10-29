@@ -247,7 +247,7 @@ router.post('/admin/send', authenticate, authorize('ADMIN'), async (req: Request
       type,
       { 
         priority, 
-        channels: channels?.length ? channels : ['DASHBOARD', 'EMAIL'],
+        channels: channels?.length ? channels : ['DASHBOARD', 'EMAIL', 'PUSH'],
         link: req.body.link || undefined,
         emailPurpose: (channels?.includes('EMAIL') || !channels?.length) ? (req.body.emailPurpose || 'REGISTRAR') : undefined,
       }
