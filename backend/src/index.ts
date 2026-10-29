@@ -308,6 +308,7 @@ app.listen(PORT, HOST, async () => {
    Environment: ${process.env.NODE_ENV || 'development'}
    API URL: http://${HOST}:${PORT}/api
   ============================================
+  `);
 
   // Clear PostgreSQL cached prepared statements to prevent
   // "cached plan must not change result type" errors after
@@ -319,7 +320,6 @@ app.listen(PORT, HOST, async () => {
   } catch (err: any) {
     console.warn('[database] Could not clear prepared statement cache:', err?.message || err);
   }
-  `);
 });
 
 export default app;
