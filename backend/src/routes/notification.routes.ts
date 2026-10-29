@@ -14,6 +14,7 @@ import {
   saveSubscription,
   removeSubscription,
   sendPushToUser,
+  sendPushToUserAllChannels,
   saveDeviceToken,
   removeDeviceToken,
   getDeviceTokensForUser,
@@ -94,7 +95,7 @@ router.get('/devices', authenticate, async (req: Request, res: Response) => {
 // Send a test push to the logged-in user's own devices (for verifying setup)
 router.post('/push/test', authenticate, async (req: Request, res: Response) => {
   try {
-    await sendPushToUser(req.user!.userId, {
+    await sendPushToUserAllChannels(req.user!.userId, {
       title: 'Test notification',
       message: 'Push notifications are set up correctly on this device.',
     });
