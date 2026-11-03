@@ -43,6 +43,7 @@ export default function NotificationsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -99,6 +100,10 @@ export default function NotificationsPage() {
     } catch (err: any) {
       console.error('Failed to mark all as read:', err);
     }
+  }
+
+  function closeDetail() {
+    setSelectedNotification(null);
   }
 
   function getNotificationIcon(type: string) {
@@ -189,6 +194,78 @@ export default function NotificationsPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
+      {/* Notification Detail Overlay */}
+      {selectedNotification && (
+        <div className="fixed inset-0 z-50 flex items-center justify-start p-4 bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-lg bg-white rounded-xl shadow-lg border border-gray-100 flex flex-col max-h-[80vh]">
+            <div className="p-6 border-b flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-900">Notification Details</h2>
+              <button
+                onClick={closeDetail}
+                className="p-2 hover:bg-gray-100 rounded-lg text-gray-500"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto">
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div className="flex-1">
+                  {!selectedNotification.isRead && <div className="w-2 h-2 bg-primary-600 rounded-full mb-2" />}
+                  <h3 className="font-bold text-gray-900 text-lg mb-1">{selectedNotification.title}</h3>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${getPriorityConfig(selectedNotification.priority).badge}`}>
+                    {selectedNotification.priority}
+                  </span>
+                  <span className="text-xs ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                    {selectedNotification.type}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {getPriorityConfig(selectedNotification.priority).icon}
+                </div>
+              </div>
+              {selectedNotification.message && (
+                <div className="mb-6">
+                  <p className="text-xs text-gray-500 uppercase font-medium mb-1">Message</p>
+                  <p className="text-gray-700 whitespace-pre-wrap">{selectedNotification.message}</p>
+                </div>
+              )}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-500">Date</span>
+                  <span className="text-sm font-medium text-gray-900">{formatDate(selectedNotification.createdAt)}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-500">Status</span>
+                  <span className={`text-sm font-medium ${selectedNotification.isRead ? 'text-green-600' : 'text-red-600'}`}>
+                    {selectedNotification.isRead ? 'Read' : 'Unread'}
+                  </span>
+                </div>
+                {selectedNotification.link && (
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-500">Link</span>
+                    <span className="text-sm text-primary-600 font-medium">{selectedNotification.link}</span>
+                  </div>
+                )}
+              </div>
+              {!selectedNotification.isRead && (
+                <button
+                  onClick={() => { markAsRead(selectedNotification.id); closeDetail(); }}
+                  className="mt-6 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 w-full text-center"
+                >
+                  Mark as read
+                </button>
+              )}
+              <button
+                onClick={closeDetail}
+                className="mt-4 px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 w-full text-center"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
@@ -284,11 +361,12 @@ export default function NotificationsPage() {
             return (
               <div
                 key={notification.id}
-                className={`bg-white rounded-xl border-2 p-5 transition-all hover:shadow-md ${
+                onClick={() => setSelectedNotification(notification)}
+                className="cursor-pointer bg-white rounded-xl border-2 p-5 transition-all hover:shadow-md ${
                   notification.isRead
                     ? 'border-gray-100'
                     : priorityConfig.border
-                } ${!notification.isRead ? priorityConfig.bg : ''}`}
+                } ${!notification.isRead ? priorityConfig.bg : ''}"
               >
                 <div className="flex items-start gap-4">
                   <div className="text-2xl flex-shrink-0">
@@ -332,7 +410,9 @@ export default function NotificationsPage() {
                       {notification.link && (
                         <Link
                           href={notification.link}
-                          onClick={() => !notification.isRead && markAsRead(notification.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!notification.isRead) markAsRead(notification.id)}
                           className="inline-flex items-center gap-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
                         >
                           {getActionLabel(notification.type)}
@@ -341,7 +421,9 @@ export default function NotificationsPage() {
                       )}
                       {!notification.isRead && (
                         <button
-                          onClick={() => markAsRead(notification.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markAsRead(notification.id)}}
                           className="inline-flex items-center gap-1 px-3 py-2 text-gray-600 hover:text-gray-900 text-sm font-medium"
                         >
                           <Check className="w-4 h-4" />

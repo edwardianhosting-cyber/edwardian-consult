@@ -33,8 +33,8 @@ const defaultSections: ContactSection[] = [
     order: 1,
     isActive: true,
     cards: [
-      { id: '1', title: 'Call Us', description: 'Speak directly with our support team', icon: 'Phone', link: 'tel:+2348000000000', linkType: 'phone', order: 1, isActive: true },
-      { id: '2', title: 'Hotline', description: '24/7 customer service line', icon: 'Phone', link: 'tel:+2348000000001', linkType: 'phone', order: 2, isActive: true },
+      { id: '1', title: 'Call Us', description: 'Speak directly with our support team', icon: 'Phone', link: 'tel:+2348137174918', linkType: 'phone', order: 1, isActive: true },
+      { id: '2', title: 'Hotline', description: '24/7 customer service line', icon: 'Phone', link: 'tel:+2348137174918', linkType: 'phone', order: 2, isActive: true },
     ],
   },
   {
@@ -44,8 +44,8 @@ const defaultSections: ContactSection[] = [
     order: 2,
     isActive: true,
     cards: [
-      { id: '3', title: 'WhatsApp Chat', description: 'Chat with us on WhatsApp', icon: 'MessageCircle', link: 'https://wa.me/2348000000000', linkType: 'whatsapp', order: 1, isActive: true },
-      { id: '4', title: 'WhatsApp Support', description: 'Get instant support', icon: 'MessageCircle', link: 'https://wa.me/2348000000001', linkType: 'whatsapp', order: 2, isActive: true },
+      { id: '3', title: 'WhatsApp Chat', description: 'Chat with us on WhatsApp', icon: 'MessageCircle', link: 'https://wa.me/2347055432059', linkType: 'whatsapp', order: 1, isActive: true },
+      { id: '4', title: 'WhatsApp Support', description: 'Get instant support', icon: 'MessageCircle', link: 'https://wa.me/2347055432059', linkType: 'whatsapp', order: 2, isActive: true },
     ],
   },
   {

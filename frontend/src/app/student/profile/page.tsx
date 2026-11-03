@@ -162,7 +162,12 @@ export default function ProfilePage() {
           <div className="relative">
             <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center overflow-hidden">
               {profile.avatar ? (
-                <img src={profile.avatar} alt={profile.fullName} className="w-20 h-20 rounded-full object-cover" />
+                <img
+                  src={profile.avatar}
+                  alt={profile.fullName}
+                  className="w-20 h-20 rounded-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
               ) : (
                 <span className="text-2xl font-bold text-primary-600">
                   {profile.fullName?.charAt(0) || 'S'}

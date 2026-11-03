@@ -16,6 +16,28 @@ interface SupportSettings {
   supportFaqs?: string;
 }
 
+const DEFAULT_WHATSAPP = '07055432059';
+const DEFAULT_PHONE = '+234 813 717 4918';
+const DEFAULT_EMAIL = 'support@edwardianeducationalconsult.com.ng';
+
+const DEFAULT_FAQS: FAQ[] = [
+  { question: 'How do I log in to my account?', answer: 'Use your registered email and password on the login screen. If you forgot your password, click "Forgot Password" to reset it.' },
+  { question: 'How do I take a CBT practice test?', answer: 'Go to the CBT Practice section from your dashboard, select your subject, and start the test. You can review answers and explanations after submitting.' },
+  { question: 'How do I view my results?', answer: 'Visit the Results section on your dashboard to see your CBT and mock exam scores, grades, and performance breakdown.' },
+  { question: 'How do I get my digital ID card?', answer: 'Visit the ID Card section from your dashboard. Your digital student ID card is generated automatically once your profile is complete.' },
+  { question: 'How do I update my profile picture?', answer: 'Go to My Profile, tap the camera icon on your profile picture circle, and upload a new photo.' },
+  { question: 'How do I check my admission status?', answer: 'Check the Dashboard or Admission section for your application status and updates from institutions.' },
+  { question: 'How do I contact support?', answer: 'You can email us, call +234 813 717 4918, or chat with us on WhatsApp at 07055432059.' },
+  { question: 'How do I access study materials?', answer: 'Go to the Study Materials section to browse notes and resources organized by subject and topic.' },
+  { question: 'How do I submit an assignment?', answer: 'Open the Assignments section, select the assignment, upload your work, and submit before the deadline.' },
+  { question: 'How do I enable push notifications?', answer: 'Allow notifications when prompted, or go to Settings to manage your notification preferences.' },
+  { question: 'What is my portal ID?', answer: 'Your portal ID is shown on your profile page and on your digital ID card. Use it to log in and verify your identity.' },
+  { question: 'How do I reset my password?', answer: 'On the login screen, click "Forgot Password" and follow the instructions sent to your registered email.' },
+  { question: 'Can I take mock exams?', answer: 'Yes. Go to the Mock Exams section to take timed mock tests and review your results with detailed explanations.' },
+  { question: 'How do I check the timetable?', answer: 'Open the Timetable section to view your class schedule and exam timetable.' },
+  { question: 'Is my data secure?', answer: 'Yes. All your personal and academic data is encrypted and stored securely on our servers.' },
+];
+
 export default function HelpPage() {
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
   const [showUserGuide, setShowUserGuide] = useState(false);
@@ -24,20 +46,35 @@ export default function HelpPage() {
   const [support, setSupport] = useState<SupportSettings>({
     supportEmail: 'support@edwardianeducationalconsult.com.ng',
     supportPhone: '+234 800 000 0000',
-    supportWhatsApp: 'https://wa.me/2348000000000',
+    supportWhatsApp: '07055432059',
     supportFaqs: '[]',
   });
   const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
+    fetchUser();
     fetchSupportSettings();
   }, []);
+
+  async function fetchUser() {
+    try {
+      const data = await api.getProfile();
+      const u = (data as any)?.data || data;
+      setUser(u);
+    } catch {
+      // fallback to localStorage
+      const stored = localStorage.getItem('user');
+      if (stored) setUser(JSON.parse(stored));
+    }
+  }
 
   async function fetchSupportSettings() {
     try {
       setLoading(true);
       setError(null);
-      const data = await api.getSettings();
+      // Use the public endpoint that does not require admin permissions
+      const data = await api.get('/settings/public/support');
       const settings: SupportSettings = (data as any)?.data || {};
       setSupport(settings);
       try {
@@ -48,17 +85,20 @@ export default function HelpPage() {
           setFaqs([]);
         }
       } catch {
-        setFaqs([]);
+        setFaqs(DEFAULT_FAQS);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load support settings');
+      setFaqs(DEFAULT_FAQS);
     } finally {
       setLoading(false);
     }
   }
 
   const emailHref = support.supportEmail ? `mailto:${support.supportEmail}` : undefined;
-  const whatsappHref = support.supportWhatsApp || 'https://wa.me/2348000000000';
+  const whatsappHref = `https://wa.me/${(support.supportWhatsApp || '07055432059').replace(/\D/g, '')}?text=${encodeURIComponent(
+    `Hello, I need assistance. My name is ${user?.fullName || 'a student'} (Portal ID: ${user?.portalId || 'N/A'}).`
+  )}`;
   const phoneHref = support.supportPhone ? `tel:${support.supportPhone.replace(/\s/g, '')}` : undefined;
 
   if (loading) {
@@ -182,32 +222,52 @@ export default function HelpPage() {
             </div>
             <div className="space-y-4 text-gray-700">
               <section>
-                <h3 className="font-semibold text-gray-900 mb-2">Getting Started</h3>
-                <p>Welcome to Edwardian Educational Consult. This guide will help you navigate the platform and make the most of your learning experience.</p>
+                <h3 className="font-semibold text-gray-900 mb-2">1. Getting Started</h3>
+                <p>Welcome to Edwardian Educational Consult! Register with your email, verify your account, and log in to access your student portal.</p>
               </section>
               <section>
-                <h3 className="font-semibold text-gray-900 mb-2">Dashboard</h3>
-                <p>Your dashboard shows your progress, upcoming exams, recent results, and important notifications all in one place.</p>
+                <h3 className="font-semibold text-gray-900 mb-2">2. Login & Your Profile</h3>
+                <p>Log in with your registered email and password. Go to "My Profile" to view and update your personal details, upload your profile picture, and check your Portal ID.</p>
               </section>
               <section>
-                <h3 className="font-semibold text-gray-900 mb-2">CBT Practice</h3>
-                <p>Go to the CBT Practice section to practice with past questions. Select a subject from your registered courses and start practicing.</p>
+                <h3 className="font-semibold text-gray-900 mb-2">3. CBT Practice Tests</h3>
+                <p>Go to "CBT Practice" from your dashboard, choose your registered subject, and start a timed practice test. Review your answers and explanations after submitting.</p>
               </section>
               <section>
-                <h3 className="font-semibold text-gray-900 mb-2">Study Materials</h3>
-                <p>Access study materials, notes, and resources organized by subject and topic to support your learning.</p>
+                <h3 className="font-semibold text-gray-900 mb-2">4. Mock Exams</h3>
+                <p>Take full-length mock exams under timed conditions to prepare for the real exam. View your mock results with a detailed performance breakdown.</p>
               </section>
               <section>
-                <h3 className="font-semibold text-gray-900 mb-2">Assignments</h3>
-                <p>View your assignments, submit completed work, and check your grades in the Assignments section.</p>
+                <h3 className="font-semibold text-gray-900 mb-2">5. Results & Performance</h3>
+                <p>Check your CBT and mock exam scores in the "Results" section. Use "Performance" to see your strengths, weaknesses, and overall averages.</p>
               </section>
               <section>
-                <h3 className="font-semibold text-gray-900 mb-2">Profile & Settings</h3>
-                <p>Update your profile information, manage notification preferences, and change your password in Settings.</p>
+                <h3 className="font-semibold text-gray-900 mb-2">6. Study Materials</h3>
+                <p>Access notes, past questions, and learning resources organized by subject and topic in the "Study Materials" section.</p>
               </section>
               <section>
-                <h3 className="font-semibold text-gray-900 mb-2">Need Help?</h3>
-                <p>If you need additional assistance, contact us via email at {support.supportEmail || 'support@edwardianeducationalconsult.com.ng'} or chat with us on WhatsApp.</p>
+                <h3 className="font-semibold text-gray-900 mb-2">7. Assignments</h3>
+                <p>View your posted assignments, download instructions, upload your completed work, and submit before the deadline in the "Assignments" section.</p>
+              </section>
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">8. Digital ID Card</h3>
+                <p>Your official digital Student ID Card is available in the "ID Card" section. Flip it to view the front and back. Keep it handy for verification.</p>
+              </section>
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">9. Timetable</h3>
+                <p>View your class schedule and exam timetable in the "Timetable" section so you never miss a session.</p>
+              </section>
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">10. Payments & Wallet</h3>
+                <p>Make payments for exams or services and track your transaction history in the "Payments" and "Wallet" sections.</p>
+              </section>
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">11. News & Notifications</h3>
+                <p>Stay updated with school announcements in "News & Updates" and view your personal notifications in the "Notifications" section.</p>
+              </section>
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">12. Contact Support</h3>
+                <p>Need extra help? Reach us via WhatsApp at 07055432059, call +234 813 717 4918, or email {support.supportEmail || DEFAULT_EMAIL}. When messaging, include your Portal ID so we can assist you faster.</p>
               </section>
             </div>
           </div>
