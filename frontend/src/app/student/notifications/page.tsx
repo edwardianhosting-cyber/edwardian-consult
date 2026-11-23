@@ -412,7 +412,7 @@ export default function NotificationsPage() {
                           href={notification.link}
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (!notification.isRead) markAsRead(notification.id)}
+                            if (!notification.isRead) markAsRead(notification.id); }}
                           className="inline-flex items-center gap-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
                         >
                           {getActionLabel(notification.type)}
