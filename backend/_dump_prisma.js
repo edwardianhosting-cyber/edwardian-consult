@@ -50,7 +50,7 @@ function log(msg) { fs.appendFileSync('C:\\edpg\\dump_progress.txt', msg + '\n')
          CASE WHEN is_nullable = 'NO' THEN ' NOT NULL' ELSE '' END,
          ', ') || ');' as ddl
        FROM information_schema.columns
-       WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+       WHERE table_schema = 'public'
        GROUP BY table_name`
     );
     for (const r of createSQL) {
