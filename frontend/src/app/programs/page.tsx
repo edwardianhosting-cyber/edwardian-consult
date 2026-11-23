@@ -16,9 +16,9 @@ interface Program {
   slug: string;
   description: string;
   features: string[];
-  icon: string;
+  icon?: string;
   imageUrl: string;
-  price: number;
+  price?: number;
   duration: string;
 }
 
@@ -190,7 +190,7 @@ export default function ProgramsPage() {
     return `₦${price.toLocaleString()}`;
   };
 
-  const renderIcon = (iconName: string, className: string) => {
+  const renderIcon = (iconName: string | undefined, className: string) => {
     const IconComponent = iconMap[iconName];
     if (IconComponent) {
       return <IconComponent className={className} />;
