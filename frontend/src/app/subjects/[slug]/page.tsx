@@ -30,7 +30,7 @@ export default function SubjectDetailPage({ params }: { params: { slug: string }
             <iframe
               src={`https://docs.google.com/gview?url=${encodeURIComponent(jambPdf)}&embedded=true`}
               style={{ width: '100%', height: '600px' }}
-              frameBorder={0}
+              frameBorder={0} sandbox="allow-scripts allow-same-origin allow-forms"
               title={`${title} JAMB Syllabus`}
             />
           </div>
@@ -40,7 +40,7 @@ export default function SubjectDetailPage({ params }: { params: { slug: string }
             <iframe
               src={`https://docs.google.com/gview?url=${encodeURIComponent(waecPdf)}&embedded=true`}
               style={{ width: '100%', height: '600px' }}
-              frameBorder={0}
+              frameBorder={0} sandbox="allow-scripts allow-same-origin allow-forms"
               title={`${title} WAEC Syllabus`}
             />
           </div>
