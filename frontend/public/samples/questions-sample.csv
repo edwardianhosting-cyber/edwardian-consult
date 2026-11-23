@@ -1,0 +1,5 @@
+subject,examType,institution,year,topic,difficulty,text,options,correctOption,explanation
+Mathematics,JAMB,UI,2024,Algebra,MEDIUM,What is the value of x in 2x + 5 = 15?,7|8|9|10,1,Subtract 5 from both sides then divide by 2
+English,WAEC,NECO,2023,Grammar, EASY,Choose the correct option: She ___ to school every day.,go|goes|going|gone,1,Third person singular present tense adds -es
+Physics,POST-UTME,UNILAG,2024,Electricity,HARD,Calculate the current in a circuit with 10V and 5Ω.,1A|2A|3A|4A,1,Ohm's Law: I = V/R = 10/5 = 2A
+Chemistry,JAMB,OAU,2023,Organic Chemistry,MEDIUM,What is the molecular formula of Ethane?,C2H4|C2H6|C3H8|CH4,1,Ethane has 2 carbons and 6 hydrogens

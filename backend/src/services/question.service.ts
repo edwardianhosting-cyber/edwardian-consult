@@ -1,0 +1,465 @@
+import { prisma } from '../lib/prisma';
+import { uploadToCloudinary } from './cloudinary.service';
+import * as XLSX from 'xlsx';
+
+export async function uploadQuestionImage(file: Express.Multer.File): Promise<{ url: string }> {
+  const result = await uploadToCloudinary(file.buffer, 'questions', 'image');
+
+  return {
+    url: result.url,
+  };
+}
+
+function parseQuestionRow(row: Record<string, any>, lineIndex: number, defaults?: {
+  subject?: string;
+  examType?: string;
+  institution?: string;
+  year?: number;
+}): { data?: any; error?: string } | null {
+  const subject = String(row.subject || row.Subject || row.SUBJECT || defaults?.subject || '').trim();
+  const examType = String(row.examType || row.ExamType || row.EXAM_TYPE || row['Exam Type'] || defaults?.examType || '').trim();
+  const institution = String(row.institution || row.Institution || row.INSTITUTION || defaults?.institution || '').trim();
+  const yearStr = String(row.year || row.Year || row.YEAR || defaults?.year || '').trim();
+  const text = String(row.question || row.text || row.Text || row.TEXT || '').trim();
+  const textHtml = String(row.textHtml || row.TextHtml || row.TEXT_HTML || row['Text HTML'] || '').trim() || undefined;
+  const options = String(row.options || row.Options || row.OPTIONS || '').trim();
+  const optionsHtmlRaw = row.optionsHtml || row.OptionsHtml || row.OPTIONS_HTML || row['Options HTML'];
+  const optionsHtml = optionsHtmlRaw ? String(optionsHtmlRaw).split('|').map((o: string) => o.trim()).filter(Boolean) : undefined;
+  const correctOptionRaw = row.answer ?? row.Answer ?? row.ANSWER ?? row.correctOption ?? row.CorrectOption ?? row.CORRECT_OPTION ?? row['Correct Option'] ?? '';
+  const correctOptionStr = String(correctOptionRaw).trim();
+  const explanation = String(row.explanation || row.Explanation || row.EXPLANATION || '').trim();
+  const explanationHtml = String(row.explanationHtml || row.ExplanationHtml || row.EXPLANATION_HTML || row['Explanation HTML'] || '').trim() || undefined;
+  const imageUrl = String(row.imageUrl || row.ImageUrl || row.IMAGE_URL || row['Image URL'] || '').trim();
+
+  // Parse formatting hints
+  let formatting: any = undefined;
+  if (row.formatting) {
+    try {
+      formatting = typeof row.formatting === 'string' ? JSON.parse(row.formatting) : row.formatting;
+    } catch {
+      formatting = undefined;
+    }
+  }
+
+  const finalSubject = subject || defaults?.subject;
+  const finalExamType = examType || defaults?.examType;
+  const finalInstitution = institution || defaults?.institution || '';
+  const finalYear = yearStr ? parseInt(yearStr, 10) : (defaults?.year || 0);
+
+  if (!finalSubject || !finalExamType || !finalYear || !text || !options || !correctOptionStr) {
+    return { error: `Row ${lineIndex}: missing required fields` };
+  }
+
+  const correctOption = parseInt(correctOptionStr, 10);
+
+  if (isNaN(correctOption)) {
+    return { error: `Row ${lineIndex}: invalid correctOption` };
+  }
+
+  const optionsArray = options.split('|').map((opt: string) => opt.trim()).filter(Boolean);
+  if (optionsArray.length < 2) {
+    return { error: `Row ${lineIndex}: options must be pipe-separated (e.g., A|B|C|D)` };
+  }
+
+  if (correctOption < 0 || correctOption >= optionsArray.length) {
+    return { error: `Row ${lineIndex}: correctOption must be between 0 and ${optionsArray.length - 1}` };
+  }
+
+  return {
+    data: {
+      subject: finalSubject,
+      examType: finalExamType,
+      institution: finalInstitution || undefined,
+      year: finalYear,
+      text,
+      textHtml: textHtml || text,
+      imageUrl: imageUrl || undefined,
+      options: optionsArray,
+      optionsHtml: optionsHtml || optionsArray,
+      formatting,
+      correctOption,
+      explanation: explanation || undefined,
+      explanationHtml: explanationHtml || explanation || undefined,
+      isActive: true,
+    },
+  };
+}
+
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const nextChar = line[i + 1];
+    
+    if (inQuotes) {
+      if (char === '"' && nextChar === '"') {
+        current += '"';
+        i++;
+      } else if (char === '"') {
+        inQuotes = false;
+      } else {
+        current += char;
+      }
+    } else {
+      if (char === '"') {
+        inQuotes = true;
+      } else if (char === ',') {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+  }
+  
+  result.push(current.trim());
+  return result;
+}
+
+function parseCSV(csvText: string): string[][] {
+  const lines: string[][] = [];
+  let currentLine: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < csvText.length; i++) {
+    const char = csvText[i];
+    const nextChar = csvText[i + 1];
+    
+    if (inQuotes) {
+      if (char === '"' && nextChar === '"') {
+        current += '"';
+        i++;
+      } else if (char === '"') {
+        inQuotes = false;
+      } else {
+        current += char;
+      }
+    } else {
+      if (char === '"') {
+        inQuotes = true;
+      } else if (char === ',') {
+        currentLine.push(current);
+        current = '';
+      } else if (char === '\n' || (char === '\r' && nextChar === '\n')) {
+        currentLine.push(current);
+        lines.push(currentLine);
+        currentLine = [];
+        current = '';
+        if (char === '\r') i++;
+      } else {
+        current += char;
+      }
+    }
+  }
+  
+  if (current || currentLine.length > 0) {
+    currentLine.push(current);
+    lines.push(currentLine);
+  }
+  
+  return lines;
+}
+
+export async function bulkCreateQuestionsFromCSV(csvText: string, defaults?: {
+  subject?: string;
+  examType?: string;
+  institution?: string;
+  year?: number;
+}): Promise<{ created: number; errors: string[] }> {
+  const rows = parseCSV(csvText).filter(row => row.some(cell => cell.trim() !== '') && !row[0]?.trim().startsWith('#'));
+  
+  if (rows.length === 0) {
+    return { created: 0, errors: ['No data rows found'] };
+  }
+  
+  const headers = rows[0].map(h => h.trim().toLowerCase());
+  const dataRows = rows.slice(1);
+  
+  let created = 0;
+  const errors: string[] = [];
+  
+  for (let i = 0; i < dataRows.length; i++) {
+    const values = dataRows[i];
+    const row: Record<string, string> = {};
+    
+    headers.forEach((header, index) => {
+      row[header] = values[index] || '';
+    });
+    
+    const parsed = parseQuestionRow(row, i + 2, defaults);
+    if (parsed?.error) {
+      errors.push(parsed.error);
+      continue;
+    }
+    
+    if (parsed?.data) {
+      try {
+        await prisma.question.create({ data: parsed.data });
+        created += 1;
+      } catch (error) {
+        errors.push(`Row ${i + 2}: ${(error as Error).message}`);
+      }
+    }
+  }
+  
+  return { created, errors };
+}
+
+export async function bulkCreateQuestionsFromExcel(buffer: Buffer, defaults?: {
+  subject?: string;
+  examType?: string;
+  institution?: string;
+  year?: number;
+}): Promise<{ created: number; errors: string[] }> {
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(worksheet);
+
+  let created = 0;
+  const errors: string[] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i] as Record<string, any>;
+    const parsed = parseQuestionRow(row, i + 2, defaults);
+
+    if (parsed?.error) {
+      errors.push(parsed.error);
+      continue;
+    }
+
+    if (parsed?.data) {
+      try {
+        await prisma.question.create({ data: parsed.data });
+        created += 1;
+      } catch (error) {
+        errors.push(`Row ${i + 2}: ${(error as Error).message}`);
+      }
+    }
+  }
+
+  return { created, errors };
+}
+
+function normalizeQuestionItem(item: Record<string, any>, index: number, defaults?: {
+  subject?: string;
+  examType?: string;
+  institution?: string;
+  year?: number;
+}): { data?: any; error?: string } | null {
+  const subject = String(item.subject || item.Subject || item.SUBJECT || defaults?.subject || '').trim();
+  const examType = String(item.examType || item.ExamType || item.EXAM_TYPE || item['Exam Type'] || defaults?.examType || '').trim();
+  const institution = String(item.institution || item.Institution || item.INSTITUTION || defaults?.institution || '').trim();
+  const yearStr = String(item.year || item.Year || item.YEAR || defaults?.year || '').trim();
+  const text = String(item.text || item.question || item.Text || item.TEXT || item.question || '').trim();
+  const textHtml = String(item.textHtml || item.TextHtml || item.TEXT_HTML || item['Text HTML'] || '').trim() || undefined;
+  const optionsRaw = item.options || item.Options || item.OPTIONS || '';
+  const options = Array.isArray(optionsRaw) ? optionsRaw : String(optionsRaw).split('|').map((o: string) => o.trim()).filter(Boolean);
+  const optionsHtmlRaw = item.optionsHtml || item.OptionsHtml || item.OPTIONS_HTML || item['Options HTML'];
+  const optionsHtml = Array.isArray(optionsHtmlRaw) ? optionsHtmlRaw : String(optionsHtmlRaw).split('|').map((o: string) => o.trim()).filter(Boolean) || undefined;
+  const correctOptionRaw = item.correctOption ?? item.correct_option ?? item.answer ?? item.Answer ?? item.CORRECT_OPTION ?? item['Correct Option'] ?? item.answer;
+  const explanation = String(item.explanation || item.Explanation || item.EXPLANATION || '').trim();
+  const explanationHtml = String(item.explanationHtml || item.ExplanationHtml || item.EXPLANATION_HTML || item['Explanation HTML'] || '').trim() || undefined;
+  const imageUrl = String(item.imageUrl || item.ImageUrl || item.IMAGE_URL || item['Image URL'] || '').trim();
+  const groupType = String(item.groupType || item.GroupType || item.GROUP_TYPE || item['Group Type'] || '').trim();
+  const groupId = String(item.groupId || item.GroupId || item.GROUP_ID || item['Group ID'] || '').trim() || undefined;
+  const groupOrderRaw = item.groupOrder ?? item.GroupOrder ?? item.GROUP_ORDER ?? item['Group Order'];
+  const groupOrder = groupOrderRaw !== undefined && groupOrderRaw !== null && String(groupOrderRaw).trim() !== '' ? parseInt(String(groupOrderRaw), 10) : undefined;
+
+  // Parse formatting hints
+  let formatting: any = undefined;
+  if (item.formatting) {
+    try {
+      formatting = typeof item.formatting === 'string' ? JSON.parse(item.formatting) : item.formatting;
+    } catch {
+      formatting = undefined;
+    }
+  }
+
+  const finalSubject = subject || defaults?.subject;
+  const finalExamType = examType || defaults?.examType;
+  const finalInstitution = institution || defaults?.institution || '';
+  const finalYear = yearStr ? parseInt(yearStr, 10) : (defaults?.year || 0);
+
+  const missing: string[] = [];
+  if (!finalSubject) missing.push('subject');
+  if (!finalExamType) missing.push('examType');
+  if (!finalYear) missing.push('year');
+  if (!text) missing.push('text/question');
+  if (options.length < 2) missing.push('options (at least 2 required)');
+  if (correctOptionRaw === undefined || correctOptionRaw === null || correctOptionRaw === '') missing.push('correctOption/answer');
+
+  if (missing.length > 0) {
+    return { error: `Question ${index + 1}: missing required fields: ${missing.join(', ')}` };
+  }
+
+  const correctOption = typeof correctOptionRaw === 'number' ? correctOptionRaw : parseInt(String(correctOptionRaw), 10);
+
+  if (isNaN(correctOption)) {
+    return { error: `Question ${index + 1}: invalid correctOption` };
+  }
+
+  if (correctOption < 0 || correctOption >= options.length) {
+    return { error: `Question ${index + 1}: correctOption must be between 0 and ${options.length - 1}` };
+  }
+
+  const data: any = {
+    subject: finalSubject,
+    examType: finalExamType,
+    institution: finalInstitution || undefined,
+    year: finalYear,
+    text,
+    textHtml: textHtml || text, // fallback to plain text
+    imageUrl: imageUrl || undefined,
+    options,
+    optionsHtml: optionsHtml || options, // fallback to plain text options
+    formatting,
+    correctOption,
+    explanation: explanation || undefined,
+    explanationHtml: explanationHtml || explanation || undefined,
+    isActive: true,
+  };
+
+  if (groupType) {
+    data.groupType = groupType;
+  }
+  if (groupId) {
+    data.groupId = groupId;
+  }
+  if (groupOrder !== undefined && !isNaN(groupOrder)) {
+    data.groupOrder = groupOrder;
+  }
+
+  return { data };
+}
+
+export async function bulkCreateQuestionsFromJSON(items: Record<string, any>[], defaults?: {
+  subject?: string;
+  examType?: string;
+  institution?: string;
+  year?: number;
+}): Promise<{ created: number; errors: string[] }> {
+  let created = 0;
+  const errors: string[] = [];
+
+  for (let i = 0; i < items.length; i++) {
+    const parsed = normalizeQuestionItem(items[i], i, defaults);
+    if (parsed?.error) {
+      errors.push(parsed.error);
+      continue;
+    }
+
+    if (parsed?.data) {
+      try {
+        await prisma.question.create({ data: parsed.data });
+        created += 1;
+      } catch (error) {
+        errors.push(`Question ${i + 1}: ${(error as Error).message}`);
+      }
+    }
+  }
+
+  return { created, errors };
+}
+
+export async function bulkCreateGroupsFromJSON(
+  groups: Array<{
+    group?: Record<string, any>;
+    questions?: Record<string, any>[];
+  }>,
+  defaults?: {
+    subject?: string;
+    examType?: string;
+    institution?: string;
+    year?: number;
+  }
+): Promise<{ createdGroups: number; createdQuestions: number; errors: string[] }> {
+  let createdGroups = 0;
+  let createdQuestions = 0;
+  const errors: string[] = [];
+
+  for (let i = 0; i < groups.length; i++) {
+    const rawGroup = groups[i];
+    const groupPayload = (rawGroup.group || rawGroup) as Record<string, any>;
+    const questions = Array.isArray(rawGroup.questions) ? rawGroup.questions : [];
+
+    const subject = String(groupPayload.subject || groupPayload.Subject || groupPayload.SUBJECT || defaults?.subject || '').trim();
+    const examType = String(groupPayload.examType || groupPayload.ExamType || groupPayload.EXAM_TYPE || groupPayload['Exam Type'] || defaults?.examType || '').trim();
+    const groupType = String(groupPayload.groupType || groupPayload.GroupType || groupPayload.GROUP_TYPE || groupPayload['Group Type'] || '').trim();
+    const title = String(groupPayload.title || groupPayload.Title || groupPayload.TITLE || groupPayload['Title'] || '').trim();
+    const titleHtml = String(groupPayload.titleHtml || groupPayload.TitleHtml || groupPayload.TITLE_HTML || groupPayload['Title HTML'] || '').trim() || undefined;
+    const instructions = String(groupPayload.instructions || groupPayload.Instructions || groupPayload.INSTRUCTIONS || groupPayload['Instructions'] || '').trim();
+    const instructionsHtml = String(groupPayload.instructionsHtml || groupPayload.InstructionsHtml || groupPayload.INSTRUCTIONS_HTML || groupPayload['Instructions HTML'] || '').trim() || undefined;
+    const passage = String(groupPayload.passage || groupPayload.Passage || groupPayload.PASSAGE || groupPayload['Passage'] || '').trim();
+    const passageHtml = String(groupPayload.passageHtml || groupPayload.PassageHtml || groupPayload.PASSAGE_HTML || groupPayload['Passage HTML'] || '').trim() || undefined;
+    const imageUrl = String(groupPayload.imageUrl || groupPayload.ImageUrl || groupPayload.IMAGE_URL || groupPayload['Image URL'] || '').trim();
+
+    const finalSubject = subject || defaults?.subject;
+    const finalExamType = examType || defaults?.examType;
+
+    if (!finalSubject || !finalExamType || !groupType) {
+      errors.push(`Group ${i + 1}: missing required fields: subject, examType, groupType`);
+      continue;
+    }
+
+    let questionGroup;
+    try {
+      questionGroup = await prisma.questionGroup.create({
+        data: {
+          subject: finalSubject,
+          examType: finalExamType,
+          groupType,
+          title: title || undefined,
+          titleHtml: titleHtml || title || undefined,
+          instructions: instructions || undefined,
+          instructionsHtml: instructionsHtml || instructions || undefined,
+          passage: passage || undefined,
+          passageHtml: passageHtml || passage || undefined,
+          imageUrl: imageUrl || undefined,
+          order: 0,
+          isActive: true,
+        },
+      });
+      createdGroups += 1;
+    } catch (error) {
+      errors.push(`Group ${i + 1}: ${(error as Error).message}`);
+      continue;
+    }
+
+    for (let j = 0; j < questions.length; j++) {
+      const q = questions[j];
+      const parsed = normalizeQuestionItem(q, j, {
+        ...defaults,
+        subject: finalSubject,
+        examType: finalExamType,
+      });
+
+      if (parsed?.error) {
+        errors.push(`Group ${i + 1} Question ${j + 1}: ${parsed.error}`);
+        continue;
+      }
+
+      if (parsed?.data) {
+        try {
+          await prisma.question.create({
+            data: {
+              ...parsed.data,
+              groupId: questionGroup.id,
+              groupType: questionGroup.groupType,
+              groupOrder: parsed.data.groupOrder ?? j + 1,
+            },
+          });
+          createdQuestions += 1;
+        } catch (error) {
+          errors.push(`Group ${i + 1} Question ${j + 1}: ${(error as Error).message}`);
+        }
+      }
+    }
+  }
+
+  return { createdGroups, createdQuestions, errors };
+}

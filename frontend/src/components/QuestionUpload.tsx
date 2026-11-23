@@ -1,0 +1,906 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Upload, FileText, Image, CheckCircle, Loader2, Download, Copy, Check } from 'lucide-react';
+import { api, API_BASE } from '@/lib/api';
+import { showSuccess, showError } from '@/lib/toast';
+
+interface Question {
+  id: string;
+  subject: string;
+  examType: string;
+  text: string;
+  imageUrl?: string;
+  year?: number;
+  topic?: string;
+}
+
+interface Institution {
+  id: string;
+  name: string;
+  abbreviation?: string;
+}
+
+interface QuestionUploadProps {
+  onUploaded?: () => void;
+}
+
+export default function QuestionUpload({ onUploaded }: QuestionUploadProps) {
+  const [bulkFile, setBulkFile] = useState<File | null>(null);
+  const [bulkResult, setBulkResult] = useState<{ created: number; errors: string[] } | null>(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [years, setYears] = useState<number[]>([]);
+  const [defaults, setDefaults] = useState({
+    subject: '',
+    examType: 'JAMB',
+    institution: '',
+    year: new Date().getFullYear(),
+    topic: '',
+  });
+  const [questionsJsonText, setQuestionsJsonText] = useState('');
+  const [groupsJsonText, setGroupsJsonText] = useState('');
+  const [uploadingQuestionsJson, setUploadingQuestionsJson] = useState(false);
+  const [uploadingGroupsJson, setUploadingGroupsJson] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
+  const [filterExamType, setFilterExamType] = useState('');
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [manualQuestion, setManualQuestion] = useState({
+    text: '',
+    options: ['', '', '', ''],
+    correctOption: 0,
+    explanation: '',
+    subject: '',
+    topic: '',
+    examType: 'JAMB',
+    imageUrl: '',
+  });
+  const [manualLoading, setManualLoading] = useState(false);
+  const [manualSuccess, setManualSuccess] = useState<string | null>(null);
+  const [manualError, setManualError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchQuestions();
+    fetchSubjects();
+    fetchInstitutions();
+    fetchYears();
+  }, []);
+
+  async function fetchQuestions() {
+    setLoadingQuestions(true);
+    try {
+      const params: Record<string, string> = { limit: '100' };
+      if (filterExamType) params.examType = filterExamType;
+      const response = await api.getAllQuestions(params);
+      setQuestions(response.data || []);
+    } catch (error) {
+      console.error('Failed to fetch questions:', error);
+    } finally {
+      setLoadingQuestions(false);
+    }
+  }
+
+  async function fetchSubjects() {
+    try {
+      const response = await api.getStudySubjects();
+      const data = response?.data || [];
+      const subjectNames = data.map((s: any) => s.name).filter(Boolean);
+      setSubjects(subjectNames);
+    } catch (error) {
+      console.error('Failed to fetch subjects:', error);
+      setSubjects([]);
+    }
+  }
+
+  async function fetchInstitutions() {
+    try {
+      const response = await api.getInstitutions();
+      setInstitutions(response.data || []);
+    } catch (error) {
+      console.error('Failed to fetch institutions:', error);
+    }
+  }
+
+  async function fetchYears() {
+    try {
+      const response = await api.getAllQuestions({ limit: '1000' });
+      const data = response.data || [];
+      const uniqueYears = Array.from(new Set(data.map((q: any) => q.year).filter(Boolean))) as number[];
+      setYears(uniqueYears);
+    } catch (error) {
+      console.error('Failed to fetch years:', error);
+      setYears([]);
+    }
+  }
+
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []);
+    setImageFiles(files);
+    setImageUrls([]);
+    setImagePreviews(files.map(file => URL.createObjectURL(file)));
+  }
+
+  async function handleImageUpload() {
+    if (!imageFiles.length) return;
+
+    setImageLoading(true);
+    try {
+      const uploaded = await Promise.all(
+        imageFiles.map(file => api.uploadQuestionImage(file))
+      );
+      const urls = uploaded.map(r => r.data.url);
+      setImageUrls(urls);
+    } catch (error: any) {
+      showError(error.message || 'Failed to upload some images');
+    } finally {
+      setImageLoading(false);
+    }
+  }
+
+  function copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text);
+    setCopiedUrl(text);
+    setTimeout(() => setCopiedUrl(null), 2000);
+  }
+
+  async function handleBulkUpload(e: React.FormEvent) {
+    e.preventDefault();
+    if (!bulkFile) return;
+
+    setBulkLoading(true);
+    setBulkResult(null);
+    try {
+      const response = await api.uploadQuestionsFile(bulkFile, {
+        subject: defaults.subject || undefined,
+        examType: defaults.examType || undefined,
+        institution: defaults.institution || undefined,
+        year: defaults.year || undefined,
+        topic: defaults.topic || undefined,
+      });
+      setBulkResult(response.data);
+      await fetchQuestions();
+      onUploaded?.();
+    } catch (error: any) {
+      showError(error.message || 'Failed to upload file');
+    } finally {
+      setBulkLoading(false);
+    }
+  }
+
+  async function handleQuestionsJsonUpload() {
+    if (!questionsJsonText.trim()) return;
+    setUploadingQuestionsJson(true);
+    setBulkResult(null);
+    try {
+      const questions = JSON.parse(questionsJsonText);
+      const response = await api.uploadQuestionsJson(Array.isArray(questions) ? questions : [questions], {
+        subject: defaults.subject || undefined,
+        examType: defaults.examType || undefined,
+        institution: defaults.institution || undefined,
+        year: defaults.year || undefined,
+        topic: defaults.topic || undefined,
+      });
+      setBulkResult(response.data);
+      setQuestionsJsonText('');
+      await fetchQuestions();
+      onUploaded?.();
+    } catch (error: any) {
+      showError(error.message || 'Failed to upload JSON questions');
+    } finally {
+      setUploadingQuestionsJson(false);
+    }
+  }
+
+  async function handleGroupsJsonUpload() {
+    if (!groupsJsonText.trim()) return;
+    setUploadingGroupsJson(true);
+    setBulkResult(null);
+    try {
+      const parsed = JSON.parse(groupsJsonText);
+      const groups = Array.isArray(parsed) ? parsed : [parsed];
+      const response = await api.uploadGroupsJson(groups, {
+        subject: defaults.subject || undefined,
+        examType: defaults.examType || undefined,
+        institution: defaults.institution || undefined,
+        year: defaults.year || undefined,
+        topic: defaults.topic || undefined,
+      });
+      setBulkResult(response.data);
+      setGroupsJsonText('');
+      await fetchQuestions();
+      onUploaded?.();
+    } catch (error: any) {
+      showError(error.message || 'Failed to upload grouped JSON');
+    } finally {
+      setUploadingGroupsJson(false);
+    }
+  }
+
+  async function downloadSample(format: 'csv' | 'excel') {
+    try {
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`${API_BASE}/questions/sample?format=${format}`, {
+        headers,
+      });
+
+      if (!res.ok) throw new Error('Failed to download sample');
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `questions-sample.${format === 'excel' ? 'xlsx' : 'csv'}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error: any) {
+      showError(error.message || 'Failed to download sample');
+    }
+  }
+
+  async function handleManualSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setManualLoading(true);
+    setManualSuccess(null);
+    setManualError(null);
+    try {
+      const payload = {
+        ...manualQuestion,
+        options: manualQuestion.options.filter(o => o.trim() !== ''),
+      };
+      const response = await api.createQuestion(payload);
+      setManualSuccess('Question added successfully.');
+      setManualQuestion({
+        text: '',
+        options: ['', '', '', ''],
+        correctOption: 0,
+        explanation: '',
+        subject: '',
+        topic: '',
+        examType: manualQuestion.examType,
+        imageUrl: '',
+      });
+      await fetchQuestions();
+      onUploaded?.();
+    } catch (error: any) {
+      setManualError(error.message || 'Failed to add question');
+    } finally {
+      setManualLoading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Question Settings */}
+      <div className="bg-white rounded-xl border p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Question Settings</h3>
+        <p className="text-xs text-gray-500 mb-4">These settings will be applied to all uploaded questions. The file should only contain question, options, answer, explanation, and optional imageUrl.</p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">University / Institution</label>
+             <select
+               value={defaults.institution}
+               onChange={(e) => setDefaults({ ...defaults, institution: e.target.value })}
+               className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+             >
+               <option value="">All Institutions</option>
+               {institutions.map((inst) => (
+                 <option key={inst.id} value={inst.name}>{inst.name}</option>
+               ))}
+             </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+            <select
+              value={defaults.subject}
+              onChange={(e) => setDefaults({ ...defaults, subject: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">Select subject...</option>
+              {subjects.map((subject) => (
+                <option key={subject} value={subject}>{subject}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Exam Type</label>
+            <select
+              value={defaults.examType}
+              onChange={(e) => setDefaults({ ...defaults, examType: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="JAMB">JAMB</option>
+              <option value="WAEC">WAEC</option>
+              <option value="NECO">NECO</option>
+              <option value="POST-UTME">POST-UTME</option>
+              <option value="MOCK">MOCK</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+            <select
+              value={defaults.year}
+              onChange={(e) => setDefaults({ ...defaults, year: parseInt(e.target.value) || 0 })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">Select year...</option>
+              {years.map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Topic (optional)</label>
+            <input
+              type="text"
+              value={defaults.topic}
+              onChange={(e) => setDefaults({ ...defaults, topic: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+              placeholder="e.g. Algebra"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* CSV / Excel Upload */}
+        <div className="bg-white rounded-xl border p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary-600" />
+            Upload Questions (CSV or Excel)
+          </h3>
+          <form onSubmit={handleBulkUpload} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Question File</label>
+              <input
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={(e) => setBulkFile(e.target.files?.[0] || null)}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+              />
+              <p className="text-xs text-gray-500 mt-1">Supported formats: CSV (.csv) or Excel (.xlsx, .xls)</p>
+            </div>
+            <button
+              type="submit"
+              disabled={!bulkFile || bulkLoading}
+              className="w-full btn-primary disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {bulkLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4" />
+                  Upload File
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-4 p-4 rounded-lg border border-gray-200 bg-gray-50">
+            <p className="text-sm font-medium text-gray-700 mb-2">Need a template?</p>
+<div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => downloadSample('csv')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-white border border-gray-200 rounded-lg hover:bg-primary-50"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Sample CSV
+              </button>
+              <button
+                type="button"
+                onClick={() => downloadSample('excel')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-white border border-gray-200 rounded-lg hover:bg-primary-50"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Sample Excel
+              </button>
+            </div>
+{(() => {
+              const sampleHelpText = 'File columns: question, textHtml, options, optionsHtml, answer, explanation, explanationHtml, formatting (JSON: {italic:[], underline:[], fillBlanks:[], bold:[]}), imageUrl (optional).';
+              const optionsHelpText = 'Options should be pipe-separated (e.g., Option A|Option B|Option C|Option D).';
+              const answerHelpText = 'Answer is the 0-based index of the correct option (0 = first option).';
+              const formattingHelpText = 'Use textHtml for <i>italic</i> (<i>), <u>underline</u> (<u>), <b>bold</b> (<b>). Use formatting for fill-in-the-blanks: {"fillBlanks":["____"]}.';
+
+              return (
+                <>
+                  <p className="text-xs text-gray-500 mt-2">{sampleHelpText}</p>
+                  <p className="text-xs text-gray-500">{optionsHelpText}</p>
+                  <p className="text-xs text-gray-500">{answerHelpText}</p>
+                  <p className="text-xs text-gray-500">{formattingHelpText}</p>
+                </>
+              );
+            })()}
+          </div>
+
+          {bulkResult && (
+            <div className="mt-4 p-4 rounded-lg border">
+              <div className="flex items-center gap-2 text-green-700 mb-2">
+                <CheckCircle className="h-5 w-5" />
+                <span className="font-medium">File Processed</span>
+              </div>
+              <p className="text-sm text-gray-600">Created: {bulkResult.created} questions</p>
+              {bulkResult.errors.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-sm font-medium text-red-700">Errors:</p>
+                  <ul className="text-xs text-red-600 list-disc list-inside max-h-40 overflow-y-auto">
+                    {bulkResult.errors.map((err, idx) => (
+                      <li key={idx}>{err}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* JSON Upload */}
+        <div className="bg-white rounded-xl border p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary-600" />
+            Upload Questions via JSON
+          </h3>
+          <p className="text-xs text-gray-500 mb-2">Paste a JSON array of questions. Only question fields are needed; settings above are applied automatically.</p>
+          <textarea
+            value={questionsJsonText}
+            onChange={(e) => setQuestionsJsonText(e.target.value)}
+            rows={10}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 mb-3 font-mono text-xs"
+            placeholder={`Paste JSON here, for example:\n[\n  {\n    "subject": "English Language",\n    "examType": "JAMB",\n    "year": 2024,\n    "text": "What is the capital of Nigeria?",\n    "options": ["Lagos", "Abuja", "Port Harcourt", "Kano"],\n    "correctOption": 1,\n    "explanation": "Abuja is the capital.",\n    "groupType": "STANDALONE"\n  }\n]`}
+          />
+          <div className="flex items-center gap-2 mb-3">
+            <button
+              type="button"
+              onClick={() => {
+                const sample = [
+                  {
+                    subject: 'English Language',
+                    examType: 'JAMB',
+                    year: 2024,
+                    text: 'Choose the correct option: She ___ to school every day.',
+                    options: ['go', 'goes', 'going', 'gone'],
+                    correctOption: 1,
+                    explanation: 'Third person singular present tense adds -es.',
+                    groupType: 'STANDALONE',
+                  },
+                  {
+                    subject: 'English Language',
+                    examType: 'JAMB',
+                    year: 2024,
+                    text: 'Identify the synonym of "happy".',
+                    options: ['sad', 'joyful', 'angry', 'tired'],
+                    correctOption: 1,
+                    explanation: '"Joyful" means the same as "happy".',
+                    groupType: 'STANDALONE',
+                  },
+                ];
+                setQuestionsJsonText(JSON.stringify(sample, null, 2));
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-white border border-gray-200 rounded-lg hover:bg-primary-50"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Load Sample JSON
+            </button>
+            <span className="text-xs text-gray-500">Click to load a sample into the textarea.</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleQuestionsJsonUpload}
+            disabled={uploadingQuestionsJson || !questionsJsonText.trim()}
+            className="w-full btn-primary disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {uploadingQuestionsJson ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Uploading JSON...
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4" />
+                Upload Questions JSON
+              </>
+            )}
+          </button>
+          <p className="text-xs text-gray-500 mt-2">Supported fields: text, options, correctOption, explanation, imageUrl, subject, examType, year, groupType, groupId, groupOrder.</p>
+        </div>
+
+        {/* Grouped JSON Upload */}
+        <div className="bg-white rounded-xl border p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary-600" />
+            Upload Question Groups via JSON
+          </h3>
+          <p className="text-xs text-gray-500 mb-2">Create comprehension/cloze groups in one upload. Each item can contain a <code className="bg-gray-100 px-1 rounded">group</code> block plus its <code className="bg-gray-100 px-1 rounded">questions</code> array.</p>
+          <textarea
+            value={groupsJsonText}
+            onChange={(e) => setGroupsJsonText(e.target.value)}
+            rows={14}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 mb-3 font-mono text-xs"
+            placeholder={`Paste grouped JSON here, for example:\n[\n  {\n    "group": {\n      "subject": "English Language",\n      "examType": "JAMB",\n      "groupType": "COMPREHENSION",\n      "title": "Reading Passage 1",\n      "instructions": "Read the passage and answer the questions below.",\n      "passage": "The passage text here..."\n    },\n    "questions": [\n      {\n        "text": "What is the main idea?",\n        "textHtml": "What is the <i>main idea</i>?",\n        "options": ["A", "B", "C", "D"],\n        "optionsHtml": ["A", "B", "<u>C</u>", "D"],\n        "correctOption": 1,\n        "explanation": "Because...",\n        "explanationHtml": "Because <b>...</b>",\n        "formatting": { "italic": ["main idea"], "underline": ["C"], "fillBlanks": [] }\n      }\n    ]\n  }\n]`}
+          />
+          <div className="flex items-center gap-2 mb-3">
+            <button
+              type="button"
+              onClick={() => {
+                const sample = [
+                  {
+                    group: {
+                      subject: 'English Language',
+                      examType: 'JAMB',
+                      groupType: 'COMPREHENSION',
+                      title: 'Reading Passage 1',
+                      instructions: 'Read the passage and answer the questions below.',
+                      passage: 'This is the comprehension passage text. It provides context for the following questions.',
+                    },
+                    questions: [
+                      {
+                        subject: 'English Language',
+                        examType: 'JAMB',
+                        year: 2024,
+                        text: 'What is the main idea of the passage?',
+                        textHtml: 'What is the <i>main idea</i> of the passage?',
+                        options: ['A', 'B', 'C', 'D'],
+                        optionsHtml: ['A', 'B', '<u>C</u>', 'D'],
+                        correctOption: 1,
+                        explanation: 'Option B best summarizes the passage.',
+                        explanationHtml: '<b>Option B</b> best summarizes the passage.',
+                        formatting: { italic: ['main idea'], underline: ['C'], fillBlanks: [] },
+                      },
+                      {
+                        subject: 'English Language',
+                        examType: 'JAMB',
+                        year: 2024,
+                        text: 'According to the passage, ...',
+                        textHtml: 'According to the passage, <u>the author suggests</u> that...',
+                        options: ['A', 'B', 'C', 'D'],
+                        optionsHtml: ['A', 'B', 'C', '<i>D</i>'],
+                        correctOption: 2,
+                        explanation: 'The passage states this explicitly.',
+                        explanationHtml: 'The passage states this <b>explicitly</b>.',
+                        formatting: { italic: ['D'], underline: ['the author suggests'], fillBlanks: [] },
+                      },
+                    ],
+                  },
+                ];
+                setGroupsJsonText(JSON.stringify(sample, null, 2));
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-white border border-gray-200 rounded-lg hover:bg-primary-50"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Load Sample Group JSON
+            </button>
+            <span className="text-xs text-gray-500">Click to load a sample group into the textarea.</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleGroupsJsonUpload}
+            disabled={uploadingGroupsJson || !groupsJsonText.trim()}
+            className="w-full btn-primary disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {uploadingGroupsJson ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Uploading Groups...
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4" />
+                Upload Groups JSON
+              </>
+            )}
+          </button>
+          <p className="text-xs text-gray-500 mt-2">Supported group fields: subject, examType, groupType, title, instructions, passage, imageUrl. Questions support the same fields as regular questions.</p>
+        </div>
+      </div>
+
+      {/* Image Upload */}
+      <div className="bg-white rounded-xl border p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Image className="h-5 w-5 text-primary-600" />
+          Upload Question Images
+        </h3>
+        <p className="text-xs text-gray-500 mb-3">Upload images and copy the generated URLs into the imageUrl column in your CSV/Excel or JSON.</p>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleImageChange}
+          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 mb-3"
+        />
+        {imagePreviews.length > 0 && (
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            {imagePreviews.map((src, idx) => (
+              <img key={idx} src={src} alt="" className="h-20 w-full object-cover rounded border" />
+            ))}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={handleImageUpload}
+          disabled={!imageFiles.length || imageLoading}
+          className="w-full btn-primary disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {imageLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Uploading...
+            </>
+          ) : (
+            <>
+              <Upload className="h-4 w-4" />
+              Upload Image{imageFiles.length > 1 ? 's' : ''}
+            </>
+          )}
+        </button>
+        {imageUrls.length > 0 && (
+          <div className="mt-4 p-4 rounded-lg border border-green-200 bg-green-50">
+            <div className="flex items-center gap-2 text-green-700 mb-2">
+              <CheckCircle className="h-5 w-5" />
+              <span className="font-medium">Image{imageUrls.length > 1 ? 's' : ''} Uploaded</span>
+            </div>
+            <p className="text-xs text-gray-500 mb-2">Copy these URLs into the imageUrl column in your CSV/Excel or JSON.</p>
+            <div className="space-y-1 max-h-40 overflow-y-auto">
+              {imageUrls.map((url, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <img src={url} alt="" className="h-8 w-8 object-cover rounded border" />
+                  <p className="text-xs text-gray-600 break-all flex-1">{url}</p>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(url)}
+                    className="p-1 text-gray-400 hover:text-primary-600"
+                    title="Copy URL"
+                  >
+                    {copiedUrl === url ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Manual Question Entry */}
+      <div className="bg-white rounded-xl border p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Manual Question Entry</h3>
+            <p className="text-xs text-gray-500">Add a single question directly to the Question Bank.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowManualForm(!showManualForm)}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium"
+          >
+            {showManualForm ? 'Close' : '+ Add Question'}
+          </button>
+        </div>
+
+        {showManualForm && (
+          <form onSubmit={handleManualSubmit} className="space-y-4">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Question Text</label>
+                <textarea
+                  value={manualQuestion.text}
+                  onChange={(e) => setManualQuestion({ ...manualQuestion, text: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="Enter the question text"
+                  required
+                />
+              </div>
+              {manualQuestion.options.map((option, idx) => (
+                <div key={idx}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Option {String.fromCharCode(65 + idx)}</label>
+                  <input
+                    type="text"
+                    value={option}
+                    onChange={(e) => {
+                      const updated = [...manualQuestion.options];
+                      updated[idx] = e.target.value;
+                      setManualQuestion({ ...manualQuestion, options: updated });
+                    }}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    placeholder={`Option ${String.fromCharCode(65 + idx)}`}
+                    required
+                  />
+                </div>
+              ))}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Correct Answer</label>
+                <select
+                  value={manualQuestion.correctOption}
+                  onChange={(e) => setManualQuestion({ ...manualQuestion, correctOption: parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                >
+                  {manualQuestion.options.map((_, idx) => (
+                    <option key={idx} value={idx}>{String.fromCharCode(65 + idx)}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                <select
+                  value={manualQuestion.subject}
+                  onChange={(e) => setManualQuestion({ ...manualQuestion, subject: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  required
+                >
+                  <option value="">Select subject...</option>
+                  {subjects.map((subject) => (
+                    <option key={subject} value={subject}>{subject}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Topic (optional)</label>
+                <input
+                  type="text"
+                  value={manualQuestion.topic}
+                  onChange={(e) => setManualQuestion({ ...manualQuestion, topic: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="e.g. Algebra"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Exam Type</label>
+                <select
+                  value={manualQuestion.examType}
+                  onChange={(e) => setManualQuestion({ ...manualQuestion, examType: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="JAMB">JAMB</option>
+                  <option value="WAEC">WAEC</option>
+                  <option value="NECO">NECO</option>
+                  <option value="POST-UTME">POST-UTME</option>
+                  <option value="MOCK">MOCK</option>
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Explanation (optional)</label>
+                <textarea
+                  value={manualQuestion.explanation}
+                  onChange={(e) => setManualQuestion({ ...manualQuestion, explanation: e.target.value })}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="Explain why the correct answer is correct"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Image URL (optional)</label>
+                <input
+                  type="url"
+                  value={manualQuestion.imageUrl}
+                  onChange={(e) => setManualQuestion({ ...manualQuestion, imageUrl: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="https://example.com/image.jpg"
+                />
+              </div>
+            </div>
+
+            {manualSuccess && (
+              <div className="p-3 rounded-lg border border-green-200 bg-green-50 text-green-700 text-sm">
+                {manualSuccess}
+              </div>
+            )}
+            {manualError && (
+              <div className="p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">
+                {manualError}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                disabled={manualLoading}
+                className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 font-medium"
+              >
+                {manualLoading ? 'Saving...' : 'Save Question'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setManualQuestion({
+                    text: '',
+                    options: ['', '', '', ''],
+                    correctOption: 0,
+                    explanation: '',
+                    subject: manualQuestion.subject,
+                    topic: manualQuestion.topic,
+                    examType: manualQuestion.examType,
+                    imageUrl: '',
+                  });
+                  setManualSuccess(null);
+                  setManualError(null);
+                }}
+                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-medium"
+              >
+                Clear
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+
+      {/* Recent Questions */}
+      <div className="bg-white rounded-xl border p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Recent Questions</h3>
+          <select
+            value={filterExamType}
+            onChange={(e) => {
+              setFilterExamType(e.target.value);
+              fetchQuestions();
+            }}
+            className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">All Exam Types</option>
+            <option value="JAMB">JAMB</option>
+            <option value="WAEC">WAEC</option>
+            <option value="NECO">NECO</option>
+            <option value="POST-UTME">POST-UTME</option>
+            <option value="MOCK">MOCK</option>
+          </select>
+        </div>
+        {loadingQuestions ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+          </div>
+        ) : questions.length === 0 ? (
+          <p className="text-sm text-gray-500 text-center py-8">No questions found. Upload a file to get started.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-2 px-3 font-medium text-gray-700">Exam Type</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-700">Subject</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-700">Question</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-700">Year</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-700">Topic</th>
+                  <th className="text-left py-2 px-3 font-medium text-gray-700">Image</th>
+                </tr>
+              </thead>
+              <tbody>
+                {questions.map((q) => (
+                  <tr key={q.id} className="border-b last:border-0">
+                    <td className="py-2 px-3 text-gray-900">
+                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-primary-50 text-primary-700">
+                        {q.examType}
+                      </span>
+                    </td>
+                    <td className="py-2 px-3 text-gray-900">{q.subject}</td>
+                    <td className="py-2 px-3 text-gray-600 max-w-md truncate">{q.text}</td>
+                    <td className="py-2 px-3 text-gray-600">{q.year || '-'}</td>
+                    <td className="py-2 px-3 text-gray-600">{q.topic || '-'}</td>
+                    <td className="py-2 px-3">
+                      {q.imageUrl ? (
+                        <img src={q.imageUrl} alt="" className="h-10 w-10 object-cover rounded border" />
+                      ) : (
+                        <span className="text-xs text-gray-400">None</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

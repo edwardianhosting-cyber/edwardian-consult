@@ -1,0 +1,21 @@
+{
+  "name": "Edwardian Educational Consult",
+  "short_name": "EEC",
+  "description": "Your pathway to academic excellence",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0B3D91",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "lang": "en-NG",
+  "dir": "ltr"
+}

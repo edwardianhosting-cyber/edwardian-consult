@@ -1,0 +1,43 @@
+# Render.com deployment configuration
+# Use this for Blueprint deployment or as reference for manual setup.
+#
+# To use: Create a new Web Service on Render with these settings:
+# - Build Command: npm install && npm run prisma:generate && npm run build
+# - Start Command: npm start
+# - Environment: Node
+
+# Or use this render.yaml for Blueprint deployment
+services:
+  - type: web
+    name: edward-ian-backend
+    env: node
+     buildCommand: npm install && npm run prisma:generate && npm run prisma:migrate && npm run build
+     startCommand: npx prisma migrate deploy && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false
+      - key: FROM_EMAIL
+        value: registrar@edwardianeducationalconsult.com.ng
+      - key: EMAIL_SERVICE_URL
+        value: https://email.edwardianeducationalconsult.com.ng/send
+      - key: EMAIL_WELCOME_URL
+        value: https://email.edwardianeducationalconsult.com.ng/send-welcome
+      - key: EMAIL_SERVICE_KEY
+        sync: false
+      - key: TERMII_API_KEY
+        sync: false
+      - key: TERMII_SENDER_ID
+        value: EdwardIan
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false

@@ -1,0 +1,10 @@
+{
+  "name": "schema-diff",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "pg": "^8.11.5"
+  }
+}

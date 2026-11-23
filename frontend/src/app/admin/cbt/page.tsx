@@ -1,0 +1,537 @@
+﻿'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ClipboardList, BookOpen, BarChart3, CheckCircle, XCircle, Clock, Eye, EyeOff, Trash2, Search, Printer, ChevronRight, Mail } from 'lucide-react';
+import { api } from '@/lib/api';
+import { showSuccess, showError } from '@/lib/toast';
+
+interface MockExam {
+  id: string;
+  title: string;
+  subject: string;
+  duration: number;
+  isPublished: boolean;
+  createdAt: string;
+  questions?: any[];
+}
+
+interface CBTResult {
+  id: string;
+  score: number;
+  subject: string;
+  type: string;
+  completedAt: string;
+  user?: {
+    fullName: string;
+    email: string;
+  };
+  exam?: {
+    title: string;
+    subject: string;
+    examType?: string;
+  };
+}
+
+interface CBTStats {
+  totalExams: number;
+  totalResults: number;
+  publishedExams: number;
+  draftExams: number;
+  averageScore: number;
+  recentResults: CBTResult[];
+}
+
+type View = 'home' | 'practice' | 'mock' | 'results';
+
+export default function AdminCBTPage() {
+  const router = useRouter();
+  const [view, setView] = useState<View>('home');
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<CBTStats | null>(null);
+  const [exams, setExams] = useState<MockExam[]>([]);
+  const [results, setResults] = useState<CBTResult[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [selectedMockExamId, setSelectedMockExamId] = useState<string>('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [orgName, setOrgName] = useState('Edwardian Educational Consult');
+
+  useEffect(() => {
+    fetchData();
+  }, [view, currentPage]);
+
+  async function fetchData() {
+    setLoading(true);
+    try {
+      if (view === 'home' || view === 'practice' || view === 'mock') {
+        const data = await api.adminGetCBTStats();
+        setStats(data.data);
+      }
+      if (view === 'mock') {
+        const data = await api.adminGetAllMockExams();
+        setExams(data.data || []);
+      }
+  if (view === 'practice' || view === 'mock') {
+        const data = await api.adminGetFilteredResults({
+          type: view === 'practice' ? 'PRACTICE' : 'MOCK',
+          examId: view === 'mock' ? selectedMockExamId || undefined : undefined,
+          sortBy: 'score',
+          page: currentPage,
+          limit: 50,
+          startDate,
+          endDate,
+        });
+        const response = data as any;
+        setResults(response.data?.results || []);
+        setTotalPages(response.data?.pagination?.totalPages || 1);
+      }
+      if (view === 'results') {
+        const data = await api.adminGetAllCBTResults(currentPage, 50);
+        setResults(data.data?.results || []);
+        setTotalPages(data.data?.pagination?.totalPages || 1);
+      }
+    } catch (error) {
+      console.error('Failed to fetch CBT data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handlePublish(id: string) {
+    setActionLoading(id);
+    try {
+      await api.publishMockExam(id);
+      fetchData();
+    } catch (error) {
+      console.error('Failed to publish:', error);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleUnpublish(id: string) {
+    setActionLoading(id);
+    try {
+      await api.unpublishMockExam(id);
+      fetchData();
+    } catch (error) {
+      console.error('Failed to unpublish:', error);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Are you sure you want to delete this mock exam? This action cannot be undone.')) return;
+    setActionLoading(id);
+    try {
+      await api.deleteMockExam(id);
+      fetchData();
+    } catch (error) {
+      console.error('Failed to delete:', error);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleSendResultEmail(resultId: string) {
+    setActionLoading(resultId);
+    try {
+      await api.adminSendMockResultEmail(resultId);
+      showSuccess('Email sent to student');
+    } catch (error: any) {
+      showError(error.message || 'Failed to send email');
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  function handlePrint() {
+    window.print();
+  }
+
+  const filteredResults = results;
+
+  const homeCards = [
+    {
+      title: 'Practice CBT',
+      description: 'View practice CBT performance and results across all students',
+      icon: BookOpen,
+      color: 'primary',
+      bgColor: 'bg-primary-100',
+      hoverBgColor: 'bg-primary-200',
+      textColor: 'text-primary-600',
+      onClick: () => setView('practice'),
+    },
+    {
+      title: 'Mock Exams',
+      description: 'Manage mock exams and review student performance',
+      icon: ClipboardList,
+      color: 'accent',
+      bgColor: 'bg-yellow-100',
+      hoverBgColor: 'bg-yellow-200',
+      textColor: 'text-yellow-600',
+      onClick: () => setView('mock'),
+    },
+    {
+      title: 'All Results',
+      description: 'Complete results overview with filtering and printing',
+      icon: BarChart3,
+      color: 'primary',
+      bgColor: 'bg-primary-100',
+      hoverBgColor: 'bg-primary-200',
+      textColor: 'text-primary-600',
+      onClick: () => setView('results'),
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">CBT Management</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Monitor and manage CBT examinations system-wide</p>
+        </div>
+        {view !== 'home' && (
+          <button
+            onClick={() => setView('home')}
+            className="px-4 py-2 bg-gray-100 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 text-sm font-medium"
+          >
+            Back to Home
+          </button>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        </div>
+      ) : (
+        <>
+          {/* Home View */}
+          {view === 'home' && (
+            <div className="grid sm:grid-cols-3 gap-6">
+              {homeCards.map((card, idx) => {
+                const Icon = card.icon;
+                return (
+                  <button
+                    key={idx}
+                    onClick={card.onClick}
+                    className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 p-6 text-left hover:shadow-lg hover:border-primary-200 transition-all group"
+                  >
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className={`w-12 h-12 bg-${card.color}-100 rounded-xl flex items-center justify-center group-hover:bg-${card.color}-200 transition-colors`}>
+                        <Icon className={`w-6 h-6 text-${card.color}-600`} />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900 dark:text-gray-100">{card.title}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{card.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center text-primary-600 text-sm font-medium">
+                      Open <ChevronRight className="w-4 h-4 ml-1" />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Practice/Mock Results View */}
+          {(view === 'practice' || view === 'mock') && (
+            <div className="printable-area space-y-4">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 p-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  {view === 'mock' && (
+                    <div className="sm:w-64">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mock Exam</label>
+                      <select
+                        value={selectedMockExamId}
+                        onChange={(e) => {
+                          setSelectedMockExamId(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
+                      >
+                        <option value="">All Mock Exams</option>
+                        {exams.map(exam => (
+                          <option key={exam.id} value={exam.id}>{exam.title}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="sm:w-48">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">From Date</label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
+                      className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+
+                  <div className="sm:w-48">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">To Date</label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
+                      className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+
+                  <div className="flex items-end">
+                    <button
+                      onClick={handlePrint}
+                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
+                    >
+                      <Printer className="w-4 h-4" />
+                      Print Results
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Print Header */}
+              <div className="hidden print:block mb-6">
+                <div className="text-center border-b pb-4 mb-4">
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{orgName}</h1>
+                  <p className="text-gray-600 dark:text-gray-400">CBT Results Report</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Generated on {new Date().toLocaleDateString()}</p>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 overflow-hidden">
+                {filteredResults.length === 0 ? (
+                  <div className="text-center py-16">
+                    <p className="text-gray-500 dark:text-gray-400">No results found</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+<thead>
+                          <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
+                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Student</th>
+                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Exam</th>
+                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Subject</th>
+                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Type</th>
+                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Score</th>
+                            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Date</th>
+                            <th className="text-right px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                            {filteredResults.map((result: any) => {
+                             const primarySubject = result.subjectEntries?.[0]?.subject || result.subject || '-';
+                             return (
+                              <tr key={result.id} className="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 font-medium">
+                                  {result.studentName || 'Unknown'}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{result.examTitle || result.exam?.title || '-'}</td>
+                                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{primarySubject}</td>
+                                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                  <span className="capitalize">{result.type?.toLowerCase() || 'mock'}</span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className={`text-sm font-medium px-2 py-1 rounded ${
+                                    result.aggregate >= 70 ? 'bg-green-100 text-green-700' :
+                                    result.aggregate >= 50 ? 'bg-yellow-100 text-yellow-700' :
+                                    'bg-red-100 text-red-700'
+                                  }`}>
+                                    {Math.round(result.aggregate || result.score)}%
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                  {new Date(result.completedAt).toLocaleDateString()}
+                               </td>
+                               <td className="px-4 py-3 text-right">
+                                 <div className="flex items-center justify-end gap-1">
+                                   {result.type === 'MOCK' ? (
+                                     <>
+                                       <button
+                                         onClick={() => router.push(`/admin/mock-results/${result.id}`)}
+                                         className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded"
+                                         title="View Attempt"
+                                       >
+                                         <Eye className="w-4 h-4" />
+                                       </button>
+                                       <button
+                                         onClick={() => handleSendResultEmail(result.id)}
+                                         disabled={actionLoading === result.id}
+                                         className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded disabled:opacity-50"
+                                         title="Send to Email"
+                                       >
+                                         <Mail className="w-4 h-4" />
+                                       </button>
+                                     </>
+                                   ) : (
+                                     <button
+                                       onClick={() => router.push(`/admin/results/review/${result.id}`)}
+                                       className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded"
+                                       title="View Result"
+                                     >
+                                       <Eye className="w-4 h-4" />
+                                     </button>
+                                   )}
+                                 </div>
+                               </td>
+                             </tr>
+                            )})}
+                        </tbody>
+                      </table>
+                    </div>
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between px-4 py-3 border-t">
+                        <button
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+                        >
+                          Previous
+                        </button>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Page {currentPage} of {totalPages}</span>
+                        <button
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                          className="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Mock Exams Management View */}
+          {view === 'mock' && (
+            <div className="space-y-4">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 p-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search mock exams..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 dark:border-gray-700 overflow-hidden">
+                {exams.length === 0 ? (
+                  <div className="text-center py-16">
+                    <p className="text-gray-500 dark:text-gray-400">No mock exams found</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
+                          <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Title</th>
+                          <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Subject</th>
+                          <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Duration</th>
+                          <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Questions</th>
+                          <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Status</th>
+                          <th className="text-right px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {exams.map((exam) => (
+                          <tr key={exam.id} className="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 font-medium">{exam.title}</td>
+                            <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{exam.subject}</td>
+                            <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{exam.duration} min</td>
+                            <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{exam.questions?.length || 0}</td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+                                exam.isPublished
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-gray-100 text-gray-700 dark:text-gray-300'
+                              }`}>
+                                {exam.isPublished ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                                {exam.isPublished ? 'Published' : 'Draft'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                {exam.isPublished ? (
+                                  <button
+                                    onClick={() => handleUnpublish(exam.id)}
+                                    disabled={actionLoading === exam.id}
+                                    className="p-1.5 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded disabled:opacity-50"
+                                    title="Unpublish"
+                                  >
+                                    <EyeOff className="w-4 h-4" />
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handlePublish(exam.id)}
+                                    disabled={actionLoading === exam.id}
+                                    className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded disabled:opacity-50"
+                                    title="Publish"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleDelete(exam.id)}
+                                  disabled={actionLoading === exam.id}
+                                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded disabled:opacity-50"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          .printable-area,
+          .printable-area *,
+          .printable-area * * {
+            visibility: visible !important;
+          }
+          .printable-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            display: block !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+          @page {
+            size: auto;
+            margin: 15mm;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
