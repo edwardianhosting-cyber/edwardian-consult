@@ -22,7 +22,6 @@ const navLinks = [
   { href: '/about', label: 'About', icon: BookOpen },
   { href: '/programs', label: 'Programs', icon: GraduationCap },
   { href: '/subjects', label: 'Subjects', icon: Book },
-  { href: '/courses', label: 'Courses', icon: Book },
   { href: '/jamb', label: 'JAMB Prep', icon: Book },
   { href: '/team', label: 'Our Team', icon: Users },
   { href: '/students', label: 'Students', icon: Users },

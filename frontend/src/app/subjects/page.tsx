@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookOpen, GraduationCap, Book, Users, Newspaper, Phone } from 'lucide-react';
@@ -69,9 +72,22 @@ const subjects = [
     icon: Users,
     description: 'Civic education covering citizens rights, duties, national values, and constitutional obligations.',
   },
+  { title: 'History', icon: Book, description: 'History covering Nigerian, African, and world history with emphasis on key events and civilizations.' },
+  { title: 'Geography', icon: BookOpen, description: 'Geography including physical, human, and regional geography with map reading skills.' },
+  { title: 'Accounting', icon: BookOpen, description: 'Financial accounting covering bookkeeping, final accounts, and financial statements.' },
+  { title: 'Commerce', icon: Users, description: 'Commerce covering trade, business organizations, and commercial law.' },
+  { title: 'French', icon: Book, description: 'French language covering grammar, comprehension, and oral communication.' },
+  { title: 'Yoruba', icon: Book, description: 'Yoruba language and literature covering grammar, prose, poetry, and culture.' },
+  { title: 'Igbo', icon: Book, description: 'Igbo language and literature covering grammar, prose, poetry, and culture.' },
+  { title: 'Hausa', icon: Book, description: 'Hausa language and literature covering grammar, prose, poetry, and culture.' },
+  { title: 'Technical Drawing', icon: BookOpen, description: 'Technical drawing covering projections, isometric views, and engineering graphics.' },
+  { title: 'Fine Arts', icon: Book, description: 'Fine arts covering drawing, painting, and art appreciation.' },
 ];
 
 export default function SubjectsPage() {
+  const [showForm, setShowForm] = useState(false);
+  const [name, setName] = useState('');
+  const [subject, setSubject] = useState('');
   return (
     <div className="min-h-screen bg-gray-50 relative">
       <FloatingNav />
@@ -95,42 +111,6 @@ export default function SubjectsPage() {
           <p className="max-w-3xl text-base text-white/90 sm:text-xl">
             <TypewriterText text="Comprehensive subject coverage for JAMB, WAEC, NECO, Post-UTME, and all major examinations." speed={90} className="text-white/90" />
           </p>
-          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 justify-center mt-6">
-            <Link
-              href="/register"
-              className="inline-flex items-center justify-center gap-2 rounded-xl transition-all hover:opacity-90 w-full sm:w-auto animate-button-enter"
-              style={{
-                backgroundColor: '#FFD700',
-                color: '#1a1a1a',
-                fontSize: '14px',
-                fontWeight: 700,
-                padding: '14px 28px',
-                boxShadow: '0 4px 15px rgba(255, 215, 0, 0.3)',
-                animationDelay: '0.6s',
-                opacity: 0,
-              }}
-            >
-              GET STARTED FREE
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/programs"
-              className="inline-flex items-center justify-center rounded-xl transition-all hover:bg-white/10 w-full sm:w-auto animate-button-enter"
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.08)',
-                color: '#ffffff',
-                fontSize: '14px',
-                fontWeight: 600,
-                padding: '14px 28px',
-                border: '1.5px solid rgba(255,255,255,0.4)',
-                backdropFilter: 'blur(4px)',
-                animationDelay: '0.8s',
-                opacity: 0,
-              }}
-            >
-              VIEW PROGRAMS
-            </Link>
-          </div>
         </div>
       </section>
       <SubjectMarquee />
@@ -159,24 +139,70 @@ export default function SubjectsPage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="relative py-20 bg-primary-800 overflow-hidden">
-          <AnimatedAcademicBackground />
+      {/* Can't find subject */}
+      <section className="py-20 lg:py-28 bg-primary-800 relative overflow-hidden">
+        <AnimatedAcademicBackground />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <h2 className="text-3xl lg:text-4xl font-bold text-white font-heading mb-4">
-            Ready to Start Learning?
+            Can't find your subject?
           </h2>
           <p className="text-lg text-primary-200 mb-8 max-w-2xl mx-auto">
-            Join thousands of students mastering their subjects with Edwardian Educational Consult.
+            Let us know which subject you need and we'll get back to you with the right resources and tutoring support.
           </p>
-          <Link
-            href="/register"
+          <button
+            onClick={() => setShowForm(true)}
             className="inline-flex items-center gap-2 px-8 py-4 bg-accent-500 text-primary-900 font-semibold rounded-xl hover:bg-accent-400 transition-all shadow-lg text-lg"
           >
-            BECOME A STUDENT FREE
-          </Link>
+            Message Us
+          </button>
         </div>
       </section>
+
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Can't find your subject?</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="Enter your name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                <input
+                  type="text"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="Enter the subject you need"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowForm(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <a
+                href={`https://wa.me/2347055432059?text=${encodeURIComponent(`Hello, my name is ${name} and I can't find ${subject} subject, can you help me with it please?`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 px-4 py-2 bg-accent-500 text-primary-900 font-semibold rounded-lg hover:bg-accent-400 transition-colors text-center"
+              >
+                Message Now
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
