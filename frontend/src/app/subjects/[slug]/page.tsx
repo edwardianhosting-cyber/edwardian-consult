@@ -19,10 +19,19 @@ export default function SubjectDetailPage({ params }: { params: { slug: string }
         <Link href="/subjects" className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 mb-6">
           <ArrowLeft className="h-4 w-4" /> Back to Subjects
         </Link>
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">{title}</h1>
-        <p className="text-gray-600 mb-8">
-          Syllabus and preparation materials for {title} will be available here.
-        </p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">{title}</h1>
+
+        <div className="space-y-10">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">JAMB Syllabus</h2>
+            <p className="text-gray-600">JAMB syllabus for {title} will be available here.</p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">WAEC Syllabus</h2>
+            <p className="text-gray-600">WAEC syllabus for {title} will be available here.</p>
+          </div>
+        </div>
       </section>
     </div>
   );
