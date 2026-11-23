@@ -28,7 +28,7 @@ export default function SubjectDetailPage({ params }: { params: { slug: string }
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">JAMB Syllabus</h2>
             <iframe
-              src={`https://docs.google.com/gview?url=${encodeURIComponent(jambPdf)}&embedded=true`}
+              src={`https://docs.google.com/gview?url=${encodeURIComponent(jambPdf)}&embedded=true&rm=minimal`}
               style={{ width: '100%', height: '600px' }}
               frameBorder={0} sandbox="allow-scripts allow-same-origin allow-forms"
               title={`${title} JAMB Syllabus`}
@@ -38,7 +38,7 @@ export default function SubjectDetailPage({ params }: { params: { slug: string }
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">WAEC Syllabus</h2>
             <iframe
-              src={`https://docs.google.com/gview?url=${encodeURIComponent(waecPdf)}&embedded=true`}
+              src={`https://docs.google.com/gview?url=${encodeURIComponent(waecPdf)}&embedded=true&rm=minimal`}
               style={{ width: '100%', height: '600px' }}
               frameBorder={0} sandbox="allow-scripts allow-same-origin allow-forms"
               title={`${title} WAEC Syllabus`}
@@ -49,3 +49,4 @@ export default function SubjectDetailPage({ params }: { params: { slug: string }
     </div>
   );
 }
+
