@@ -11,6 +11,9 @@ export default function SubjectDetailPage({ params }: { params: { slug: string }
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
 
+  const jambPdf = `https://your-domain.com/syllabus/${params.slug}-jamb.pdf`;
+  const waecPdf = `https://your-domain.com/syllabus/${params.slug}-waec.pdf`;
+
   return (
     <div className="min-h-screen bg-gray-50 relative">
       <FloatingNav />
@@ -24,12 +27,22 @@ export default function SubjectDetailPage({ params }: { params: { slug: string }
         <div className="space-y-10">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">JAMB Syllabus</h2>
-            <p className="text-gray-600">JAMB syllabus for {title} will be available here.</p>
+            <iframe
+              src={`https://docs.google.com/gview?url=${encodeURIComponent(jambPdf)}&embedded=true`}
+              style={{ width: '100%', height: '600px' }}
+              frameBorder={0}
+              title={`${title} JAMB Syllabus`}
+            />
           </div>
 
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">WAEC Syllabus</h2>
-            <p className="text-gray-600">WAEC syllabus for {title} will be available here.</p>
+            <iframe
+              src={`https://docs.google.com/gview?url=${encodeURIComponent(waecPdf)}&embedded=true`}
+              style={{ width: '100%', height: '600px' }}
+              frameBorder={0}
+              title={`${title} WAEC Syllabus`}
+            />
           </div>
         </div>
       </section>
