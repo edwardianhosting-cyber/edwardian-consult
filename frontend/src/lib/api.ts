@@ -424,6 +424,7 @@ adminGetMockResultDetail: (resultId: string) => fetchAPI(`/cbt/admin/mock-result
   
   // Admin - Settings
   getSettings: () => fetchAPI('/settings'),
+  getPublicSupport: () => fetchAPI('/settings/public/support'),
   updateSetting: (key: string, value: string) => fetchAPI(`/settings/${key}`, { method: 'PUT', body: JSON.stringify({ value }) }),
   bulkUpdateSettings: (data: Record<string, string>) => fetchAPI('/settings/bulk', { method: 'POST', body: JSON.stringify(data) }),
   getEnglishBlueprint: () => fetchAPI('/settings/english_exam_blueprint'),

@@ -10,6 +10,7 @@ interface Notice {
   content: string;
   type: string;
   isPinned: boolean;
+  isRead?: boolean;
   createdAt: string;
 }
 

@@ -157,13 +157,13 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
     if (!user || pushRegistered.current) return;
 
     const registerPushNotifications = async () => {
-      const isCapacitorApp = typeof window !== 'undefined' && !!window.Capacitor;
+      const isCapacitorApp = typeof window !== 'undefined' && !!(window as any).Capacitor;
       console.log('[push] Starting registration. User:', user.id, '| Capacitor available:', isCapacitorApp);
 
       // Path 1: Capacitor FCM (mobile app)
       if (isCapacitorApp) {
         try {
-          const PushNotifications = (window.Capacitor as any).Plugins?.PushNotifications;
+          const PushNotifications = ((window as any).Capacitor as any)?.Plugins?.PushNotifications;
           if (!PushNotifications) {
             console.warn('[push] PushNotifications plugin not available on Capacitor');
           } else {
@@ -235,7 +235,7 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
             pushRegistered.current = true;
           }
         } catch (err) {
-          console.warn('[push] Web push subscription failed:', err?.message || err);
+          console.warn('[push] Web push subscription failed:', (err as any)?.message || err);
         }
       }
 

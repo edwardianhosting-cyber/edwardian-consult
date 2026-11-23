@@ -74,7 +74,7 @@ export default function HelpPage() {
       setLoading(true);
       setError(null);
       // Use the public endpoint that does not require admin permissions
-      const data = await api.get('/settings/public/support');
+      const data = await api.getPublicSupport();
       const settings: SupportSettings = (data as any)?.data || {};
       setSupport(settings);
       try {
