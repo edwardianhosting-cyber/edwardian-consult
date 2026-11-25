@@ -34,11 +34,13 @@ export default function AboutPage() {
   const innovationImages = readImages('innovation', '/images/innovation/');
   const teamworkImages = readImages('teamwork', '/images/teamwork/');
   const historyImages = readImages('history', '/images/history/');
+  const storyImages = readImages('story', '/images/story/');
 
   const excellenceImgs = excellenceImages;
   const innovationImgs = innovationImages;
   const teamworkImgs = teamworkImages;
   const historyImgs = historyImages;
+  const storyImgs = storyImages;
 
   return (
     <>
@@ -88,7 +90,7 @@ export default function AboutPage() {
               <div className="relative md:ml-4">
                 <div className="absolute -inset-3 rotate-2 rounded-3xl bg-accent-400/30 shadow-xl" />
                 <div className="relative -rotate-1 overflow-hidden rounded-2xl border-8 border-white bg-white shadow-2xl transition-transform duration-300 hover:rotate-0">
-                  <StoryImageCarousel images={historyImgs} />
+                  <StoryImageCarousel images={storyImgs} />
                 </div>
               </div>
             </div>
@@ -180,13 +182,13 @@ export default function AboutPage() {
 
                 {/* Student-Centered */}
                 <div className="grid md:grid-cols-2 gap-8 items-center">
-                  <div className="relative md:ml-4 order-2 md:order-1">
+                  <div className="relative order-1 md:order-1">
                     <div className="absolute -inset-3 -rotate-2 rounded-3xl bg-accent-400/30 shadow-xl" />
                     <div className="relative -rotate-1 overflow-hidden rounded-2xl border-8 border-white bg-white shadow-2xl transition-transform duration-300 hover:rotate-0 h-[280px] sm:h-[320px]">
-                      <CreativeFrame images={excellenceImgs} />
+                      <CreativeFrame images={historyImgs} />
                     </div>
                   </div>
-                  <div className="bg-white rounded-xl p-8 border border-gray-100 transition-all duration-300 hover:shadow-xl hover:-translate-y-2 hover:scale-[1.02] cursor-pointer group order-1 md:order-2">
+                  <div className="bg-white rounded-xl p-8 border border-gray-100 transition-all duration-300 hover:shadow-xl hover:-translate-y-2 hover:scale-[1.02] cursor-pointer group order-2 md:order-2">
                     <div className="w-14 h-14 bg-primary-100 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
                       <Users className="w-7 h-7 text-primary-600" />
                     </div>

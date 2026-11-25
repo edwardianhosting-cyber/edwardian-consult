@@ -9,36 +9,12 @@ import AnimatedAcademicBackground from '@/components/public/AnimatedAcademicBack
 import TypewriterText from '@/components/public/TypewriterText';
 
 const jambFeatures = [
-  {
-    title: 'CBT Practice Tests',
-    icon: BookOpen,
-    description: 'Realistic computer-based testing environment that mimics the actual JAMB UTME exam.',
-  },
-  {
-    title: 'Past Questions Database',
-    icon: GraduationCap,
-    description: 'Access to years of JAMB past questions with detailed explanations and answers.',
-  },
-  {
-    title: 'Mock Examinations',
-    icon: Award,
-    description: 'Timed mock exams to assess your readiness and predict your JAMB score.',
-  },
-  {
-    title: 'Subject Coverage',
-    icon: Users,
-    description: 'All JAMB subjects covered: English, Mathematics, Physics, Chemistry, Biology, and more.',
-  },
-  {
-    title: 'Performance Analytics',
-    icon: Shield,
-    description: 'Detailed score breakdowns and weak topic identification after every practice test.',
-  },
-  {
-    title: '24/7 Access',
-    icon: Clock,
-    description: 'Study anytime, anywhere with our online JAMB preparation platform.',
-  },
+  { title: 'CBT Practice Tests', icon: BookOpen, image: '/cbt practice test.jpeg', description: 'Realistic computer-based testing environment that mimics the actual JAMB UTME exam.' },
+  { title: 'Past Questions Database', icon: GraduationCap, image: '/past question database.webp', description: 'Access to years of JAMB past questions with detailed explanations and answers.' },
+  { title: 'Mock Examinations', icon: Award, image: '/mock examinations.jpeg', description: 'Timed mock exams to assess your readiness and predict your JAMB score.' },
+  { title: 'Subject Coverage', icon: Users, image: '/subjects coverage.jpeg', description: 'All JAMB subjects covered: English, Mathematics, Physics, Chemistry, Biology, and more.' },
+  { title: 'Performance Analytics', icon: Shield, image: '/performance analytics.jfif', description: 'Detailed score breakdowns and weak topic identification after every practice test.' },
+  { title: '24/7 Access', icon: Clock, image: '/24-7 access.jfif', description: 'Study anytime, anywhere with our online JAMB preparation platform.' },
 ];
 
 export default function JambPage() {
@@ -65,42 +41,6 @@ export default function JambPage() {
           <p className="max-w-3xl text-base text-white/90 sm:text-xl">
             <TypewriterText text="Comprehensive JAMB/UTME preparation with CBT practice, past questions, and mock examinations." speed={90} className="text-white/90" />
           </p>
-          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 justify-center mt-6">
-            <Link
-              href="/register"
-              className="inline-flex items-center justify-center gap-2 rounded-xl transition-all hover:opacity-90 w-full sm:w-auto animate-button-enter"
-              style={{
-                backgroundColor: '#FFD700',
-                color: '#1a1a1a',
-                fontSize: '14px',
-                fontWeight: 700,
-                padding: '14px 28px',
-                boxShadow: '0 4px 15px rgba(255, 215, 0, 0.3)',
-                animationDelay: '0.6s',
-                opacity: 0,
-              }}
-            >
-              START JAMB PREP FREE
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/programs"
-              className="inline-flex items-center justify-center rounded-xl transition-all hover:bg-white/10 w-full sm:w-auto animate-button-enter"
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.08)',
-                color: '#ffffff',
-                fontSize: '14px',
-                fontWeight: 600,
-                padding: '14px 28px',
-                border: '1.5px solid rgba(255,255,255,0.4)',
-                backdropFilter: 'blur(4px)',
-                animationDelay: '0.8s',
-                opacity: 0,
-              }}
-            >
-              VIEW PROGRAMS
-            </Link>
-          </div>
         </div>
       </section>
       <SubjectMarquee />
@@ -109,12 +49,19 @@ export default function JambPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {jambFeatures.map((feature, index) => (
-              <div key={index} className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100">
-                <div className="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center mb-4">
-                  <feature.icon className="h-6 w-6 text-primary-600" />
+              <div key={index} className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group">
+                {feature.image && (
+                  <div className="relative w-full h-48 bg-gray-100 overflow-hidden">
+                    <Image src={feature.image} alt={feature.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+                  </div>
+                )}
+                <div className="p-6">
+                  <div className="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary-600 transition-colors">
+                    <feature.icon className="h-6 w-6 text-primary-600 group-hover:text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">{feature.title}</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">{feature.description}</p>
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">{feature.title}</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">{feature.description}</p>
               </div>
             ))}
           </div>
