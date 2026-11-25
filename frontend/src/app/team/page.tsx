@@ -10,7 +10,19 @@ import { AboutHeroCarousel } from '@/components/public/AboutImageCarousels';
 import AnimatedAcademicBackground from '@/components/public/AnimatedAcademicBackground';
 import TypewriterText from '@/components/public/TypewriterText';
 
-const teamMembers = [];
+interface TeamMember {
+  id: string;
+  name: string;
+  title: string;
+  role?: string;
+  image?: string;
+  bio?: string;
+  email?: string;
+  phone?: string;
+  socials?: { icon: any; href: string; label: string }[];
+}
+
+const teamMembers: TeamMember[] = [];
 
 const socialLinks = [
   { icon: Facebook, href: '#', label: 'Facebook' },
