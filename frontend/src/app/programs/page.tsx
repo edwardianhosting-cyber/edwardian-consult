@@ -307,13 +307,6 @@ export default function ProgramsPage() {
           <p className="text-lg text-primary-200 mb-8 max-w-2xl mx-auto">
             Join thousands of successful students who have achieved their academic dreams with us.
           </p>
-          <Link
-            href="/register"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-accent-500 text-primary-900 font-semibold rounded-xl hover:bg-accent-400 transition-all shadow-lg text-lg"
-          >
-            BECOME A STUDENT FREE
-            <ArrowRight className="h-5 w-5" />
-          </Link>
         </div>
       </section>
     </div>

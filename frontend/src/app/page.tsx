@@ -2,7 +2,8 @@ import Link from 'next/link';
 import HeroCarousel from '@/components/public/HeroCarousel';
 import FloatingNav from '@/components/public/FloatingNav';
 import SubjectMarquee from '@/components/public/SubjectMarquee';
-import { BookOpen, Award, Users, TrendingUp, CheckCircle, ArrowRight, Star, Shield, Clock, BookMarked } from 'lucide-react';
+import { BookOpen, Award, Users, TrendingUp, CheckCircle, ArrowRight, Star, Shield, Clock, BookMarked, Calendar, Newspaper } from 'lucide-react';
+import Image from 'next/image';
 import AnimatedCounter from '@/components/AnimatedCounter';
 import AnimatedFormulasBackground from '@/components/public/AnimatedFormulasBackground';
 import AnimatedAcademicBackground from '@/components/public/AnimatedAcademicBackground';
@@ -51,6 +52,54 @@ const features = [
   { title: '24/7 Access', description: 'Study anytime, anywhere with our online platform' },
 ];
 
+const testimonials = [
+  {
+    name: 'Grace Okafor',
+    school: 'Federal Govt College, Enugu',
+    quote: 'The CBT practice tests helped me score 310 in JAMB. I got admission into Medicine.',
+    result: 'JAMB 310',
+    avatar: '/logo.png',
+  },
+  {
+    name: 'Samuel Adebayo',
+    school: 'Methodist Boys High School, Lagos',
+    quote: 'Excellent WAEC preparation. The past questions and explanations made all the difference.',
+    result: 'WAEC 8 As',
+    avatar: '/logo.png',
+  },
+  {
+    name: 'Chinonso Nwosu',
+    school: 'Loyola Jesuit College, Abuja',
+    quote: 'Post-UTME training was comprehensive. I scored high and got my first choice university.',
+    result: 'Post-UTME Distinction',
+    avatar: '/logo.png',
+  },
+];
+
+const featuredNews = [
+  {
+    id: '1',
+    title: 'JAMB 2026 Registration Guidelines Released',
+    excerpt: 'The Joint Admissions and Matriculation Board has released the official registration guidelines for the 2026 UTME examination.',
+    category: 'JAMB',
+    date: '2026-08-20',
+  },
+  {
+    id: '2',
+    title: 'WAEC Releases 2026 Exam Timetable',
+    excerpt: 'The West African Examinations Council has published the official timetable for the 2026 WASSCE examination.',
+    category: 'WAEC',
+    date: '2026-08-18',
+  },
+  {
+    id: '3',
+    title: 'Top 10 Universities in Nigeria 2026',
+    excerpt: 'See the latest ranking of Nigerian universities based on academic excellence, research output, and graduate employability.',
+    category: 'Admission',
+    date: '2026-08-15',
+  },
+];
+
 export default function HomePage() {
   return (
     <>
@@ -97,7 +146,7 @@ export default function HomePage() {
               {programs.map((program, index) => (
                 <Link
                   key={index}
-                  href={`/programs/${program.slug}`}
+                  href="/programs"
                   className="bg-primary-700 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 border border-primary-600 group block"
                 >
                   <div className="w-14 h-14 bg-primary-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-accent-500 transition-colors border border-primary-500">
@@ -169,6 +218,132 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Student Testimonials */}
+        <section className="relative py-20 lg:py-28 bg-white overflow-hidden">
+          <AnimatedAcademicBackground />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="text-center mb-16">
+              <span className="inline-block px-4 py-1.5 bg-accent-500/20 text-accent-400 rounded-full text-sm font-medium mb-4">
+                Student Stories
+              </span>
+              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 font-heading mb-6">
+                What Our Students Say
+              </h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Hear from students who have achieved their academic goals with Edwardian Educational Consult.
+              </p>
+            </div>
+            <div className="relative h-[200px] overflow-hidden">
+              <div className="flex items-center animate-marquee will-change-transform">
+                {testimonials.map((t, index) => (
+                  <div key={index} className="flex-none shrink-0 mr-12">
+                    <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm min-w-[320px]">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center overflow-hidden border border-gray-200">
+                          <Image src={t.avatar} alt={t.name} width={40} height={40} className="object-cover" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-900">{t.name}</h4>
+                          <p className="text-xs text-gray-500">{t.school}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 text-primary-600 mb-4">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star key={i} className="h-4 w-4 fill-current" />
+                        ))}
+                      </div>
+                      <p className="text-gray-700 text-sm leading-relaxed mb-6">
+                        "{t.quote}"
+                      </p>
+                      <span className="text-xs text-primary-600 font-medium">{t.result}</span>
+                    </div>
+                  </div>
+                ))}
+                {testimonials.map((t, index) => (
+                  <div key={`dup-${index}`} className="flex-none shrink-0 mr-12">
+                    <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm min-w-[320px]">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center overflow-hidden border border-gray-200">
+                          <Image src={t.avatar} alt={t.name} width={40} height={40} className="object-cover" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-900">{t.name}</h4>
+                          <p className="text-xs text-gray-500">{t.school}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 text-primary-600 mb-4">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star key={i} className="h-4 w-4 fill-current" />
+                        ))}
+                      </div>
+                      <p className="text-gray-700 text-sm leading-relaxed mb-6">
+                        "{t.quote}"
+                      </p>
+                      <span className="text-xs text-primary-600 font-medium">{t.result}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Latest News */}
+        <section className="relative py-20 lg:py-28 bg-white overflow-hidden">
+          <AnimatedAcademicBackground />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="text-center mb-16">
+              <span className="inline-block px-4 py-1.5 bg-accent-500/20 text-accent-400 rounded-full text-sm font-medium mb-4">
+                Latest News
+              </span>
+              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 font-heading mb-6">
+                Admission News & Updates
+              </h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Stay informed with the latest news about JAMB, WAEC, NECO, and university admissions.
+              </p>
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredNews.map((article) => (
+                <article
+                  key={article.id}
+                  className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-xl transition-shadow duration-300"
+                >
+                  <div className="h-48 bg-gray-100 flex items-center justify-center">
+                    <Newspaper className="w-12 h-12 text-gray-400" />
+                  </div>
+                  <div className="p-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-xs bg-primary-50 text-primary-600 px-2 py-1 rounded font-medium">
+                        {article.category}
+                      </span>
+                      <span className="text-xs text-gray-500 flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {new Date(article.date).toLocaleDateString('en-NG', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
+                      {article.title}
+                    </h3>
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-3">{article.excerpt}</p>
+                    <Link
+                      href="/news"
+                      className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 text-sm font-medium"
+                    >
+                      Read More
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </article>
+              ))}
             </div>
           </div>
         </section>

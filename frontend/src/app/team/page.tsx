@@ -20,10 +20,6 @@ const socialLinks = [
 ];
 
 export default function TeamPage() {
-  const [members, setMembers] = useState<any[]>([]);
-  useEffect(() => {
-    fetch('http://localhost:5001/team').then(r => r.json()).then(setMembers).catch(() => {});
-  }, []);
   return (
     <div className="min-h-screen bg-gray-50 relative">
       <FloatingNav />
@@ -54,7 +50,7 @@ export default function TeamPage() {
       <section className="py-20 lg:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {members.map((member, index) => (
+            {teamMembers.map((member, index) => (
               <div key={index} className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden flex flex-col">
                 <Link href={`/team/${member.id}`} className="block">
                 <div className="h-48 bg-gray-200 relative overflow-hidden">
