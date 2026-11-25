@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 
 pdfjs.GlobalWorkerOptions.workerSrc =
-  'https://unpkg.com/pdfjs-dist@4.8.69/build/pdf.worker.min.js';
+  'https://unpkg.com/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs';
 
 export default function PdfViewer({ src }: { src: string }) {
   const boxRef = useRef<HTMLDivElement>(null);
